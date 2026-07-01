@@ -39,6 +39,10 @@ px4_add_module(
 	SRCS
 		MulticopterRateControl.cpp
 		MulticopterRateControl.hpp
+		ladrc_rate_control/LadrcRateControl.cpp
+		ladrc_rate_control/LadrcRateControl.hpp
+		rbf_residual_compensation/RbfResidualCompensation.cpp
+		rbf_residual_compensation/RbfResidualCompensation.hpp
 	DEPENDS
 		circuit_breaker
 		mathlib

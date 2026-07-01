@@ -35,6 +35,7 @@
 
 #include <drivers/drv_hrt.h>
 #include <circuit_breaker/circuit_breaker.h>
+#include <math.h>
 #include <mathlib/math/Limits.hpp>
 #include <mathlib/math/Functions.hpp>
 #include <px4_platform_common/events.h>
@@ -97,6 +98,67 @@ MulticopterRateControl::parameters_updated()
 				  radians(_param_mc_acro_y_max.get()));
 
 	_output_lpf_yaw.setCutoffFreq(_param_mc_yaw_tq_cutoff.get());
+	_rbf_rate_error_lpf.setCutoffFreq(_param_mc_rbf_e_filt_hz.get());
+	_rbf_target_lpf.setCutoffFreq(_param_mc_rbf_tgt_hz.get());
+
+	// LADRC rate control parameters
+	_ladrc_rate_control.setLadrcGains(
+		Vector3f(_param_mc_ladrc_b0_r.get(), _param_mc_ladrc_b0_p.get(), _param_mc_ladrc_b0_y.get()),
+		Vector3f(_param_mc_ladrc_wc_r.get(), _param_mc_ladrc_wc_p.get(), _param_mc_ladrc_wc_y.get()),
+		Vector3f(_param_mc_ladrc_wo_r.get(), _param_mc_ladrc_wo_p.get(), _param_mc_ladrc_wo_y.get()));
+
+	_ladrc_rate_control.setTorqueLimit(
+		Vector3f(_param_mc_ladrc_lim_r.get(), _param_mc_ladrc_lim_p.get(), _param_mc_ladrc_lim_y.get()));
+
+	RbfResidualCompensation::Parameters rbf_parameters{};
+	rbf_parameters.input_dimension = math::constrain(_param_mc_rbf_in_dim.get(), 1, (int)RbfResidualCompensation::kMaxInputDimension);
+	rbf_parameters.basis_count = math::constrain(_param_mc_rbf_basis.get(), 0, (int)RbfResidualCompensation::kMaxBasisCount);
+	rbf_parameters.learning_rate = _param_mc_rbf_lr.get();
+	rbf_parameters.leakage = _param_mc_rbf_leak.get();
+	rbf_parameters.output_limit = Vector3f(_param_mc_rbf_lim_r.get(), _param_mc_rbf_lim_p.get(), _param_mc_rbf_lim_y.get());
+	rbf_parameters.output_lpf_alpha = _param_mc_rbf_lpf_alpha.get();
+	rbf_parameters.output_rate_limit = _param_mc_rbf_du_max.get();
+	rbf_parameters.feature_limit = _param_mc_rbf_feat_lim.get();
+	rbf_parameters.enabled = _param_mc_ladrc_en.get() && _param_mc_rbf_en.get();
+	rbf_parameters.learning_enabled = _param_mc_rbf_learn_en.get();
+	rbf_parameters.normalize_activation = true;
+
+	_rbf_residual_compensation.configure(rbf_parameters);
+	_rbf_residual_compensation.configureRateErrorBasis(rbf_parameters.basis_count,
+			_param_mc_rbf_width.get(),
+			_param_mc_rbf_spacing.get());
+
+	updateRateControllerSelection();
+}
+
+void
+MulticopterRateControl::updateRateControllerSelection()
+{
+	const bool use_ladrc = _param_mc_ladrc_en.get();
+	const bool rbf_en = _param_mc_rbf_en.get();
+	const bool rbf_inject_en = _param_mc_rbf_inject_en.get();
+	const bool rbf_learn_en = _param_mc_rbf_learn_en.get();
+	const bool use_rbf_ladrc = use_ladrc && rbf_en;
+
+	if (!_rate_controller_selection_initialized
+	    || use_ladrc != _use_ladrc
+	    || use_rbf_ladrc != _use_rbf_ladrc
+	    || rbf_en != _reported_rbf_en
+	    || rbf_inject_en != _reported_rbf_inject_en
+	    || rbf_learn_en != _reported_rbf_learn_en) {
+		_use_ladrc = use_ladrc;
+		_use_rbf_ladrc = use_rbf_ladrc;
+		_reported_rbf_en = rbf_en;
+		_reported_rbf_inject_en = rbf_inject_en;
+		_reported_rbf_learn_en = rbf_learn_en;
+		_rate_controller_selection_initialized = true;
+
+		PX4_INFO("MC rate inner loop: %s (MC_RBF_EN=%d, MC_RBF_INJECT_EN=%d, MC_RBF_LEARN_EN=%d)",
+			 _use_ladrc ? (_use_rbf_ladrc ? (rbf_inject_en ? "RBF-LADRC" : "RBF-LADRC-bypass") : "LADRC") : "PID",
+			 (int)rbf_en,
+			 (int)rbf_inject_en,
+			 (int)rbf_learn_en);
+	}
 }
 
 void
@@ -130,6 +192,7 @@ MulticopterRateControl::Run()
 		// Guard against too small (< 0.125ms) and too large (> 20ms) dt's.
 		const float dt = math::constrain(((now - _last_run) * 1e-6f), 0.000125f, 0.02f);
 		_last_run = now;
+		const bool dt_valid = PX4_ISFINITE(dt) && dt > FLT_EPSILON && dt <= 0.02f;
 
 		const Vector3f rates{angular_velocity.xyz};
 		const Vector3f angular_accel{angular_velocity.xyz_derivative};
@@ -188,9 +251,16 @@ MulticopterRateControl::Run()
 		// run the rate controller
 		if (_vehicle_control_mode.flag_control_rates_enabled) {
 
-			// reset integral if disarmed
+			// reset controller states if disarmed or not a multicopter
 			if (!_vehicle_control_mode.flag_armed || _vehicle_status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
 				_rate_control.resetIntegral();
+				_ladrc_rate_control.reset(rates);
+				_rbf_residual_compensation.reset();
+				_rbf_rate_error_lpf.reset(Vector3f{});
+				_rbf_target_lpf.reset(Vector3f{});
+				_rbf_last_rates_setpoint_valid = false;
+				_torque_saturation_positive = Vector<bool, 3>{};
+				_torque_saturation_negative = Vector<bool, 3>{};
 			}
 
 			// update saturation status from control allocation feedback
@@ -213,18 +283,180 @@ MulticopterRateControl::Run()
 
 				// TODO: send the unallocated value directly for better anti-windup
 				_rate_control.setSaturationStatus(saturation_positive, saturation_negative);
+				_ladrc_rate_control.setSaturationStatus(saturation_positive, saturation_negative);
+				_torque_saturation_positive = saturation_positive;
+				_torque_saturation_negative = saturation_negative;
 			}
 
-			// run rate controller
-			Vector3f torque_setpoint =
-				_rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
+			const bool on_ground = _maybe_landed || _landed;
+			rate_ctrl_status_s rate_ctrl_status{};
+			Vector3f torque_setpoint{};
+
+			if (_use_ladrc && !_last_control_cycle_ladrc && !on_ground && _vehicle_control_mode.flag_armed) {
+				_ladrc_rate_control.initializeBumpless(rates, _rates_setpoint, _last_published_torque);
+			}
+
+			if (_use_ladrc) {
+				torque_setpoint = _ladrc_rate_control.update(rates, _rates_setpoint, angular_accel, dt, on_ground);
+				_ladrc_rate_control.getRateControlStatus(rate_ctrl_status);
+
+				if (_use_rbf_ladrc) {
+					RbfResidualCompensation::LadrcBridgeInput rbf_input{};
+					rbf_input.rate = rates;
+					rbf_input.rate_sp = _rates_setpoint;
+					rbf_input.angular_accel = angular_accel;
+					rbf_input.ladrc_torque = torque_setpoint;
+					rbf_input.ladrc_disturbance_compensation = Vector3f(rate_ctrl_status.rollspeed_integ,
+							rate_ctrl_status.pitchspeed_integ,
+							rate_ctrl_status.yawspeed_integ);
+					rbf_input.applied_torque = _last_published_torque;
+
+					const RbfResidualCompensation::FeatureVector rbf_features =
+						_rbf_residual_compensation.makeFeatureVector(rbf_input);
+					const Vector3f rbf_compensation = _rbf_residual_compensation.update(rbf_features, dt);
+					rate_ctrl_status.rollspeed_rbf = rbf_compensation(0);
+					rate_ctrl_status.pitchspeed_rbf = rbf_compensation(1);
+					rate_ctrl_status.yawspeed_rbf = rbf_compensation(2);
+
+					const Vector3f rbf_output_raw = _rbf_residual_compensation.getLastRawOutput();
+					rbf_output_raw.copyTo(rate_ctrl_status.rbf_output_raw);
+					rbf_compensation.copyTo(rate_ctrl_status.rbf_output_filtered);
+
+					RbfResidualCompensation::ResidualLearningTarget learning_target{};
+					const Vector3f rate_error = _rates_setpoint - rates;
+					const Vector3f disturbance_compensation = rbf_input.ladrc_disturbance_compensation;
+					const Vector3f b0(_param_mc_ladrc_b0_r.get(), _param_mc_ladrc_b0_p.get(), _param_mc_ladrc_b0_y.get());
+					Vector3f residual_torque_target{};
+					Vector<bool, 3> residual_torque_target_valid;
+
+					for (size_t axis = 0; axis < 3; axis++) {
+						const float b0_axis = b0(axis);
+						residual_torque_target_valid(axis) = PX4_ISFINITE(b0_axis)
+										     && fabsf(b0_axis) > 1.e-3f
+										     && PX4_ISFINITE(angular_accel(axis))
+										     && PX4_ISFINITE(_last_published_torque(axis))
+										     && PX4_ISFINITE(disturbance_compensation(axis));
+
+						if (residual_torque_target_valid(axis)) {
+							const float predicted_accel =
+								b0_axis * (_last_published_torque(axis) - disturbance_compensation(axis));
+							const float residual_accel = angular_accel(axis) - predicted_accel;
+							residual_torque_target(axis) = -residual_accel / b0_axis * _param_mc_rbf_err_gain.get();
+						}
+					}
+
+					if (!_last_control_cycle_rbf_ladrc) {
+						_rbf_rate_error_lpf.reset(rate_error);
+						_rbf_target_lpf.reset(residual_torque_target);
+						_rbf_last_rates_setpoint = _rates_setpoint;
+						_rbf_last_rates_setpoint_valid = false;
+					}
+
+					const Vector3f rate_error_filtered = _rbf_rate_error_lpf.update(rate_error, dt);
+					learning_target.torque_residual = _rbf_target_lpf.update(residual_torque_target, dt);
+					learning_target.torque_residual.copyTo(rate_ctrl_status.rbf_target);
+
+					Vector3f rate_sp_dot{};
+					const bool rate_sp_dot_valid = _rbf_last_rates_setpoint_valid && dt_valid;
+
+					if (rate_sp_dot_valid) {
+						rate_sp_dot = (_rates_setpoint - _rbf_last_rates_setpoint) * (1.f / dt);
+					}
+
+					_rbf_last_rates_setpoint = _rates_setpoint;
+					_rbf_last_rates_setpoint_valid = true;
+
+					const float e_min = fmaxf(_param_mc_rbf_e_min.get(), 0.f);
+					const float e_max = fmaxf(_param_mc_rbf_e_max.get(), e_min + FLT_EPSILON);
+					const float rate_sp_dot_max = fmaxf(_param_mc_rbf_spd_max.get(), 0.f);
+					const Vector3f ladrc_limit(fmaxf(_param_mc_ladrc_lim_r.get(), FLT_EPSILON),
+								    fmaxf(_param_mc_ladrc_lim_p.get(), FLT_EPSILON),
+								    fmaxf(_param_mc_ladrc_lim_y.get(), FLT_EPSILON));
+
+					bool rbf_learn_active = false;
+
+					for (size_t axis = 0; axis < 3; axis++) {
+						const bool torque_saturated_axis = _torque_saturation_positive(axis) || _torque_saturation_negative(axis);
+						const float abs_e = fabsf(rate_error_filtered(axis));
+						const bool finite_axis = PX4_ISFINITE(rate_error_filtered(axis))
+									 && PX4_ISFINITE(rate_sp_dot(axis))
+									 && PX4_ISFINITE(torque_setpoint(axis))
+									 && PX4_ISFINITE(learning_target.torque_residual(axis))
+									 && PX4_ISFINITE(ladrc_limit(axis));
+
+						learning_target.valid(axis) =
+							_vehicle_control_mode.flag_armed
+							&& !_landed
+							&& !_maybe_landed
+							&& dt_valid
+							&& rate_sp_dot_valid
+							&& residual_torque_target_valid(axis)
+							&& finite_axis
+							&& abs_e > e_min
+							&& abs_e < e_max
+							&& fabsf(rate_sp_dot(axis)) < rate_sp_dot_max
+							&& !torque_saturated_axis
+							&& fabsf(torque_setpoint(axis)) < 0.85f * ladrc_limit(axis);
+
+						rbf_learn_active = rbf_learn_active || learning_target.valid(axis);
+					}
+
+					if (_rbf_residual_compensation.isLearningEnabled() && dt_valid) {
+						_rbf_residual_compensation.learn(rbf_features, learning_target.torque_residual, learning_target.valid, dt);
+					}
+
+					rate_ctrl_status.rbf_learn_flag = _rbf_residual_compensation.isLearningEnabled() && rbf_learn_active;
+					rate_ctrl_status.rbf_weight_norm = _rbf_residual_compensation.getWeightNorm();
+					rate_ctrl_status.rbf_phi_max = _rbf_residual_compensation.getMaxActivation();
+
+					bool final_torque_would_saturate = false;
+
+					for (size_t axis = 0; axis < 3; axis++) {
+						const float injected_torque = torque_setpoint(axis) + rbf_compensation(axis);
+
+						if (PX4_ISFINITE(injected_torque)
+						    && fabsf(injected_torque - math::constrain(injected_torque, -1.f, 1.f)) > FLT_EPSILON) {
+							final_torque_would_saturate = true;
+						}
+					}
+
+					rate_ctrl_status.rbf_saturation_flag =
+						_rbf_residual_compensation.getLastOutputSaturated() || final_torque_would_saturate;
+
+					if (_param_mc_rbf_inject_en.get()) {
+						torque_setpoint = _rbf_residual_compensation.compensate(torque_setpoint);
+					}
+
+				} else if (_last_control_cycle_rbf_ladrc) {
+					_rbf_residual_compensation.reset();
+					_rbf_rate_error_lpf.reset(Vector3f{});
+					_rbf_target_lpf.reset(Vector3f{});
+					_rbf_last_rates_setpoint_valid = false;
+				}
+
+			} else {
+				if (_last_control_cycle_ladrc) {
+					_rate_control.resetIntegral();
+				}
+
+				if (_last_control_cycle_rbf_ladrc) {
+					_rbf_residual_compensation.reset();
+					_rbf_rate_error_lpf.reset(Vector3f{});
+					_rbf_target_lpf.reset(Vector3f{});
+					_rbf_last_rates_setpoint_valid = false;
+				}
+
+				torque_setpoint = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, on_ground);
+				_rate_control.getRateControlStatus(rate_ctrl_status);
+			}
+
+			_last_control_cycle_ladrc = _use_ladrc;
+			_last_control_cycle_rbf_ladrc = _use_rbf_ladrc;
 
 			// apply low-pass filtering on yaw axis to reduce high frequency torque caused by rotor acceleration
 			torque_setpoint(2) = _output_lpf_yaw.update(torque_setpoint(2), dt);
 
 			// publish rate controller status
-			rate_ctrl_status_s rate_ctrl_status{};
-			_rate_control.getRateControlStatus(rate_ctrl_status);
 			rate_ctrl_status.timestamp = hrt_absolute_time();
 			_controller_status_pub.publish(rate_ctrl_status);
 
@@ -262,6 +494,12 @@ MulticopterRateControl::Run()
 			vehicle_torque_setpoint.timestamp_sample = angular_velocity.timestamp_sample;
 			vehicle_torque_setpoint.timestamp = hrt_absolute_time();
 			_vehicle_torque_setpoint_pub.publish(vehicle_torque_setpoint);
+
+			_last_published_torque = Vector3f(vehicle_torque_setpoint.xyz);
+
+			if (_use_ladrc) {
+				_ladrc_rate_control.setAppliedTorque(_last_published_torque);
+			}
 
 			updateActuatorControlsStatus(vehicle_torque_setpoint, dt);
 
@@ -331,6 +569,19 @@ int MulticopterRateControl::custom_command(int argc, char *argv[])
 	return print_usage("unknown command");
 }
 
+int MulticopterRateControl::print_status()
+{
+	const bool rbf_inject_en = _param_mc_rbf_inject_en.get();
+
+	PX4_INFO("MC rate inner loop: %s (MC_RBF_EN=%d, MC_RBF_INJECT_EN=%d, MC_RBF_LEARN_EN=%d)",
+		 _use_ladrc ? (_use_rbf_ladrc ? (rbf_inject_en ? "RBF-LADRC" : "RBF-LADRC-bypass") : "LADRC") : "PID",
+		 (int)_param_mc_rbf_en.get(),
+		 (int)rbf_inject_en,
+		 (int)_param_mc_rbf_learn_en.get());
+
+	return 0;
+}
+
 int MulticopterRateControl::print_usage(const char *reason)
 {
 	if (reason) {
@@ -343,7 +594,11 @@ int MulticopterRateControl::print_usage(const char *reason)
 This implements the multicopter rate controller. It takes rate setpoints (in acro mode
 via `manual_control_setpoint` topic) as inputs and outputs actuator control messages.
 
-The controller has a PID loop for angular rate error.
+The default inner loop is the original PX4 PID rate controller. Set MC_LADRC_EN=1
+to manually select the separated LADRC rate controller. Set MC_RBF_EN=1 together
+with MC_LADRC_EN=1 to run the RBF residual compensator after LADRC. Set
+MC_RBF_INJECT_EN=1 to inject the RBF residual into the final torque command;
+when disabled, RBF still computes, learns, and logs diagnostics in bypass mode.
 
 )DESCR_STR");
 

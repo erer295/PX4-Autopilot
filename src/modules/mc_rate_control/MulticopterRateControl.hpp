@@ -33,6 +33,9 @@
 
 #pragma once
 
+#include "ladrc_rate_control/LadrcRateControl.hpp"
+#include "rbf_residual_compensation/RbfResidualCompensation.hpp"
+
 #include <lib/rate_control/rate_control.hpp>
 #include <lib/mathlib/math/filter/AlphaFilter.hpp>
 #include <lib/matrix/matrix/math.hpp>
@@ -78,6 +81,9 @@ public:
 	/** @see ModuleBase */
 	static int print_usage(const char *reason = nullptr);
 
+	/** @see ModuleBase */
+	int print_status() override;
+
 	bool init();
 
 private:
@@ -88,9 +94,13 @@ private:
 	 */
 	void parameters_updated();
 
+	void updateRateControllerSelection();
+
 	void updateActuatorControlsStatus(const vehicle_torque_setpoint_s &vehicle_torque_setpoint, float dt);
 
 	RateControl _rate_control; ///< class for rate control calculations
+	LadrcRateControl _ladrc_rate_control; ///< LADRC class for rate control calculations
+	RbfResidualCompensation _rbf_residual_compensation; ///< RBF residual compensation for LADRC
 
 	uORB::Subscription _battery_status_sub{ORB_ID(battery_status)};
 	uORB::Subscription _control_allocator_status_sub{ORB_ID(control_allocator_status)};
@@ -126,6 +136,26 @@ private:
 
 	float _battery_status_scale{0.0f};
 	matrix::Vector3f _thrust_setpoint{};
+
+	bool _use_ladrc{false};
+	bool _use_rbf_ladrc{false};
+	bool _rate_controller_selection_initialized{false};
+	bool _reported_rbf_en{false};
+	bool _reported_rbf_inject_en{false};
+	bool _reported_rbf_learn_en{false};
+	bool _last_control_cycle_ladrc{false};
+	bool _last_control_cycle_rbf_ladrc{false};
+
+	// Last published torque is used to initialize LADRC when switching from PID.
+	matrix::Vector3f _last_published_torque{};
+
+	// RBF learning gate state.
+	AlphaFilter<matrix::Vector3f> _rbf_rate_error_lpf;
+	AlphaFilter<matrix::Vector3f> _rbf_target_lpf;
+	matrix::Vector3f _rbf_last_rates_setpoint{};
+	matrix::Vector<bool, 3> _torque_saturation_positive{};
+	matrix::Vector<bool, 3> _torque_saturation_negative{};
+	bool _rbf_last_rates_setpoint_valid{false};
 
 	float _energy_integration_time{0.0f};
 	float _control_energy[4] {};
@@ -163,6 +193,52 @@ private:
 		(ParamFloat<px4::params::MC_ACRO_SUPEXPO>) _param_mc_acro_supexpo,		/**< superexpo stick curve shape (roll & pitch) */
 		(ParamFloat<px4::params::MC_ACRO_SUPEXPOY>) _param_mc_acro_supexpoy,		/**< superexpo stick curve shape (yaw) */
 
-		(ParamBool<px4::params::MC_BAT_SCALE_EN>) _param_mc_bat_scale_en
+		(ParamBool<px4::params::MC_BAT_SCALE_EN>) _param_mc_bat_scale_en,
+
+		// LADRC manual controller selection
+		(ParamBool<px4::params::MC_LADRC_EN>) _param_mc_ladrc_en,
+
+		// LADRC equivalent input gain b0
+		(ParamFloat<px4::params::MC_LADRC_B0_R>) _param_mc_ladrc_b0_r,
+		(ParamFloat<px4::params::MC_LADRC_B0_P>) _param_mc_ladrc_b0_p,
+		(ParamFloat<px4::params::MC_LADRC_B0_Y>) _param_mc_ladrc_b0_y,
+
+		// LADRC controller bandwidth wc
+		(ParamFloat<px4::params::MC_LADRC_WC_R>) _param_mc_ladrc_wc_r,
+		(ParamFloat<px4::params::MC_LADRC_WC_P>) _param_mc_ladrc_wc_p,
+		(ParamFloat<px4::params::MC_LADRC_WC_Y>) _param_mc_ladrc_wc_y,
+
+		// LADRC observer bandwidth wo
+		(ParamFloat<px4::params::MC_LADRC_WO_R>) _param_mc_ladrc_wo_r,
+		(ParamFloat<px4::params::MC_LADRC_WO_P>) _param_mc_ladrc_wo_p,
+		(ParamFloat<px4::params::MC_LADRC_WO_Y>) _param_mc_ladrc_wo_y,
+
+		// LADRC normalized torque limit
+		(ParamFloat<px4::params::MC_LADRC_LIM_R>) _param_mc_ladrc_lim_r,
+		(ParamFloat<px4::params::MC_LADRC_LIM_P>) _param_mc_ladrc_lim_p,
+		(ParamFloat<px4::params::MC_LADRC_LIM_Y>) _param_mc_ladrc_lim_y,
+
+		// RBF residual compensation for LADRC
+		(ParamBool<px4::params::MC_RBF_EN>) _param_mc_rbf_en,
+		(ParamBool<px4::params::MC_RBF_INJECT_EN>) _param_mc_rbf_inject_en,
+		(ParamBool<px4::params::MC_RBF_LEARN_EN>) _param_mc_rbf_learn_en,
+		(ParamInt<px4::params::MC_RBF_BASIS>) _param_mc_rbf_basis,
+		(ParamInt<px4::params::MC_RBF_IN_DIM>) _param_mc_rbf_in_dim,
+		(ParamFloat<px4::params::MC_RBF_WIDTH>) _param_mc_rbf_width,
+		(ParamFloat<px4::params::MC_RBF_SPACING>) _param_mc_rbf_spacing,
+		(ParamFloat<px4::params::MC_RBF_LR>) _param_mc_rbf_lr,
+		(ParamFloat<px4::params::MC_RBF_LEAK>) _param_mc_rbf_leak,
+		(ParamFloat<px4::params::MC_RBF_LIM_R>) _param_mc_rbf_lim_r,
+		(ParamFloat<px4::params::MC_RBF_LIM_P>) _param_mc_rbf_lim_p,
+		(ParamFloat<px4::params::MC_RBF_LIM_Y>) _param_mc_rbf_lim_y,
+		(ParamFloat<px4::params::MC_RBF_LPF_ALPHA>) _param_mc_rbf_lpf_alpha,
+		(ParamFloat<px4::params::MC_RBF_DU_MAX>) _param_mc_rbf_du_max,
+		(ParamFloat<px4::params::MC_RBF_ERR_GAIN>) _param_mc_rbf_err_gain,
+		(ParamFloat<px4::params::MC_RBF_TGT_HZ>) _param_mc_rbf_tgt_hz,
+		(ParamFloat<px4::params::MC_RBF_E_MIN>) _param_mc_rbf_e_min,
+		(ParamFloat<px4::params::MC_RBF_E_MAX>) _param_mc_rbf_e_max,
+		(ParamFloat<px4::params::MC_RBF_SPD_MAX>) _param_mc_rbf_spd_max,
+		(ParamFloat<px4::params::MC_RBF_E_FILT_HZ>) _param_mc_rbf_e_filt_hz,
+		(ParamFloat<px4::params::MC_RBF_FEAT_LIM>) _param_mc_rbf_feat_lim
 	)
 };
