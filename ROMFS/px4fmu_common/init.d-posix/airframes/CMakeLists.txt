@@ -118,4 +118,6 @@ px4_add_romfs_files(
 
 	# [22000, 22999] Reserve for custom models
 	22000_gz_zd680
+	22001_gz_zd680_load
+	22002_gz_zd680_hang
 )

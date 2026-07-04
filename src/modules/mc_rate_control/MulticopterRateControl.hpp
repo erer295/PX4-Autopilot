@@ -51,12 +51,14 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/topics/actuator_controls_status.h>
+#include <uORB/topics/actuator_motors.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/control_allocator_status.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/rate_ctrl_status.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
+#include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
@@ -102,9 +104,11 @@ private:
 	LadrcRateControl _ladrc_rate_control; ///< LADRC class for rate control calculations
 	RbfResidualCompensation _rbf_residual_compensation; ///< RBF residual compensation for LADRC
 
+	uORB::Subscription _actuator_motors_sub{ORB_ID(actuator_motors)};
 	uORB::Subscription _battery_status_sub{ORB_ID(battery_status)};
 	uORB::Subscription _control_allocator_status_sub{ORB_ID(control_allocator_status)};
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
+	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription _vehicle_rates_setpoint_sub{ORB_ID(vehicle_rates_setpoint)};
@@ -155,7 +159,13 @@ private:
 	matrix::Vector3f _rbf_last_rates_setpoint{};
 	matrix::Vector<bool, 3> _torque_saturation_positive{};
 	matrix::Vector<bool, 3> _torque_saturation_negative{};
+	hrt_abstime _rbf_attitude_gate_timestamp{0};
+	hrt_abstime _rbf_allocation_gate_timestamp{0};
+	hrt_abstime _rbf_actuator_gate_timestamp{0};
 	bool _rbf_last_rates_setpoint_valid{false};
+	bool _rbf_attitude_gate_ok{false};
+	bool _rbf_allocation_gate_ok{false};
+	bool _rbf_actuator_gate_ok{false};
 
 	float _energy_integration_time{0.0f};
 	float _control_energy[4] {};
@@ -234,6 +244,7 @@ private:
 		(ParamFloat<px4::params::MC_RBF_LPF_ALPHA>) _param_mc_rbf_lpf_alpha,
 		(ParamFloat<px4::params::MC_RBF_DU_MAX>) _param_mc_rbf_du_max,
 		(ParamFloat<px4::params::MC_RBF_ERR_GAIN>) _param_mc_rbf_err_gain,
+		(ParamFloat<px4::params::MC_RBF_ERR_WC>) _param_mc_rbf_err_wc,
 		(ParamFloat<px4::params::MC_RBF_TGT_HZ>) _param_mc_rbf_tgt_hz,
 		(ParamFloat<px4::params::MC_RBF_E_MIN>) _param_mc_rbf_e_min,
 		(ParamFloat<px4::params::MC_RBF_E_MAX>) _param_mc_rbf_e_max,

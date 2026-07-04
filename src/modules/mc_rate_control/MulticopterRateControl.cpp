@@ -44,6 +44,18 @@ using namespace matrix;
 using namespace time_literals;
 using math::radians;
 
+namespace
+{
+
+constexpr float kRbfLearningMaxTiltRad = math::radians(20.f);
+constexpr float kRbfLearningMotorMin = 0.05f;
+constexpr float kRbfLearningMotorMax = 0.95f;
+constexpr hrt_abstime kRbfLearningAttitudeTimeout = 200_ms;
+constexpr hrt_abstime kRbfLearningAllocatorTimeout = 500_ms;
+constexpr hrt_abstime kRbfLearningActuatorTimeout = 500_ms;
+
+} // namespace
+
 MulticopterRateControl::MulticopterRateControl(bool vtol) :
 	ModuleParams(nullptr),
 	WorkItem(MODULE_NAME, px4::wq_configurations::rate_ctrl),
@@ -211,6 +223,44 @@ MulticopterRateControl::Run()
 
 		_vehicle_status_sub.update(&_vehicle_status);
 
+		vehicle_attitude_s vehicle_attitude{};
+
+		if (_vehicle_attitude_sub.update(&vehicle_attitude)) {
+			const Eulerf attitude_euler(Quatf(vehicle_attitude.q));
+			const float roll = attitude_euler.phi();
+			const float pitch = attitude_euler.theta();
+
+			// RBF global learning gate: do not learn from large-attitude recovery or incipient loss of control.
+			_rbf_attitude_gate_ok = PX4_ISFINITE(roll)
+						&& PX4_ISFINITE(pitch)
+						&& fabsf(roll) < kRbfLearningMaxTiltRad
+						&& fabsf(pitch) < kRbfLearningMaxTiltRad;
+			_rbf_attitude_gate_timestamp = vehicle_attitude.timestamp;
+		}
+
+		actuator_motors_s actuator_motors{};
+
+		if (_actuator_motors_sub.update(&actuator_motors)) {
+			bool finite_motor_seen = false;
+			bool actuator_outputs_clear = true;
+
+			for (size_t i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
+				const float motor_output = actuator_motors.control[i];
+
+				if (PX4_ISFINITE(motor_output)) {
+					finite_motor_seen = true;
+
+					if (motor_output < kRbfLearningMotorMin || motor_output > kRbfLearningMotorMax) {
+						actuator_outputs_clear = false;
+					}
+				}
+			}
+
+			// RBF global learning gate: motor outputs near 0/1 indicate allocator saturation or loss of authority.
+			_rbf_actuator_gate_ok = finite_motor_seen && actuator_outputs_clear;
+			_rbf_actuator_gate_timestamp = actuator_motors.timestamp;
+		}
+
 		// use rates setpoint topic
 		vehicle_rates_setpoint_s vehicle_rates_setpoint{};
 
@@ -261,6 +311,12 @@ MulticopterRateControl::Run()
 				_rbf_last_rates_setpoint_valid = false;
 				_torque_saturation_positive = Vector<bool, 3>{};
 				_torque_saturation_negative = Vector<bool, 3>{};
+				_rbf_attitude_gate_ok = false;
+				_rbf_allocation_gate_ok = false;
+				_rbf_actuator_gate_ok = false;
+				_rbf_attitude_gate_timestamp = 0;
+				_rbf_allocation_gate_timestamp = 0;
+				_rbf_actuator_gate_timestamp = 0;
 			}
 
 			// update saturation status from control allocation feedback
@@ -286,6 +342,10 @@ MulticopterRateControl::Run()
 				_ladrc_rate_control.setSaturationStatus(saturation_positive, saturation_negative);
 				_torque_saturation_positive = saturation_positive;
 				_torque_saturation_negative = saturation_negative;
+				// RBF global learning gate: reject all axes while the allocator cannot achieve requested control.
+				_rbf_allocation_gate_ok = control_allocator_status.torque_setpoint_achieved
+							  && control_allocator_status.thrust_setpoint_achieved;
+				_rbf_allocation_gate_timestamp = control_allocator_status.timestamp;
 			}
 
 			const bool on_ground = _maybe_landed || _landed;
@@ -326,33 +386,58 @@ MulticopterRateControl::Run()
 					const Vector3f rate_error = _rates_setpoint - rates;
 					const Vector3f disturbance_compensation = rbf_input.ladrc_disturbance_compensation;
 					const Vector3f b0(_param_mc_ladrc_b0_r.get(), _param_mc_ladrc_b0_p.get(), _param_mc_ladrc_b0_y.get());
+					const Vector3f rbf_limit(_param_mc_rbf_lim_r.get(), _param_mc_rbf_lim_p.get(), _param_mc_rbf_lim_y.get());
 					Vector3f residual_torque_target{};
 					Vector<bool, 3> residual_torque_target_valid;
 
-					for (size_t axis = 0; axis < 3; axis++) {
-						const float b0_axis = b0(axis);
-						residual_torque_target_valid(axis) = PX4_ISFINITE(b0_axis)
-										     && fabsf(b0_axis) > 1.e-3f
-										     && PX4_ISFINITE(angular_accel(axis))
-										     && PX4_ISFINITE(_last_published_torque(axis))
-										     && PX4_ISFINITE(disturbance_compensation(axis));
-
-						if (residual_torque_target_valid(axis)) {
-							const float predicted_accel =
-								b0_axis * (_last_published_torque(axis) - disturbance_compensation(axis));
-							const float residual_accel = angular_accel(axis) - predicted_accel;
-							residual_torque_target(axis) = -residual_accel / b0_axis * _param_mc_rbf_err_gain.get();
-						}
-					}
-
 					if (!_last_control_cycle_rbf_ladrc) {
 						_rbf_rate_error_lpf.reset(rate_error);
-						_rbf_target_lpf.reset(residual_torque_target);
 						_rbf_last_rates_setpoint = _rates_setpoint;
 						_rbf_last_rates_setpoint_valid = false;
 					}
 
 					const Vector3f rate_error_filtered = _rbf_rate_error_lpf.update(rate_error, dt);
+					const float residual_accel_gain = fmaxf(_param_mc_rbf_err_gain.get(), 0.f);
+					const float rate_error_bandwidth = fmaxf(_param_mc_rbf_err_wc.get(), 0.f);
+
+					for (size_t axis = 0; axis < 3; axis++) {
+						const float b0_axis = b0(axis);
+						const float rbf_limit_axis = rbf_limit(axis);
+						const bool b0_valid = PX4_ISFINITE(b0_axis) && fabsf(b0_axis) > 1.e-3f;
+						const bool rbf_axis_enabled = PX4_ISFINITE(rbf_limit_axis) && rbf_limit_axis > FLT_EPSILON;
+						const bool accel_target_valid = b0_valid
+										&& PX4_ISFINITE(angular_accel(axis))
+										&& PX4_ISFINITE(_last_published_torque(axis))
+										&& PX4_ISFINITE(disturbance_compensation(axis));
+						const bool error_target_valid = b0_valid && PX4_ISFINITE(rate_error_filtered(axis));
+
+						residual_torque_target_valid(axis) = rbf_axis_enabled && (accel_target_valid || error_target_valid);
+
+						if (residual_torque_target_valid(axis)) {
+							float target = 0.f;
+
+							// RBF-LADRC improvement: keep the acceleration-residual target,
+							// and add a low-frequency rate-error target so persistent LADRC
+							// tracking leftovers create a learnable residual torque.
+							if (accel_target_valid) {
+								const float predicted_accel =
+									b0_axis * (_last_published_torque(axis) - disturbance_compensation(axis));
+								const float residual_accel = angular_accel(axis) - predicted_accel;
+								target += -residual_accel / b0_axis * residual_accel_gain;
+							}
+
+							if (error_target_valid) {
+								target += rate_error_bandwidth * rate_error_filtered(axis) / b0_axis;
+							}
+
+							residual_torque_target(axis) = math::constrain(target, -rbf_limit_axis, rbf_limit_axis);
+						}
+					}
+
+					if (!_last_control_cycle_rbf_ladrc) {
+						_rbf_target_lpf.reset(residual_torque_target);
+					}
+
 					learning_target.torque_residual = _rbf_target_lpf.update(residual_torque_target, dt);
 					learning_target.torque_residual.copyTo(rate_ctrl_status.rbf_target);
 
@@ -373,6 +458,16 @@ MulticopterRateControl::Run()
 								    fmaxf(_param_mc_ladrc_lim_p.get(), FLT_EPSILON),
 								    fmaxf(_param_mc_ladrc_lim_y.get(), FLT_EPSILON));
 
+					const bool rbf_global_learning_gate_ok =
+						_rbf_attitude_gate_ok
+						&& _rbf_attitude_gate_timestamp != 0
+						&& hrt_elapsed_time(&_rbf_attitude_gate_timestamp) < kRbfLearningAttitudeTimeout
+						&& _rbf_allocation_gate_ok
+						&& _rbf_allocation_gate_timestamp != 0
+						&& hrt_elapsed_time(&_rbf_allocation_gate_timestamp) < kRbfLearningAllocatorTimeout
+						&& _rbf_actuator_gate_ok
+						&& _rbf_actuator_gate_timestamp != 0
+						&& hrt_elapsed_time(&_rbf_actuator_gate_timestamp) < kRbfLearningActuatorTimeout;
 					bool rbf_learn_active = false;
 
 					for (size_t axis = 0; axis < 3; axis++) {
@@ -390,6 +485,7 @@ MulticopterRateControl::Run()
 							&& !_maybe_landed
 							&& dt_valid
 							&& rate_sp_dot_valid
+							&& rbf_global_learning_gate_ok
 							&& residual_torque_target_valid(axis)
 							&& finite_axis
 							&& abs_e > e_min

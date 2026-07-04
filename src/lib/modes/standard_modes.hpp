@@ -59,7 +59,9 @@ enum class StandardMode : uint8_t {
 static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_t vehicle_type, bool is_vtol)
 {
 	switch (nav_state) {
-	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL: return StandardMode::SAFE_RECOVERY;
+	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
+		// Keep RTL as a PX4 custom mode during local SITL manual tests.
+		return StandardMode::NON_STANDARD;
 
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION: return StandardMode::MISSION;
 
@@ -104,7 +106,9 @@ static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_
 static inline uint8_t getNavStateFromStandardMode(StandardMode mode, uint8_t vehicle_type, bool is_vtol)
 {
 	switch (mode) {
-	case StandardMode::SAFE_RECOVERY: return vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
+	case StandardMode::SAFE_RECOVERY:
+		// Ignore GCS Safe Recovery standard-mode requests in local SITL.
+		return vehicle_status_s::NAVIGATION_STATE_MAX;
 
 	case StandardMode::MISSION: return vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION;
 

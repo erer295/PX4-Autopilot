@@ -1,0 +1,88 @@
+#!/bin/sh
+#
+# @name Gazebo ZD680_HANG
+#
+# @type Quadrotor
+#
+
+. ${R}etc/init.d/rc.mc_defaults
+
+PX4_SIMULATOR=${PX4_SIMULATOR:=gz}
+PX4_GZ_WORLD=${PX4_GZ_WORLD:=default}
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=zd680_hang}
+
+param set-default SIM_GZ_EN 1
+param set-default EKF2_EN 1
+param set-default EKF2_ABIAS_INIT 0
+param set-default EKF2_ACC_B_NOISE 0
+param set-default EKF2_GPS_CTRL 1
+param set-default EKF2_HGT_REF 0
+param set-default SYS_HAS_GPS 1
+param set-default SIM_GPS_USED 10
+param set-default BAT1_N_CELLS 6
+param set-default FD_ESCS_EN 0
+
+param set-default CA_AIRFRAME 0
+param set-default CA_ROTOR_COUNT 4
+
+param set-default CA_ROTOR0_PX 0.240605
+param set-default CA_ROTOR0_PY 0.240605
+param set-default CA_ROTOR0_KM  0.05
+
+param set-default CA_ROTOR1_PX -0.240605
+param set-default CA_ROTOR1_PY -0.240605
+param set-default CA_ROTOR1_KM  0.05
+
+param set-default CA_ROTOR2_PX 0.240605
+param set-default CA_ROTOR2_PY -0.240605
+param set-default CA_ROTOR2_KM -0.05
+
+param set-default CA_ROTOR3_PX -0.240605
+param set-default CA_ROTOR3_PY 0.240605
+param set-default CA_ROTOR3_KM -0.05
+
+param set-default SIM_GZ_EC_FUNC1 101
+param set-default SIM_GZ_EC_FUNC2 102
+param set-default SIM_GZ_EC_FUNC3 103
+param set-default SIM_GZ_EC_FUNC4 104
+
+param set-default SIM_GZ_EC_MIN1 150
+param set-default SIM_GZ_EC_MIN2 150
+param set-default SIM_GZ_EC_MIN3 150
+param set-default SIM_GZ_EC_MIN4 150
+
+param set-default SIM_GZ_EC_MAX1 1000
+param set-default SIM_GZ_EC_MAX2 1000
+param set-default SIM_GZ_EC_MAX3 1000
+param set-default SIM_GZ_EC_MAX4 1000
+
+param set-default MPC_THR_MIN 0.02
+# ZD680_HANG total mass is about 2.72 kg with a 0.50 kg suspended payload and light rope/gimbal.
+param set-default MPC_THR_HOVER 0.60
+# Lift off more decisively with the hanging payload; the default 3 s ramp
+# spends too long with the rigid pendulum near the ground.
+param set-default MPC_TKO_RAMP_T 1.0
+param set-default MPC_TKO_SPEED 1.0
+param set-default MPC_XY_CRUISE 3.0
+param set-default MPC_ACC_HOR 1.2
+param set-default MPC_JERK_AUTO 2.0
+param set-default NAV_DLL_ACT 2
+
+# Conservative LADRC defaults for the suspended payload model. The hanging load
+# is sensitive to fast rate-loop torque changes, so keep the effective WC/B0
+# gain between the original ZD680 setting and the PID rate gain.
+param set-default MC_LADRC_B0_R 140
+param set-default MC_LADRC_B0_P 140
+param set-default MC_LADRC_B0_Y 18
+
+param set-default MC_LADRC_WC_R 8
+param set-default MC_LADRC_WC_P 8
+param set-default MC_LADRC_WC_Y 2.5
+
+param set-default MC_LADRC_WO_R 18
+param set-default MC_LADRC_WO_P 18
+param set-default MC_LADRC_WO_Y 7.5
+
+param set-default MC_LADRC_LIM_R 0.30
+param set-default MC_LADRC_LIM_P 0.30
+param set-default MC_LADRC_LIM_Y 0.20

@@ -682,6 +682,22 @@ PARAM_DEFINE_FLOAT(MC_RBF_DU_MAX, 0.5f);
 PARAM_DEFINE_FLOAT(MC_RBF_ERR_GAIN, 0.05f);
 
 /**
+ * RBF residual target rate-error bandwidth
+ *
+ * Converts the low-frequency body-rate tracking error into an additional
+ * equivalent normalized torque target for online RBF learning. This term helps
+ * the residual network learn LADRC tracking leftovers that are not visible as
+ * angular-acceleration model error alone.
+ *
+ * @unit rad/s
+ * @min 0
+ * @decimal 3
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_ERR_WC, 2.0f);
+
+/**
  * RBF residual target cutoff frequency
  *
  * Cutoff frequency for the equivalent residual-disturbance torque target used

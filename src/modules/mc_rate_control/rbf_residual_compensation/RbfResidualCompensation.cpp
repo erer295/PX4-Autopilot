@@ -296,9 +296,21 @@ void RbfResidualCompensation::learn(const FeatureVector &features,
 		const bool adapt_axis = valid(axis) && isFinite(target_residual(axis));
 		const float target = adapt_axis ? boundedResidual(target_residual(axis), axis) : 0.f;
 		const float output_limit = _parameters.output_limit(axis);
+		float prediction = 0.f;
+		float activation_norm_sq = 1.0e-3f;
+
+		// RBF-LADRC improvement: fit the residual target with an NLMS-style
+		// prediction error instead of integrating the target directly.
+		for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
+			prediction += _weights[axis][basis] * _activation[basis];
+			activation_norm_sq += _activation[basis] * _activation[basis];
+		}
+
+		const float fit_error = target - prediction;
 
 		for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
-			const float adaptation = adapt_axis ? _parameters.learning_rate * target * _activation[basis] : 0.f;
+			const float adaptation = adapt_axis ?
+						 _parameters.learning_rate * fit_error * _activation[basis] / activation_norm_sq : 0.f;
 			const float weight_dot = adaptation - _parameters.leakage * _weights[axis][basis];
 
 			const float weight = _weights[axis][basis] + dt * weight_dot;
