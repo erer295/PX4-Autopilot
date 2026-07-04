@@ -38,8 +38,10 @@ class RbfResidualCompensation
 public:
 	static constexpr size_t kAxisCount = 3;
 	static constexpr size_t kMaxInputDimension = 18;
+	static constexpr size_t kPerAxisInputDimension = 5;
+	static constexpr size_t kPerAxisDistanceStart = 1;
 	static constexpr size_t kMaxBasisCount = 12;
-	static constexpr uint8_t kDefaultInputDimension = kMaxInputDimension;
+	static constexpr uint8_t kDefaultInputDimension = kPerAxisInputDimension;
 
 	using FeatureVector = matrix::Vector<float, kMaxInputDimension>;
 	using AxisVector = matrix::Vector3f;
@@ -63,14 +65,17 @@ public:
 	/**
 	 * @brief Snapshot prepared by the hosting controller after LADRC update.
 	 *
-	 * Feature order produced by makeFeatureVector():
+	 * The active RBF-LADRC path uses per-axis normalized slots:
 	 *
-	 *   0..2   rate_sp - rate
-	 *   3..5   measured body rate
-	 *   6..8   measured angular acceleration
-	 *   9..11  LADRC torque before RBF
-	 *   12..14 LADRC disturbance compensation term, if available
-	 *   15..17 previous/final applied torque, if available
+	 *   axis_offset + 0  constant bias input, ignored by Gaussian distance
+	 *   axis_offset + 1  filtered rate error
+	 *   axis_offset + 2  LADRC torque before RBF
+	 *   axis_offset + 3  LADRC disturbance compensation torque
+	 *   axis_offset + 4  filtered residual angular acceleration
+	 *
+	 * The hosting controller builds the normalized inputs directly. The bridge
+	 * helper is only a convenience fallback and does not replace the residual
+	 * acceleration calculation in MulticopterRateControl.
 	 */
 	struct LadrcBridgeInput {
 		AxisVector rate{};
@@ -140,6 +145,7 @@ public:
 	 * @brief Add the last RBF residual to an existing LADRC torque command.
 	 */
 	AxisVector compensate(const AxisVector &ladrc_torque) const;
+	void decayOutput(const matrix::Vector<bool, kAxisCount> &axis_enabled, float decay);
 
 	const AxisVector &getLastCompensation() const { return _last_compensation; }
 	const AxisVector &getLastRawOutput() const { return _last_raw_output; }
@@ -160,7 +166,7 @@ private:
 	float _centers[kMaxBasisCount][kMaxInputDimension] {};
 	float _widths[kMaxBasisCount] {};
 	float _weights[kAxisCount][kMaxBasisCount] {};
-	float _activation[kMaxBasisCount] {};
+	float _activation[kAxisCount][kMaxBasisCount] {};
 
 	AxisVector _last_raw_output{};
 	AxisVector _last_saturated_output{};

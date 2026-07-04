@@ -20,3 +20,10 @@ float32 rbf_weight_norm		# L2 norm of active RBF weights
 float32 rbf_phi_max		# maximum active basis-function value
 bool rbf_learn_flag		# true when at least one axis passes the online learning gate
 bool rbf_saturation_flag	# true when RBF output/final injected torque saturates
+
+float32[3] rbf_residual_accel	# filtered residual angular acceleration: angular_accel - (z2 + b0 * u_last)
+float32[3] rbf_feature_e		# normalized filtered rate-error feature
+float32[3] rbf_feature_uladrc	# normalized LADRC torque feature before RBF injection
+float32[3] rbf_feature_udist	# normalized LADRC disturbance compensation feature
+bool rbf_freeze_flag		# true when at least one RBF axis is frozen by protection logic
+uint8[3] rbf_freeze_reason	# per-axis freeze bitmask: sign, target jump, accel, saturation, setpoint jump, gate

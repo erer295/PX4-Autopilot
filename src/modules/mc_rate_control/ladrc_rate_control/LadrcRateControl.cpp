@@ -26,6 +26,7 @@ constexpr float kMinBandwidth = 1.0e-2f;
 constexpr float kMaxBandwidth = 500.0f;
 constexpr float kMinTorqueLimit = 1.0e-3f;
 constexpr float kDefaultTorqueLimit = 1.0f;
+constexpr float kMaxAngularAccelDamping = 1.0f;
 
 static inline bool isFinite(float value)
 {
@@ -63,6 +64,15 @@ static inline float safeTorqueLimit(float value)
 	return math::constrain(value, kMinTorqueLimit, kDefaultTorqueLimit);
 }
 
+static inline float safeAngularAccelDamping(float value)
+{
+	if (!isFinite(value) || value < 0.f) {
+		return 0.f;
+	}
+
+	return math::constrain(value, 0.f, kMaxAngularAccelDamping);
+}
+
 } // namespace
 
 void LadrcRateControl::setLadrcGains(const Vector3f &b0,
@@ -82,6 +92,13 @@ void LadrcRateControl::setTorqueLimit(const Vector3f &torque_limit)
 {
 	for (int i = 0; i < 3; i++) {
 		_torque_limit(i) = safeTorqueLimit(torque_limit(i));
+	}
+}
+
+void LadrcRateControl::setAngularAccelDamping(const Vector3f &angular_accel_damping)
+{
+	for (int i = 0; i < 3; i++) {
+		_angular_accel_damping(i) = safeAngularAccelDamping(angular_accel_damping(i));
 	}
 }
 
@@ -153,10 +170,6 @@ Vector3f LadrcRateControl::update(const Vector3f &rate,
 				  float dt,
 				  bool landed)
 {
-	// Keep the same signature as the original PX4 RateControl::update().
-	// The first-order LADRC below does not directly use angular acceleration.
-	(void)angular_accel;
-
 	if (!PX4_ISFINITE(dt) || dt <= FLT_EPSILON) {
 		return _u;
 	}
@@ -220,6 +233,10 @@ Vector3f LadrcRateControl::update(const Vector3f &rate,
 		//   u = (wc * (rate_sp - z1) - z2) / b0
 		const float rate_error = rate_sp(i) - _z1(i);
 		float u = (_wc(i) * rate_error - _z2(i)) / _b0(i);
+
+		if (_angular_accel_damping(i) > 0.f && isFinite(angular_accel(i))) {
+			u -= _angular_accel_damping(i) * angular_accel(i);
+		}
 
 		u = math::constrain(u, -_torque_limit(i), _torque_limit(i));
 

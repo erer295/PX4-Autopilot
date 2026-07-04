@@ -67,11 +67,8 @@ static inline float sanitizeAlpha(float value)
 
 void RbfResidualCompensation::configure(const Parameters &parameters)
 {
-	_parameters.input_dimension = sanitizeCount(parameters.input_dimension, kMaxInputDimension);
-
-	if (_parameters.input_dimension == 0) {
-		_parameters.input_dimension = kDefaultInputDimension;
-	}
+	(void)parameters.input_dimension;
+	_parameters.input_dimension = kDefaultInputDimension;
 
 	_parameters.basis_count = sanitizeCount(parameters.basis_count, kMaxBasisCount);
 	_parameters.learning_rate = sanitizeNonNegative(parameters.learning_rate, 0.f, kMaxAdaptationGain);
@@ -152,11 +149,17 @@ void RbfResidualCompensation::configureRateErrorBasis(size_t basis_count, float 
 		}
 	}
 
-	// Basis 0 remains centered at hover/zero-error. The following bases are
-	// placed symmetrically on the first six features: rate error and body rate.
+	// Basis 0 remains centered at zero. The default 7-basis layout covers the
+	// per-axis normalized residual-compensator inputs:
+	//   1/2: +/- filtered rate error
+	//   3/4: +/- residual angular acceleration
+	//   5/6: +/- LADRC disturbance compensation torque
+	// Extra bases, if configured, continue with +/- LADRC torque.
+	static constexpr size_t kFeaturePattern[] = {1, 1, 4, 4, 3, 3, 2, 2};
+
 	for (size_t basis = 1; basis < _parameters.basis_count; basis++) {
-		const size_t pair_index = (basis - 1) / 2;
-		const size_t feature_index = pair_index < 6 ? pair_index : pair_index % 6;
+		const size_t pattern_index = (basis - 1) % (sizeof(kFeaturePattern) / sizeof(kFeaturePattern[0]));
+		const size_t feature_index = kFeaturePattern[pattern_index];
 		const float sign = ((basis - 1) % 2 == 0) ? 1.f : -1.f;
 
 		_centers[basis][feature_index] = sanitizedFeatureValue(sign * spacing);
@@ -167,10 +170,15 @@ void RbfResidualCompensation::clearBasis()
 {
 	for (size_t basis = 0; basis < kMaxBasisCount; basis++) {
 		_widths[basis] = 0.f;
-		_activation[basis] = 0.f;
 
 		for (size_t feature = 0; feature < kMaxInputDimension; feature++) {
 			_centers[basis][feature] = 0.f;
+		}
+	}
+
+	for (size_t axis = 0; axis < kAxisCount; axis++) {
+		for (size_t basis = 0; basis < kMaxBasisCount; basis++) {
+			_activation[axis][basis] = 0.f;
 		}
 	}
 
@@ -193,8 +201,10 @@ void RbfResidualCompensation::reset()
 {
 	resetWeights();
 
-	for (size_t basis = 0; basis < kMaxBasisCount; basis++) {
-		_activation[basis] = 0.f;
+	for (size_t axis = 0; axis < kAxisCount; axis++) {
+		for (size_t basis = 0; basis < kMaxBasisCount; basis++) {
+			_activation[axis][basis] = 0.f;
+		}
 	}
 
 	resetOutputState();
@@ -208,12 +218,12 @@ RbfResidualCompensation::makeFeatureVector(const LadrcBridgeInput &input) const
 	const AxisVector rate_error = input.rate_sp - input.rate;
 
 	for (size_t axis = 0; axis < kAxisCount; axis++) {
-		features(axis) = sanitizedFeatureValue(rate_error(axis));
-		features(axis + 3) = sanitizedFeatureValue(input.rate(axis));
-		features(axis + 6) = sanitizedFeatureValue(input.angular_accel(axis));
-		features(axis + 9) = sanitizedFeatureValue(input.ladrc_torque(axis));
-		features(axis + 12) = sanitizedFeatureValue(input.ladrc_disturbance_compensation(axis));
-		features(axis + 15) = sanitizedFeatureValue(input.applied_torque(axis));
+		const size_t offset = axis * kPerAxisInputDimension;
+		features(offset + 0) = 1.f;
+		features(offset + 1) = sanitizedFeatureValue(rate_error(axis));
+		features(offset + 2) = sanitizedFeatureValue(input.ladrc_torque(axis));
+		features(offset + 3) = sanitizedFeatureValue(input.ladrc_disturbance_compensation(axis));
+		features(offset + 4) = sanitizedFeatureValue(input.angular_accel(axis));
 	}
 
 	return features;
@@ -234,7 +244,7 @@ RbfResidualCompensation::update(const FeatureVector &features, float dt)
 		float output = 0.f;
 
 		for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
-			output += _weights[axis][basis] * _activation[basis];
+			output += _weights[axis][basis] * _activation[axis][basis];
 		}
 
 		_last_raw_output(axis) = isFinite(output) ? output : 0.f;
@@ -302,15 +312,15 @@ void RbfResidualCompensation::learn(const FeatureVector &features,
 		// RBF-LADRC improvement: fit the residual target with an NLMS-style
 		// prediction error instead of integrating the target directly.
 		for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
-			prediction += _weights[axis][basis] * _activation[basis];
-			activation_norm_sq += _activation[basis] * _activation[basis];
+			prediction += _weights[axis][basis] * _activation[axis][basis];
+			activation_norm_sq += _activation[axis][basis] * _activation[axis][basis];
 		}
 
 		const float fit_error = target - prediction;
 
 		for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
 			const float adaptation = adapt_axis ?
-						 _parameters.learning_rate * fit_error * _activation[basis] / activation_norm_sq : 0.f;
+						 _parameters.learning_rate * fit_error * _activation[axis][basis] / activation_norm_sq : 0.f;
 			const float weight_dot = adaptation - _parameters.leakage * _weights[axis][basis];
 
 			const float weight = _weights[axis][basis] + dt * weight_dot;
@@ -344,6 +354,20 @@ RbfResidualCompensation::compensate(const AxisVector &ladrc_torque) const
 	return torque;
 }
 
+void RbfResidualCompensation::decayOutput(const matrix::Vector<bool, kAxisCount> &axis_enabled, float decay)
+{
+	const float safe_decay = isFinite(decay) ? math::constrain(decay, 0.f, 1.f) : 0.f;
+
+	for (size_t axis = 0; axis < kAxisCount; axis++) {
+		if (axis_enabled(axis)) {
+			_last_raw_output(axis) *= safe_decay;
+			_last_saturated_output(axis) *= safe_decay;
+			_last_lpf_output(axis) *= safe_decay;
+			_last_compensation(axis) *= safe_decay;
+		}
+	}
+}
+
 float RbfResidualCompensation::getWeightNorm() const
 {
 	float norm_sq = 0.f;
@@ -363,42 +387,53 @@ float RbfResidualCompensation::getBasisActivation(size_t basis_index) const
 		return 0.f;
 	}
 
-	return _activation[basis_index];
+	float activation = 0.f;
+
+	for (size_t axis = 0; axis < kAxisCount; axis++) {
+		activation = fmaxf(activation, _activation[axis][basis_index]);
+	}
+
+	return activation;
 }
 
 void RbfResidualCompensation::computeBasisActivation(const FeatureVector &features)
 {
-	float activation_sum = 0.f;
 	_last_phi_max = 0.f;
 
-	for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
-		const float width = sanitizeWidth(_widths[basis]);
-		const float inv_width_sq = 1.f / (width * width);
-		float distance_sq = 0.f;
-
-		for (size_t feature = 0; feature < _parameters.input_dimension; feature++) {
-			const float error = sanitizedFeatureValue(features(feature)) - _centers[basis][feature];
-			distance_sq += error * error;
-		}
-
-		float exponent = -0.5f * distance_sq * inv_width_sq;
-		exponent = fmaxf(exponent, kMinExpArgument);
-
-		_activation[basis] = expf(exponent);
-		activation_sum += _activation[basis];
-		_last_phi_max = fmaxf(_last_phi_max, _activation[basis]);
-	}
-
-	for (size_t basis = _parameters.basis_count; basis < kMaxBasisCount; basis++) {
-		_activation[basis] = 0.f;
-	}
-
-	if (_parameters.normalize_activation && activation_sum > kActivationEpsilon) {
-		_last_phi_max = 0.f;
+	for (size_t axis = 0; axis < kAxisCount; axis++) {
+		float activation_sum = 0.f;
+		const size_t axis_offset = axis * kPerAxisInputDimension;
 
 		for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
-			_activation[basis] /= activation_sum;
-			_last_phi_max = fmaxf(_last_phi_max, _activation[basis]);
+			const float width = sanitizeWidth(_widths[basis]);
+			const float inv_width_sq = 1.f / (width * width);
+			float distance_sq = 0.f;
+
+			for (size_t feature = kPerAxisDistanceStart; feature < kPerAxisInputDimension; feature++) {
+				const float error = sanitizedFeatureValue(features(axis_offset + feature)) - _centers[basis][feature];
+				distance_sq += error * error;
+			}
+
+			float exponent = -0.5f * distance_sq * inv_width_sq;
+			exponent = fmaxf(exponent, kMinExpArgument);
+
+			_activation[axis][basis] = expf(exponent);
+			activation_sum += _activation[axis][basis];
+			_last_phi_max = fmaxf(_last_phi_max, _activation[axis][basis]);
+		}
+
+		for (size_t basis = _parameters.basis_count; basis < kMaxBasisCount; basis++) {
+			_activation[axis][basis] = 0.f;
+		}
+
+		if (_parameters.normalize_activation && activation_sum > kActivationEpsilon) {
+			for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
+				_activation[axis][basis] /= activation_sum;
+			}
+		}
+
+		for (size_t basis = 0; basis < _parameters.basis_count; basis++) {
+			_last_phi_max = fmaxf(_last_phi_max, _activation[axis][basis]);
 		}
 	}
 }

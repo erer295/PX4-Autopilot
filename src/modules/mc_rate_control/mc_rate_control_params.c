@@ -481,6 +481,50 @@ PARAM_DEFINE_FLOAT(MC_LADRC_LIM_P, 0.35f);
 PARAM_DEFINE_FLOAT(MC_LADRC_LIM_Y, 0.20f);
 
 /**
+ * LADRC roll angular-acceleration damping
+ *
+ * Damping gain applied as -gain * roll angular acceleration on top of the
+ * LADRC torque command. This mirrors the PX4 PID D path and can reduce fast
+ * roll oscillations. Start with small values.
+ *
+ * @min 0
+ * @max 1.0
+ * @decimal 4
+ * @increment 0.0005
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_D_R, 0.0f);
+
+/**
+ * LADRC pitch angular-acceleration damping
+ *
+ * Damping gain applied as -gain * pitch angular acceleration on top of the
+ * LADRC torque command. This mirrors the PX4 PID D path and can reduce fast
+ * pitch oscillations. Start with small values.
+ *
+ * @min 0
+ * @max 1.0
+ * @decimal 4
+ * @increment 0.0005
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_D_P, 0.0f);
+
+/**
+ * LADRC yaw angular-acceleration damping
+ *
+ * Damping gain applied as -gain * yaw angular acceleration on top of the LADRC
+ * torque command. Keep at zero unless yaw-rate oscillation is observed.
+ *
+ * @min 0
+ * @max 1.0
+ * @decimal 4
+ * @increment 0.0005
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_D_Y, 0.0f);
+
+/**
  * Enable RBF residual compensation after LADRC
  *
  * This switch is only active when MC_LADRC_EN is also enabled.
@@ -492,6 +536,37 @@ PARAM_DEFINE_FLOAT(MC_LADRC_LIM_Y, 0.20f);
  * @group Multicopter Rate Control
  */
 PARAM_DEFINE_INT32(MC_RBF_EN, 0);
+
+/**
+ * Enable RBF residual compensation on roll axis
+ *
+ * This switch is only active when MC_LADRC_EN and MC_RBF_EN are enabled.
+ *
+ * @boolean
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_INT32(MC_RBF_EN_R, 1);
+
+/**
+ * Enable RBF residual compensation on pitch axis
+ *
+ * This switch is only active when MC_LADRC_EN and MC_RBF_EN are enabled.
+ *
+ * @boolean
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_INT32(MC_RBF_EN_P, 1);
+
+/**
+ * Enable RBF residual compensation on yaw axis
+ *
+ * This switch is only active when MC_LADRC_EN and MC_RBF_EN are enabled.
+ * Keep disabled by default during initial residual-learning tests.
+ *
+ * @boolean
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_INT32(MC_RBF_EN_Y, 0);
 
 /**
  * Enable RBF residual injection after LADRC
@@ -535,18 +610,17 @@ PARAM_DEFINE_INT32(MC_RBF_BASIS, 7);
 /**
  * RBF input feature dimension
  *
- * The full bridge vector has 18 features: rate error, body rate, angular
- * acceleration, LADRC torque, LADRC disturbance compensation and applied torque.
- * Use the first 3 features by default so the short-term RBF learning only sees
- * roll, pitch and yaw rate error. Do not use 9/12/15/18 dimensions until the
- * 3-dimensional bypass logs show stable and useful learning.
+ * Compatibility parameter kept for older logs. The active implementation uses
+ * a fixed per-axis normalized input: bias, filtered rate error, LADRC torque,
+ * LADRC disturbance compensation and residual angular acceleration. The
+ * Gaussian distance ignores the bias slot.
  *
  * @min 1
  * @max 18
  * @increment 1
  * @group Multicopter Rate Control
  */
-PARAM_DEFINE_INT32(MC_RBF_IN_DIM, 3);
+PARAM_DEFINE_INT32(MC_RBF_IN_DIM, 5);
 
 /**
  * RBF basis width
@@ -609,7 +683,7 @@ PARAM_DEFINE_FLOAT(MC_RBF_LEAK, 0.05f);
  * @increment 0.01
  * @group Multicopter Rate Control
  */
-PARAM_DEFINE_FLOAT(MC_RBF_LIM_R, 0.03f);
+PARAM_DEFINE_FLOAT(MC_RBF_LIM_R, 0.015f);
 
 /**
  * RBF pitch normalized torque limit
@@ -623,7 +697,7 @@ PARAM_DEFINE_FLOAT(MC_RBF_LIM_R, 0.03f);
  * @increment 0.01
  * @group Multicopter Rate Control
  */
-PARAM_DEFINE_FLOAT(MC_RBF_LIM_P, 0.03f);
+PARAM_DEFINE_FLOAT(MC_RBF_LIM_P, 0.015f);
 
 /**
  * RBF yaw normalized torque limit
@@ -638,7 +712,7 @@ PARAM_DEFINE_FLOAT(MC_RBF_LIM_P, 0.03f);
  * @increment 0.005
  * @group Multicopter Rate Control
  */
-PARAM_DEFINE_FLOAT(MC_RBF_LIM_Y, 0.015f);
+PARAM_DEFINE_FLOAT(MC_RBF_LIM_Y, 0.0f);
 
 /**
  * RBF output low-pass alpha
@@ -695,7 +769,7 @@ PARAM_DEFINE_FLOAT(MC_RBF_ERR_GAIN, 0.05f);
  * @increment 0.1
  * @group Multicopter Rate Control
  */
-PARAM_DEFINE_FLOAT(MC_RBF_ERR_WC, 2.0f);
+PARAM_DEFINE_FLOAT(MC_RBF_ERR_WC, 0.0f);
 
 /**
  * RBF residual target cutoff frequency
@@ -709,7 +783,21 @@ PARAM_DEFINE_FLOAT(MC_RBF_ERR_WC, 2.0f);
  * @increment 0.5
  * @group Multicopter Rate Control
  */
-PARAM_DEFINE_FLOAT(MC_RBF_TGT_HZ, 5.0f);
+PARAM_DEFINE_FLOAT(MC_RBF_TGT_HZ, 2.0f);
+
+/**
+ * RBF residual acceleration cutoff frequency
+ *
+ * Cutoff frequency for the residual angular acceleration used by the per-axis
+ * RBF-LADRC input and acceleration-residual learning target.
+ *
+ * @unit Hz
+ * @min 0
+ * @decimal 2
+ * @increment 0.5
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_RES_HZ, 3.0f);
 
 /**
  * RBF learning minimum filtered rate error
@@ -765,7 +853,7 @@ PARAM_DEFINE_FLOAT(MC_RBF_SPD_MAX, 5.0f);
  * @increment 0.5
  * @group Multicopter Rate Control
  */
-PARAM_DEFINE_FLOAT(MC_RBF_E_FILT_HZ, 5.0f);
+PARAM_DEFINE_FLOAT(MC_RBF_E_FILT_HZ, 3.0f);
 
 /**
  * RBF feature limit
@@ -778,3 +866,192 @@ PARAM_DEFINE_FLOAT(MC_RBF_E_FILT_HZ, 5.0f);
  * @group Multicopter Rate Control
  */
 PARAM_DEFINE_FLOAT(MC_RBF_FEAT_LIM, 100.0f);
+
+/**
+ * RBF roll rate-error normalization scale
+ *
+ * Scale for filtered roll-rate error before evaluating the per-axis RBF basis.
+ *
+ * @unit rad/s
+ * @min 0.001
+ * @decimal 3
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_E_SCALE_R, 0.20f);
+
+/**
+ * RBF pitch rate-error normalization scale
+ *
+ * Scale for filtered pitch-rate error before evaluating the per-axis RBF basis.
+ *
+ * @unit rad/s
+ * @min 0.001
+ * @decimal 3
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_E_SCALE_P, 0.20f);
+
+/**
+ * RBF yaw rate-error normalization scale
+ *
+ * Scale for filtered yaw-rate error before evaluating the per-axis RBF basis.
+ *
+ * @unit rad/s
+ * @min 0.001
+ * @decimal 3
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_E_SCALE_Y, 0.20f);
+
+/**
+ * RBF roll residual-acceleration normalization scale
+ *
+ * Scale for filtered roll residual angular acceleration before evaluating the
+ * per-axis RBF basis.
+ *
+ * @unit rad/s^2
+ * @min 0.001
+ * @decimal 2
+ * @increment 1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_ACC_SC_R, 10.0f);
+
+/**
+ * RBF pitch residual-acceleration normalization scale
+ *
+ * Scale for filtered pitch residual angular acceleration before evaluating the
+ * per-axis RBF basis.
+ *
+ * @unit rad/s^2
+ * @min 0.001
+ * @decimal 2
+ * @increment 1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_ACC_SC_P, 10.0f);
+
+/**
+ * RBF yaw residual-acceleration normalization scale
+ *
+ * Scale for filtered yaw residual angular acceleration before evaluating the
+ * per-axis RBF basis.
+ *
+ * @unit rad/s^2
+ * @min 0.001
+ * @decimal 2
+ * @increment 1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_ACC_SC_Y, 10.0f);
+
+/**
+ * RBF residual-acceleration learning freeze limit
+ *
+ * Online RBF adaptation is disabled while the filtered residual angular
+ * acceleration exceeds this magnitude.
+ *
+ * @unit rad/s^2
+ * @min 0
+ * @decimal 1
+ * @increment 1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_ACC_MAX, 30.0f);
+
+/**
+ * RBF sign-change freeze time
+ *
+ * Duration to freeze online RBF adaptation after the filtered rate-error sign
+ * changes while the error is larger than MC_RBF_E_MIN.
+ *
+ * @unit s
+ * @min 0
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_FRZ_SGN_T, 0.30f);
+
+/**
+ * RBF target-jump freeze threshold
+ *
+ * Online RBF adaptation is frozen when the filtered residual torque target
+ * changes by more than this value in one cycle.
+ *
+ * @min 0
+ * @decimal 4
+ * @increment 0.001
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_TGT_JUMP, 0.008f);
+
+/**
+ * RBF frozen-output decay
+ *
+ * Multiplier applied to the stored RBF residual output on axes that are frozen
+ * by transient or saturation protection.
+ *
+ * @min 0
+ * @max 1
+ * @decimal 3
+ * @increment 0.01
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_FRZ_DEC, 0.98f);
+
+/**
+ * RBF final torque limit gain
+ *
+ * Final RBF-LADRC torque is constrained to LADRC_LIMIT multiplied by this gain.
+ *
+ * @min 0
+ * @max 1.2
+ * @decimal 3
+ * @increment 0.01
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_FIN_GAIN, 1.0f);
+
+/**
+ * RBF roll injection gain
+ *
+ * Gain applied to roll RBF residual torque before adding it to LADRC torque.
+ *
+ * @min 0
+ * @max 1
+ * @decimal 3
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_INJ_R, 1.0f);
+
+/**
+ * RBF pitch injection gain
+ *
+ * Gain applied to pitch RBF residual torque before adding it to LADRC torque.
+ *
+ * @min 0
+ * @max 1
+ * @decimal 3
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_INJ_P, 1.0f);
+
+/**
+ * RBF yaw injection gain
+ *
+ * Gain applied to yaw RBF residual torque before adding it to LADRC torque.
+ * Keep zero by default during initial RBF-LADRC tests.
+ *
+ * @min 0
+ * @max 1
+ * @decimal 3
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_RBF_INJ_Y, 0.0f);

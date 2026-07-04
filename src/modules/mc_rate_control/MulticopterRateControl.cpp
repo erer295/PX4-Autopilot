@@ -53,6 +53,31 @@ constexpr float kRbfLearningMotorMax = 0.95f;
 constexpr hrt_abstime kRbfLearningAttitudeTimeout = 200_ms;
 constexpr hrt_abstime kRbfLearningAllocatorTimeout = 500_ms;
 constexpr hrt_abstime kRbfLearningActuatorTimeout = 500_ms;
+constexpr uint8_t kRbfFreezeReasonSignChange = 1u << 0;
+constexpr uint8_t kRbfFreezeReasonTargetJump = 1u << 1;
+constexpr uint8_t kRbfFreezeReasonAccelResidual = 1u << 2;
+constexpr uint8_t kRbfFreezeReasonSaturation = 1u << 3;
+constexpr uint8_t kRbfFreezeReasonSetpointJump = 1u << 4;
+constexpr uint8_t kRbfFreezeReasonGate = 1u << 5;
+
+static inline float constrainUnitByScale(float value, float scale)
+{
+	const float safe_scale = PX4_ISFINITE(scale) && fabsf(scale) > FLT_EPSILON ? fabsf(scale) : 1.f;
+	return math::constrain(value / safe_scale, -1.f, 1.f);
+}
+
+static inline int signForFreeze(float value)
+{
+	if (value > 0.f) {
+		return 1;
+	}
+
+	if (value < 0.f) {
+		return -1;
+	}
+
+	return 0;
+}
 
 } // namespace
 
@@ -112,6 +137,7 @@ MulticopterRateControl::parameters_updated()
 	_output_lpf_yaw.setCutoffFreq(_param_mc_yaw_tq_cutoff.get());
 	_rbf_rate_error_lpf.setCutoffFreq(_param_mc_rbf_e_filt_hz.get());
 	_rbf_target_lpf.setCutoffFreq(_param_mc_rbf_tgt_hz.get());
+	_rbf_residual_accel_lpf.setCutoffFreq(_param_mc_rbf_res_hz.get());
 
 	// LADRC rate control parameters
 	_ladrc_rate_control.setLadrcGains(
@@ -122,12 +148,18 @@ MulticopterRateControl::parameters_updated()
 	_ladrc_rate_control.setTorqueLimit(
 		Vector3f(_param_mc_ladrc_lim_r.get(), _param_mc_ladrc_lim_p.get(), _param_mc_ladrc_lim_y.get()));
 
+	_ladrc_rate_control.setAngularAccelDamping(
+		Vector3f(_param_mc_ladrc_d_r.get(), _param_mc_ladrc_d_p.get(), _param_mc_ladrc_d_y.get()));
+
 	RbfResidualCompensation::Parameters rbf_parameters{};
-	rbf_parameters.input_dimension = math::constrain(_param_mc_rbf_in_dim.get(), 1, (int)RbfResidualCompensation::kMaxInputDimension);
+	rbf_parameters.input_dimension = RbfResidualCompensation::kPerAxisInputDimension;
 	rbf_parameters.basis_count = math::constrain(_param_mc_rbf_basis.get(), 0, (int)RbfResidualCompensation::kMaxBasisCount);
 	rbf_parameters.learning_rate = _param_mc_rbf_lr.get();
 	rbf_parameters.leakage = _param_mc_rbf_leak.get();
-	rbf_parameters.output_limit = Vector3f(_param_mc_rbf_lim_r.get(), _param_mc_rbf_lim_p.get(), _param_mc_rbf_lim_y.get());
+	rbf_parameters.output_limit = Vector3f(
+					      _param_mc_rbf_en_r.get() ? _param_mc_rbf_lim_r.get() : 0.f,
+					      _param_mc_rbf_en_p.get() ? _param_mc_rbf_lim_p.get() : 0.f,
+					      _param_mc_rbf_en_y.get() ? _param_mc_rbf_lim_y.get() : 0.f);
 	rbf_parameters.output_lpf_alpha = _param_mc_rbf_lpf_alpha.get();
 	rbf_parameters.output_rate_limit = _param_mc_rbf_du_max.get();
 	rbf_parameters.feature_limit = _param_mc_rbf_feat_lim.get();
@@ -308,7 +340,11 @@ MulticopterRateControl::Run()
 				_rbf_residual_compensation.reset();
 				_rbf_rate_error_lpf.reset(Vector3f{});
 				_rbf_target_lpf.reset(Vector3f{});
+				_rbf_residual_accel_lpf.reset(Vector3f{});
 				_rbf_last_rates_setpoint_valid = false;
+				_rbf_last_rate_error_filtered.zero();
+				_rbf_last_target.zero();
+				_rbf_freeze_time_remaining_s.zero();
 				_torque_saturation_positive = Vector<bool, 3>{};
 				_torque_saturation_negative = Vector<bool, 3>{};
 				_rbf_attitude_gate_ok = false;
@@ -317,6 +353,11 @@ MulticopterRateControl::Run()
 				_rbf_attitude_gate_timestamp = 0;
 				_rbf_allocation_gate_timestamp = 0;
 				_rbf_actuator_gate_timestamp = 0;
+
+				for (size_t axis = 0; axis < 3; axis++) {
+					_rbf_last_rate_error_sign_valid[axis] = false;
+					_rbf_freeze_reason[axis] = 0;
+				}
 			}
 
 			// update saturation status from control allocation feedback
@@ -371,62 +412,86 @@ MulticopterRateControl::Run()
 							rate_ctrl_status.yawspeed_integ);
 					rbf_input.applied_torque = _last_published_torque;
 
-					const RbfResidualCompensation::FeatureVector rbf_features =
-						_rbf_residual_compensation.makeFeatureVector(rbf_input);
-					const Vector3f rbf_compensation = _rbf_residual_compensation.update(rbf_features, dt);
-					rate_ctrl_status.rollspeed_rbf = rbf_compensation(0);
-					rate_ctrl_status.pitchspeed_rbf = rbf_compensation(1);
-					rate_ctrl_status.yawspeed_rbf = rbf_compensation(2);
-
-					const Vector3f rbf_output_raw = _rbf_residual_compensation.getLastRawOutput();
-					rbf_output_raw.copyTo(rate_ctrl_status.rbf_output_raw);
-					rbf_compensation.copyTo(rate_ctrl_status.rbf_output_filtered);
-
 					RbfResidualCompensation::ResidualLearningTarget learning_target{};
 					const Vector3f rate_error = _rates_setpoint - rates;
 					const Vector3f disturbance_compensation = rbf_input.ladrc_disturbance_compensation;
 					const Vector3f b0(_param_mc_ladrc_b0_r.get(), _param_mc_ladrc_b0_p.get(), _param_mc_ladrc_b0_y.get());
-					const Vector3f rbf_limit(_param_mc_rbf_lim_r.get(), _param_mc_rbf_lim_p.get(), _param_mc_rbf_lim_y.get());
+					const Vector3f rbf_limit(
+						_param_mc_rbf_en_r.get() ? _param_mc_rbf_lim_r.get() : 0.f,
+						_param_mc_rbf_en_p.get() ? _param_mc_rbf_lim_p.get() : 0.f,
+						_param_mc_rbf_en_y.get() ? _param_mc_rbf_lim_y.get() : 0.f);
+					const Vector3f ladrc_limit(fmaxf(_param_mc_ladrc_lim_r.get(), FLT_EPSILON),
+								    fmaxf(_param_mc_ladrc_lim_p.get(), FLT_EPSILON),
+								    fmaxf(_param_mc_ladrc_lim_y.get(), FLT_EPSILON));
+					const Vector3f error_scale(fmaxf(_param_mc_rbf_e_scale_r.get(), FLT_EPSILON),
+								   fmaxf(_param_mc_rbf_e_scale_p.get(), FLT_EPSILON),
+								   fmaxf(_param_mc_rbf_e_scale_y.get(), FLT_EPSILON));
+					const Vector3f accel_scale(fmaxf(_param_mc_rbf_acc_sc_r.get(), FLT_EPSILON),
+								   fmaxf(_param_mc_rbf_acc_sc_p.get(), FLT_EPSILON),
+								   fmaxf(_param_mc_rbf_acc_sc_y.get(), FLT_EPSILON));
+					const Vector3f inject_gain(_param_mc_rbf_inj_r.get(), _param_mc_rbf_inj_p.get(), _param_mc_rbf_inj_y.get());
+					const float final_limit_gain = fmaxf(_param_mc_rbf_fin_gain.get(), 0.f);
+					const Vector3f final_limit = ladrc_limit * fmaxf(final_limit_gain, 1.f);
+					Vector3f residual_accel{};
 					Vector3f residual_torque_target{};
 					Vector<bool, 3> residual_torque_target_valid;
 
+					const float residual_accel_gain = fmaxf(_param_mc_rbf_err_gain.get(), 0.f);
+					const float rate_error_bandwidth = fmaxf(_param_mc_rbf_err_wc.get(), 0.f);
+
+					for (size_t axis = 0; axis < 3; axis++) {
+						const float b0_axis = b0(axis);
+						const bool b0_valid = PX4_ISFINITE(b0_axis) && fabsf(b0_axis) > 1.e-3f;
+
+						if (b0_valid
+						    && PX4_ISFINITE(angular_accel(axis))
+						    && PX4_ISFINITE(_last_published_torque(axis))
+						    && PX4_ISFINITE(disturbance_compensation(axis))) {
+							const float predicted_accel = b0_axis * (_last_published_torque(axis) - disturbance_compensation(axis));
+							residual_accel(axis) = angular_accel(axis) - predicted_accel;
+						}
+					}
+
 					if (!_last_control_cycle_rbf_ladrc) {
 						_rbf_rate_error_lpf.reset(rate_error);
+						_rbf_residual_accel_lpf.reset(residual_accel);
 						_rbf_last_rates_setpoint = _rates_setpoint;
 						_rbf_last_rates_setpoint_valid = false;
+						_rbf_last_rate_error_filtered.zero();
+						_rbf_last_target.zero();
+						_rbf_freeze_time_remaining_s.zero();
+
+						for (size_t axis = 0; axis < 3; axis++) {
+							_rbf_last_rate_error_sign_valid[axis] = false;
+							_rbf_freeze_reason[axis] = 0;
+						}
 					}
 
 					const Vector3f rate_error_filtered = _rbf_rate_error_lpf.update(rate_error, dt);
-					const float residual_accel_gain = fmaxf(_param_mc_rbf_err_gain.get(), 0.f);
-					const float rate_error_bandwidth = fmaxf(_param_mc_rbf_err_wc.get(), 0.f);
+					const Vector3f residual_accel_filtered = _rbf_residual_accel_lpf.update(residual_accel, dt);
+					RbfResidualCompensation::FeatureVector rbf_features{};
+
+					for (size_t axis = 0; axis < 3; axis++) {
+						const size_t offset = axis * RbfResidualCompensation::kPerAxisInputDimension;
+						rbf_features(offset + 0) = 1.f;
+						rbf_features(offset + 1) = constrainUnitByScale(rate_error_filtered(axis), error_scale(axis));
+						rbf_features(offset + 2) = constrainUnitByScale(torque_setpoint(axis), ladrc_limit(axis));
+						rbf_features(offset + 3) = constrainUnitByScale(disturbance_compensation(axis), ladrc_limit(axis));
+						rbf_features(offset + 4) = constrainUnitByScale(residual_accel_filtered(axis), accel_scale(axis));
+					}
 
 					for (size_t axis = 0; axis < 3; axis++) {
 						const float b0_axis = b0(axis);
 						const float rbf_limit_axis = rbf_limit(axis);
 						const bool b0_valid = PX4_ISFINITE(b0_axis) && fabsf(b0_axis) > 1.e-3f;
 						const bool rbf_axis_enabled = PX4_ISFINITE(rbf_limit_axis) && rbf_limit_axis > FLT_EPSILON;
-						const bool accel_target_valid = b0_valid
-										&& PX4_ISFINITE(angular_accel(axis))
-										&& PX4_ISFINITE(_last_published_torque(axis))
-										&& PX4_ISFINITE(disturbance_compensation(axis));
-						const bool error_target_valid = b0_valid && PX4_ISFINITE(rate_error_filtered(axis));
-
-						residual_torque_target_valid(axis) = rbf_axis_enabled && (accel_target_valid || error_target_valid);
+						residual_torque_target_valid(axis) = rbf_axis_enabled && b0_valid
+										      && PX4_ISFINITE(residual_accel_filtered(axis));
 
 						if (residual_torque_target_valid(axis)) {
-							float target = 0.f;
+							float target = -residual_accel_filtered(axis) / b0_axis * residual_accel_gain;
 
-							// RBF-LADRC improvement: keep the acceleration-residual target,
-							// and add a low-frequency rate-error target so persistent LADRC
-							// tracking leftovers create a learnable residual torque.
-							if (accel_target_valid) {
-								const float predicted_accel =
-									b0_axis * (_last_published_torque(axis) - disturbance_compensation(axis));
-								const float residual_accel = angular_accel(axis) - predicted_accel;
-								target += -residual_accel / b0_axis * residual_accel_gain;
-							}
-
-							if (error_target_valid) {
+							if (rate_error_bandwidth > 0.f && PX4_ISFINITE(rate_error_filtered(axis))) {
 								target += rate_error_bandwidth * rate_error_filtered(axis) / b0_axis;
 							}
 
@@ -436,10 +501,10 @@ MulticopterRateControl::Run()
 
 					if (!_last_control_cycle_rbf_ladrc) {
 						_rbf_target_lpf.reset(residual_torque_target);
+						_rbf_last_target = residual_torque_target;
 					}
 
 					learning_target.torque_residual = _rbf_target_lpf.update(residual_torque_target, dt);
-					learning_target.torque_residual.copyTo(rate_ctrl_status.rbf_target);
 
 					Vector3f rate_sp_dot{};
 					const bool rate_sp_dot_valid = _rbf_last_rates_setpoint_valid && dt_valid;
@@ -454,9 +519,10 @@ MulticopterRateControl::Run()
 					const float e_min = fmaxf(_param_mc_rbf_e_min.get(), 0.f);
 					const float e_max = fmaxf(_param_mc_rbf_e_max.get(), e_min + FLT_EPSILON);
 					const float rate_sp_dot_max = fmaxf(_param_mc_rbf_spd_max.get(), 0.f);
-					const Vector3f ladrc_limit(fmaxf(_param_mc_ladrc_lim_r.get(), FLT_EPSILON),
-								    fmaxf(_param_mc_ladrc_lim_p.get(), FLT_EPSILON),
-								    fmaxf(_param_mc_ladrc_lim_y.get(), FLT_EPSILON));
+					const float accel_max = fmaxf(_param_mc_rbf_acc_max.get(), 0.f);
+					const float freeze_sign_time_s = fmaxf(_param_mc_rbf_frz_sgn_t.get(), 0.f);
+					const float target_jump = fmaxf(_param_mc_rbf_tgt_jump.get(), 0.f);
+					const float freeze_decay = math::constrain(_param_mc_rbf_frz_dec.get(), 0.f, 1.f);
 
 					const bool rbf_global_learning_gate_ok =
 						_rbf_attitude_gate_ok
@@ -470,32 +536,123 @@ MulticopterRateControl::Run()
 						&& hrt_elapsed_time(&_rbf_actuator_gate_timestamp) < kRbfLearningActuatorTimeout;
 					bool rbf_learn_active = false;
 
+					Vector3f rbf_compensation = _rbf_residual_compensation.update(rbf_features, dt);
+
 					for (size_t axis = 0; axis < 3; axis++) {
 						const bool torque_saturated_axis = _torque_saturation_positive(axis) || _torque_saturation_negative(axis);
 						const float abs_e = fabsf(rate_error_filtered(axis));
+						const float final_limit_axis = fmaxf(final_limit(axis), FLT_EPSILON);
+						const float injected_torque = torque_setpoint(axis) + inject_gain(axis) * rbf_compensation(axis);
 						const bool finite_axis = PX4_ISFINITE(rate_error_filtered(axis))
 									 && PX4_ISFINITE(rate_sp_dot(axis))
 									 && PX4_ISFINITE(torque_setpoint(axis))
 									 && PX4_ISFINITE(learning_target.torque_residual(axis))
-									 && PX4_ISFINITE(ladrc_limit(axis));
-
-						learning_target.valid(axis) =
+									 && PX4_ISFINITE(residual_accel_filtered(axis))
+									 && PX4_ISFINITE(ladrc_limit(axis))
+									 && PX4_ISFINITE(injected_torque);
+						const bool hard_learning_gate_ok =
 							_vehicle_control_mode.flag_armed
 							&& !_landed
 							&& !_maybe_landed
 							&& dt_valid
-							&& rate_sp_dot_valid
 							&& rbf_global_learning_gate_ok
+							&& finite_axis;
+						const int current_error_sign = signForFreeze(rate_error_filtered(axis));
+						uint8_t freeze_reason = _rbf_freeze_time_remaining_s(axis) > 0.f
+									? (_rbf_freeze_reason[axis]
+									   & (kRbfFreezeReasonSignChange | kRbfFreezeReasonTargetJump))
+									: 0;
+
+						_rbf_freeze_time_remaining_s(axis) = dt_valid
+										  ? fmaxf(0.f, _rbf_freeze_time_remaining_s(axis) - dt)
+										  : _rbf_freeze_time_remaining_s(axis);
+
+						if (_rbf_last_rate_error_sign_valid[axis]
+						    && current_error_sign != 0
+						    && current_error_sign != signForFreeze(_rbf_last_rate_error_filtered(axis))
+						    && abs_e > e_min) {
+							_rbf_freeze_time_remaining_s(axis) = fmaxf(_rbf_freeze_time_remaining_s(axis), freeze_sign_time_s);
+							freeze_reason |= kRbfFreezeReasonSignChange;
+						}
+
+						if (_last_control_cycle_rbf_ladrc
+						    && target_jump > FLT_EPSILON
+						    && fabsf(learning_target.torque_residual(axis) - _rbf_last_target(axis)) > target_jump) {
+							_rbf_freeze_time_remaining_s(axis) = fmaxf(_rbf_freeze_time_remaining_s(axis), freeze_sign_time_s);
+							freeze_reason |= kRbfFreezeReasonTargetJump;
+						}
+
+						if (accel_max > FLT_EPSILON && fabsf(residual_accel_filtered(axis)) > accel_max) {
+							freeze_reason |= kRbfFreezeReasonAccelResidual;
+						}
+
+						if (!rate_sp_dot_valid || fabsf(rate_sp_dot(axis)) >= rate_sp_dot_max) {
+							freeze_reason |= kRbfFreezeReasonSetpointJump;
+						}
+
+						if (torque_saturated_axis
+						    || fabsf(torque_setpoint(axis)) >= 0.85f * ladrc_limit(axis)
+						    || fabsf(injected_torque) >= 0.85f * final_limit_axis) {
+							freeze_reason |= kRbfFreezeReasonSaturation;
+						}
+
+						if (!hard_learning_gate_ok) {
+							freeze_reason |= kRbfFreezeReasonGate;
+						}
+
+						learning_target.valid(axis) =
+							hard_learning_gate_ok
+							&& rate_sp_dot_valid
 							&& residual_torque_target_valid(axis)
-							&& finite_axis
 							&& abs_e > e_min
 							&& abs_e < e_max
 							&& fabsf(rate_sp_dot(axis)) < rate_sp_dot_max
 							&& !torque_saturated_axis
-							&& fabsf(torque_setpoint(axis)) < 0.85f * ladrc_limit(axis);
+							&& fabsf(torque_setpoint(axis)) < 0.85f * ladrc_limit(axis)
+							&& fabsf(injected_torque) < 0.85f * final_limit_axis
+							&& _rbf_freeze_time_remaining_s(axis) <= FLT_EPSILON
+							&& freeze_reason == 0;
 
 						rbf_learn_active = rbf_learn_active || learning_target.valid(axis);
+						_rbf_freeze_reason[axis] = freeze_reason;
+						_rbf_last_rate_error_sign_valid[axis] = current_error_sign != 0;
 					}
+
+					if (_rbf_freeze_reason[0] || _rbf_freeze_reason[1] || _rbf_freeze_reason[2]) {
+						Vector<bool, 3> decay_axis{};
+
+						for (size_t axis = 0; axis < 3; axis++) {
+							if (_rbf_freeze_reason[axis] != 0) {
+								decay_axis(axis) = true;
+							}
+						}
+
+						_rbf_residual_compensation.decayOutput(decay_axis, freeze_decay);
+						rbf_compensation = _rbf_residual_compensation.getLastCompensation();
+					}
+
+					rate_ctrl_status.rollspeed_rbf = rbf_compensation(0);
+					rate_ctrl_status.pitchspeed_rbf = rbf_compensation(1);
+					rate_ctrl_status.yawspeed_rbf = rbf_compensation(2);
+
+					const Vector3f rbf_output_raw = _rbf_residual_compensation.getLastRawOutput();
+					rbf_output_raw.copyTo(rate_ctrl_status.rbf_output_raw);
+					rbf_compensation.copyTo(rate_ctrl_status.rbf_output_filtered);
+					learning_target.torque_residual.copyTo(rate_ctrl_status.rbf_target);
+					residual_accel_filtered.copyTo(rate_ctrl_status.rbf_residual_accel);
+					rate_ctrl_status.rbf_feature_e[0] = rbf_features(1);
+					rate_ctrl_status.rbf_feature_e[1] = rbf_features(RbfResidualCompensation::kPerAxisInputDimension + 1);
+					rate_ctrl_status.rbf_feature_e[2] = rbf_features(2 * RbfResidualCompensation::kPerAxisInputDimension + 1);
+					rate_ctrl_status.rbf_feature_uladrc[0] = rbf_features(2);
+					rate_ctrl_status.rbf_feature_uladrc[1] = rbf_features(RbfResidualCompensation::kPerAxisInputDimension + 2);
+					rate_ctrl_status.rbf_feature_uladrc[2] = rbf_features(2 * RbfResidualCompensation::kPerAxisInputDimension + 2);
+					rate_ctrl_status.rbf_feature_udist[0] = rbf_features(3);
+					rate_ctrl_status.rbf_feature_udist[1] = rbf_features(RbfResidualCompensation::kPerAxisInputDimension + 3);
+					rate_ctrl_status.rbf_feature_udist[2] = rbf_features(2 * RbfResidualCompensation::kPerAxisInputDimension + 3);
+					rate_ctrl_status.rbf_freeze_flag = _rbf_freeze_reason[0] || _rbf_freeze_reason[1] || _rbf_freeze_reason[2];
+					rate_ctrl_status.rbf_freeze_reason[0] = _rbf_freeze_reason[0];
+					rate_ctrl_status.rbf_freeze_reason[1] = _rbf_freeze_reason[1];
+					rate_ctrl_status.rbf_freeze_reason[2] = _rbf_freeze_reason[2];
 
 					if (_rbf_residual_compensation.isLearningEnabled() && dt_valid) {
 						_rbf_residual_compensation.learn(rbf_features, learning_target.torque_residual, learning_target.valid, dt);
@@ -508,10 +665,11 @@ MulticopterRateControl::Run()
 					bool final_torque_would_saturate = false;
 
 					for (size_t axis = 0; axis < 3; axis++) {
-						const float injected_torque = torque_setpoint(axis) + rbf_compensation(axis);
+						const float injected_torque = torque_setpoint(axis) + inject_gain(axis) * rbf_compensation(axis);
+						const float final_limit_axis = fmaxf(final_limit(axis), FLT_EPSILON);
 
 						if (PX4_ISFINITE(injected_torque)
-						    && fabsf(injected_torque - math::constrain(injected_torque, -1.f, 1.f)) > FLT_EPSILON) {
+						    && fabsf(injected_torque - math::constrain(injected_torque, -final_limit_axis, final_limit_axis)) > FLT_EPSILON) {
 							final_torque_would_saturate = true;
 						}
 					}
@@ -520,13 +678,21 @@ MulticopterRateControl::Run()
 						_rbf_residual_compensation.getLastOutputSaturated() || final_torque_would_saturate;
 
 					if (_param_mc_rbf_inject_en.get()) {
-						torque_setpoint = _rbf_residual_compensation.compensate(torque_setpoint);
+						for (size_t axis = 0; axis < 3; axis++) {
+							const float final_limit_axis = fmaxf(final_limit(axis), FLT_EPSILON);
+							const float injected_torque = torque_setpoint(axis) + inject_gain(axis) * rbf_compensation(axis);
+							torque_setpoint(axis) = math::constrain(injected_torque, -final_limit_axis, final_limit_axis);
+						}
 					}
+
+					_rbf_last_rate_error_filtered = rate_error_filtered;
+					_rbf_last_target = learning_target.torque_residual;
 
 				} else if (_last_control_cycle_rbf_ladrc) {
 					_rbf_residual_compensation.reset();
 					_rbf_rate_error_lpf.reset(Vector3f{});
 					_rbf_target_lpf.reset(Vector3f{});
+					_rbf_residual_accel_lpf.reset(Vector3f{});
 					_rbf_last_rates_setpoint_valid = false;
 				}
 
@@ -539,6 +705,7 @@ MulticopterRateControl::Run()
 					_rbf_residual_compensation.reset();
 					_rbf_rate_error_lpf.reset(Vector3f{});
 					_rbf_target_lpf.reset(Vector3f{});
+					_rbf_residual_accel_lpf.reset(Vector3f{});
 					_rbf_last_rates_setpoint_valid = false;
 				}
 

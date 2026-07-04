@@ -72,6 +72,17 @@ public:
 			   const matrix::Vector3f &wo);
 
 	/**
+	 * @brief Set angular-acceleration damping gains.
+	 *
+	 * This term mirrors the original PX4 PID D term and is applied as:
+	 *
+	 *     u = u_ladrc - d_accel * angular_accel
+	 *
+	 * Keep it small; it is a fast damping path on top of the LADRC output.
+	 */
+	void setAngularAccelDamping(const matrix::Vector3f &angular_accel_damping);
+
+	/**
 	 * @brief Set normalized torque output limit for each axis.
 	 *
 	 * Normal PX4 multicopter torque setpoint range is usually [-1, 1].
@@ -121,7 +132,7 @@ public:
 	 *
 	 * @param rate current body angular rate [rad/s]
 	 * @param rate_sp desired body angular rate [rad/s]
-	 * @param angular_accel current body angular acceleration [rad/s^2], unused by this first-order LADRC
+	 * @param angular_accel current body angular acceleration [rad/s^2], used for optional damping
 	 * @param dt control period [s]
 	 * @param landed true when vehicle is landed or maybe landed
 	 *
@@ -187,6 +198,9 @@ private:
 	// Normalized torque limit for roll, pitch and yaw. Conservative initial
 	// flight-test defaults reduce the authority of an unvalidated observer.
 	matrix::Vector3f _torque_limit{0.35f, 0.35f, 0.20f};
+
+	// Optional angular-acceleration damping, equivalent to the PX4 PID D path.
+	matrix::Vector3f _angular_accel_damping{};
 
 	// LESO states
 	matrix::Vector3f _z1{};

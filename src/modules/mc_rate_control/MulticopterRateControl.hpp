@@ -156,16 +156,22 @@ private:
 	// RBF learning gate state.
 	AlphaFilter<matrix::Vector3f> _rbf_rate_error_lpf;
 	AlphaFilter<matrix::Vector3f> _rbf_target_lpf;
+	AlphaFilter<matrix::Vector3f> _rbf_residual_accel_lpf;
 	matrix::Vector3f _rbf_last_rates_setpoint{};
+	matrix::Vector3f _rbf_last_rate_error_filtered{};
+	matrix::Vector3f _rbf_last_target{};
+	matrix::Vector3f _rbf_freeze_time_remaining_s{};
 	matrix::Vector<bool, 3> _torque_saturation_positive{};
 	matrix::Vector<bool, 3> _torque_saturation_negative{};
 	hrt_abstime _rbf_attitude_gate_timestamp{0};
 	hrt_abstime _rbf_allocation_gate_timestamp{0};
 	hrt_abstime _rbf_actuator_gate_timestamp{0};
 	bool _rbf_last_rates_setpoint_valid{false};
+	bool _rbf_last_rate_error_sign_valid[3] {};
 	bool _rbf_attitude_gate_ok{false};
 	bool _rbf_allocation_gate_ok{false};
 	bool _rbf_actuator_gate_ok{false};
+	uint8_t _rbf_freeze_reason[3] {};
 
 	float _energy_integration_time{0.0f};
 	float _control_energy[4] {};
@@ -228,8 +234,16 @@ private:
 		(ParamFloat<px4::params::MC_LADRC_LIM_P>) _param_mc_ladrc_lim_p,
 		(ParamFloat<px4::params::MC_LADRC_LIM_Y>) _param_mc_ladrc_lim_y,
 
+		// LADRC angular-acceleration damping, equivalent to PID D path
+		(ParamFloat<px4::params::MC_LADRC_D_R>) _param_mc_ladrc_d_r,
+		(ParamFloat<px4::params::MC_LADRC_D_P>) _param_mc_ladrc_d_p,
+		(ParamFloat<px4::params::MC_LADRC_D_Y>) _param_mc_ladrc_d_y,
+
 		// RBF residual compensation for LADRC
 		(ParamBool<px4::params::MC_RBF_EN>) _param_mc_rbf_en,
+		(ParamBool<px4::params::MC_RBF_EN_R>) _param_mc_rbf_en_r,
+		(ParamBool<px4::params::MC_RBF_EN_P>) _param_mc_rbf_en_p,
+		(ParamBool<px4::params::MC_RBF_EN_Y>) _param_mc_rbf_en_y,
 		(ParamBool<px4::params::MC_RBF_INJECT_EN>) _param_mc_rbf_inject_en,
 		(ParamBool<px4::params::MC_RBF_LEARN_EN>) _param_mc_rbf_learn_en,
 		(ParamInt<px4::params::MC_RBF_BASIS>) _param_mc_rbf_basis,
@@ -246,10 +260,25 @@ private:
 		(ParamFloat<px4::params::MC_RBF_ERR_GAIN>) _param_mc_rbf_err_gain,
 		(ParamFloat<px4::params::MC_RBF_ERR_WC>) _param_mc_rbf_err_wc,
 		(ParamFloat<px4::params::MC_RBF_TGT_HZ>) _param_mc_rbf_tgt_hz,
+		(ParamFloat<px4::params::MC_RBF_RES_HZ>) _param_mc_rbf_res_hz,
 		(ParamFloat<px4::params::MC_RBF_E_MIN>) _param_mc_rbf_e_min,
 		(ParamFloat<px4::params::MC_RBF_E_MAX>) _param_mc_rbf_e_max,
 		(ParamFloat<px4::params::MC_RBF_SPD_MAX>) _param_mc_rbf_spd_max,
 		(ParamFloat<px4::params::MC_RBF_E_FILT_HZ>) _param_mc_rbf_e_filt_hz,
-		(ParamFloat<px4::params::MC_RBF_FEAT_LIM>) _param_mc_rbf_feat_lim
+		(ParamFloat<px4::params::MC_RBF_FEAT_LIM>) _param_mc_rbf_feat_lim,
+		(ParamFloat<px4::params::MC_RBF_E_SCALE_R>) _param_mc_rbf_e_scale_r,
+		(ParamFloat<px4::params::MC_RBF_E_SCALE_P>) _param_mc_rbf_e_scale_p,
+		(ParamFloat<px4::params::MC_RBF_E_SCALE_Y>) _param_mc_rbf_e_scale_y,
+		(ParamFloat<px4::params::MC_RBF_ACC_SC_R>) _param_mc_rbf_acc_sc_r,
+		(ParamFloat<px4::params::MC_RBF_ACC_SC_P>) _param_mc_rbf_acc_sc_p,
+		(ParamFloat<px4::params::MC_RBF_ACC_SC_Y>) _param_mc_rbf_acc_sc_y,
+		(ParamFloat<px4::params::MC_RBF_ACC_MAX>) _param_mc_rbf_acc_max,
+		(ParamFloat<px4::params::MC_RBF_FRZ_SGN_T>) _param_mc_rbf_frz_sgn_t,
+		(ParamFloat<px4::params::MC_RBF_TGT_JUMP>) _param_mc_rbf_tgt_jump,
+		(ParamFloat<px4::params::MC_RBF_FRZ_DEC>) _param_mc_rbf_frz_dec,
+		(ParamFloat<px4::params::MC_RBF_FIN_GAIN>) _param_mc_rbf_fin_gain,
+		(ParamFloat<px4::params::MC_RBF_INJ_R>) _param_mc_rbf_inj_r,
+		(ParamFloat<px4::params::MC_RBF_INJ_P>) _param_mc_rbf_inj_p,
+		(ParamFloat<px4::params::MC_RBF_INJ_Y>) _param_mc_rbf_inj_y
 	)
 };
