@@ -45,6 +45,8 @@
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 
+#include <SuspendedLoadAntiSwing.hpp>
+
 struct PositionControlStates {
 	matrix::Vector3f position;
 	matrix::Vector3f velocity;
@@ -147,6 +149,35 @@ public:
 	void setInputSetpoint(const trajectory_setpoint_s &setpoint);
 
 	/**
+	 * Configure optional suspended-load anti-swing acceleration correction.
+	 *
+	 * The correction is passive unless enabled and fed with a fresh suspended
+	 * load joint state. With the default disabled parameters the original PX4
+	 * position-control behavior is unchanged.
+	 */
+	void setSuspendedLoadAntiSwingParameters(const SuspendedLoadAntiSwing::Parameters &parameters)
+	{
+		_suspended_load_anti_swing.setParameters(parameters);
+	}
+
+	void setSuspendedLoadJointState(const SuspendedLoadAntiSwing::JointState &joint_state)
+	{
+		_suspended_load_anti_swing.setJointState(joint_state);
+	}
+
+	void resetSuspendedLoadAntiSwing() { _suspended_load_anti_swing.reset(); }
+	void setSuspendedLoadAntiSwingFlying(bool flying) { _suspended_load_anti_swing_flying = flying; }
+	const matrix::Vector2f &suspendedLoadAntiSwingAcceleration() const
+	{
+		return _suspended_load_anti_swing.lastAccelerationNed();
+	}
+
+	const SuspendedLoadAntiSwing::Status &suspendedLoadAntiSwingStatus() const
+	{
+		return _suspended_load_anti_swing.status();
+	}
+
+	/**
 	 * Apply P-position and PID-velocity controller that updates the member
 	 * thrust, yaw- and yawspeed-setpoints.
 	 * @see _thr_sp
@@ -233,4 +264,7 @@ private:
 	matrix::Vector3f _thr_sp; /**< desired thrust */
 	float _yaw_sp{}; /**< desired heading */
 	float _yawspeed_sp{}; /** desired yaw-speed */
+
+	SuspendedLoadAntiSwing _suspended_load_anti_swing{};
+	bool _suspended_load_anti_swing_flying{false};
 };

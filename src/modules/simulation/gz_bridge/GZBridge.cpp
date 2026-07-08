@@ -172,6 +172,11 @@ int GZBridge::init()
 		return PX4_ERROR;
 	}
 
+	if (!_suspended_load_joint_bridge.init(_world_name, _model_name)) {
+		PX4_ERR("failed to init suspended-load joint bridge");
+		return PX4_ERROR;
+	}
+
 	ScheduleNow();
 	return OK;
 }

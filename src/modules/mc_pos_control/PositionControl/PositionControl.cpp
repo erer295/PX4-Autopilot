@@ -37,6 +37,7 @@
 
 #include "PositionControl.hpp"
 #include "ControlMath.hpp"
+#include <drivers/drv_hrt.h>
 #include <float.h>
 #include <mathlib/mathlib.h>
 #include <px4_platform_common/defines.h>
@@ -148,6 +149,11 @@ void PositionControl::_velocityControl(const float dt)
 
 	// No control input from setpoints or corresponding states which are NAN
 	ControlMath::addIfNotNanVector3f(_acc_sp, acc_sp_velocity);
+
+	// Optional suspended-load anti-swing acceleration is zero until fed with a fresh joint state.
+	const Vector2f anti_swing_acceleration =
+		_suspended_load_anti_swing.update(dt, hrt_absolute_time(), _yaw, _suspended_load_anti_swing_flying);
+	_acc_sp.xy() += anti_swing_acceleration;
 
 	_accelerationControl();
 

@@ -57,6 +57,8 @@ if (gz-transport_FOUND)
 			GZMixingInterfaceWheel.hpp
 			GZGimbal.cpp
 			GZGimbal.hpp
+			GZSuspendedLoadJointBridge.cpp
+			GZSuspendedLoadJointBridge.hpp
 		DEPENDS
 			mixer_module
 			px4_work_queue
@@ -71,6 +73,7 @@ if (gz-transport_FOUND)
     )
 
 	target_include_directories(modules__simulation__gz_bridge PUBLIC px4_gz_msgs)
+	target_include_directories(modules__simulation__gz_bridge PUBLIC ${PX4_SOURCE_DIR}/src/modules/mc_pos_control/SuspendedLoadAntiSwing)
 	target_link_libraries(modules__simulation__gz_bridge PUBLIC px4_gz_msgs)
 
 	px4_add_git_submodule(TARGET git_gz PATH "${PX4_SOURCE_DIR}/Tools/simulation/gz")

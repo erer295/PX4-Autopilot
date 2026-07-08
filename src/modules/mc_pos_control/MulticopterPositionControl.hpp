@@ -38,6 +38,7 @@
 #pragma once
 
 #include "PositionControl/PositionControl.hpp"
+#include "SuspendedLoadAntiSwing/SuspendedLoadJointStateDebugArray.hpp"
 #include "Takeoff/Takeoff.hpp"
 #include "GotoControl/GotoControl.hpp"
 
@@ -58,6 +59,8 @@
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
+#include <uORB/SubscriptionMultiArray.hpp>
+#include <uORB/topics/debug_array.h>
 #include <uORB/topics/hover_thrust_estimate.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/trajectory_setpoint.h>
@@ -90,6 +93,8 @@ public:
 
 private:
 	void Run() override;
+	void updateSuspendedLoadJointState();
+	void publishSuspendedLoadAntiSwingStatus();
 
 	TakeoffHandling _takeoff; /**< state machine and ramp to bring the vehicle off the ground without jumps */
 
@@ -98,6 +103,7 @@ private:
 	uORB::PublicationData<takeoff_status_s>              _takeoff_status_pub{ORB_ID(takeoff_status)};
 	uORB::Publication<vehicle_attitude_setpoint_s>	     _vehicle_attitude_setpoint_pub{ORB_ID(vehicle_attitude_setpoint)};
 	uORB::Publication<vehicle_local_position_setpoint_s> _local_pos_sp_pub{ORB_ID(vehicle_local_position_setpoint)};	/**< vehicle local position setpoint publication */
+	uORB::Publication<debug_array_s> _suspended_load_anti_swing_status_pub{ORB_ID(debug_array)};
 
 	uORB::SubscriptionCallbackWorkItem _local_pos_sub{this, ORB_ID(vehicle_local_position)};	/**< vehicle local position */
 
@@ -108,6 +114,7 @@ private:
 	uORB::Subscription _vehicle_constraints_sub{ORB_ID(vehicle_constraints)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+	uORB::SubscriptionMultiArray<debug_array_s> _suspended_load_joint_state_subs{ORB_ID::debug_array};
 
 	hrt_abstime _time_stamp_last_loop{0};		/**< time stamp of last loop iteration */
 	hrt_abstime _time_position_control_enabled{0};
@@ -189,7 +196,28 @@ private:
 
 		(ParamFloat<px4::params::MPC_XY_ERR_MAX>) _param_mpc_xy_err_max,
 		(ParamFloat<px4::params::MPC_YAWRAUTO_MAX>) _param_mpc_yawrauto_max,
-		(ParamFloat<px4::params::MPC_YAWRAUTO_ACC>) _param_mpc_yawrauto_acc
+		(ParamFloat<px4::params::MPC_YAWRAUTO_ACC>) _param_mpc_yawrauto_acc,
+
+		// Optional suspended-load anti-swing outer loop
+		(ParamBool<px4::params::MC_HANG_AS_EN>) _param_mc_hang_as_en,
+		(ParamBool<px4::params::MC_HANG_OFFB>) _param_mc_hang_offb,
+		(ParamFloat<px4::params::MC_HANG_LEN>) _param_mc_hang_len,
+		(ParamFloat<px4::params::MC_HANG_K_ANG>) _param_mc_hang_k_ang,
+		(ParamFloat<px4::params::MC_HANG_K_RATE>) _param_mc_hang_k_rate,
+		(ParamFloat<px4::params::MC_HANG_ACC_LIM>) _param_mc_hang_acc_lim,
+		(ParamFloat<px4::params::MC_HANG_ACC_SLW>) _param_mc_hang_acc_slw,
+		(ParamFloat<px4::params::MC_HANG_LPF_HZ>) _param_mc_hang_lpf_hz,
+		(ParamInt<px4::params::MC_HANG_SIGN_X>) _param_mc_hang_sign_x,
+		(ParamInt<px4::params::MC_HANG_SIGN_Y>) _param_mc_hang_sign_y,
+		(ParamFloat<px4::params::MC_HANG_MAX_ANG>) _param_mc_hang_max_ang,
+		(ParamFloat<px4::params::MC_HANG_TIMEOUT>) _param_mc_hang_timeout,
+		(ParamFloat<px4::params::MC_HANG_ACT_DLY>) _param_mc_hang_act_dly,
+		(ParamFloat<px4::params::MC_HANG_ACT_ANG>) _param_mc_hang_act_ang,
+		(ParamFloat<px4::params::MC_HANG_ACT_R>) _param_mc_hang_act_r,
+		(ParamFloat<px4::params::MC_HANG_ACT_T>) _param_mc_hang_act_t,
+		(ParamFloat<px4::params::MC_HANG_RAMP_T>) _param_mc_hang_ramp_t,
+		(ParamFloat<px4::params::MC_HANG_SAFE_A>) _param_mc_hang_safe_a,
+		(ParamFloat<px4::params::MC_HANG_REARM>) _param_mc_hang_rearm
 	);
 
 	math::WelfordMean<float> _sample_interval_s{};

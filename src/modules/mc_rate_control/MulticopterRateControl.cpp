@@ -39,6 +39,7 @@
 #include <mathlib/math/Limits.hpp>
 #include <mathlib/math/Functions.hpp>
 #include <px4_platform_common/events.h>
+#include <string.h>
 
 using namespace matrix;
 using namespace time_literals;
@@ -53,12 +54,43 @@ constexpr float kRbfLearningMotorMax = 0.95f;
 constexpr hrt_abstime kRbfLearningAttitudeTimeout = 200_ms;
 constexpr hrt_abstime kRbfLearningAllocatorTimeout = 500_ms;
 constexpr hrt_abstime kRbfLearningActuatorTimeout = 500_ms;
+constexpr hrt_abstime kLadrcTDAttitudeTimeout = 200_ms;
 constexpr uint8_t kRbfFreezeReasonSignChange = 1u << 0;
 constexpr uint8_t kRbfFreezeReasonTargetJump = 1u << 1;
 constexpr uint8_t kRbfFreezeReasonAccelResidual = 1u << 2;
 constexpr uint8_t kRbfFreezeReasonSaturation = 1u << 3;
 constexpr uint8_t kRbfFreezeReasonSetpointJump = 1u << 4;
 constexpr uint8_t kRbfFreezeReasonGate = 1u << 5;
+constexpr uint16_t kLadrcTDDebugArrayId = 682;
+constexpr const char kLadrcTDDebugArrayName[] = "ladrc_td";
+constexpr int32_t kLadrcTDModeOff = 0;
+constexpr int32_t kLadrcTDModeAlways = 1;
+constexpr int32_t kLadrcTDModeSafeRamp = 2;
+constexpr int32_t kLadrcTDModeHoverOnly = 3;
+
+enum LadrcTDDebugArrayIndex : uint8_t {
+	LADRC_TD_RAW_ROLL = 0,
+	LADRC_TD_RAW_PITCH,
+	LADRC_TD_RAW_YAW,
+	LADRC_TD_SP_ROLL,
+	LADRC_TD_SP_PITCH,
+	LADRC_TD_SP_YAW,
+	LADRC_TD_V2_ROLL,
+	LADRC_TD_V2_PITCH,
+	LADRC_TD_V2_YAW,
+	LADRC_TD_TORQUE_ROLL,
+	LADRC_TD_TORQUE_PITCH,
+	LADRC_TD_TORQUE_YAW,
+	LADRC_TD_BLEND,
+	LADRC_TD_AIRBORNE_TIME,
+	LADRC_TD_MODE,
+	LADRC_TD_SAFE,
+	LADRC_TD_DELAY_OK,
+	LADRC_TD_ATT_OK,
+	LADRC_TD_ERR_OK,
+	LADRC_TD_RATE_OK,
+	LADRC_TD_TORQUE_OK,
+};
 
 static inline float constrainUnitByScale(float value, float scale)
 {
@@ -205,6 +237,66 @@ MulticopterRateControl::updateRateControllerSelection()
 	}
 }
 
+Vector3f
+MulticopterRateControl::updateLadrcTD(const Vector3f &input_sp,
+				      const Vector3f &measured_rate,
+				      float dt,
+				      bool reset_td,
+				      bool use_slow_profile)
+{
+	if (reset_td || !_ladrc_td_initialized || !PX4_ISFINITE(dt) || dt <= FLT_EPSILON) {
+		for (int i = 0; i < 3; i++) {
+			if (PX4_ISFINITE(input_sp(i))) {
+				_ladrc_td_v1(i) = input_sp(i);
+
+			} else {
+				_ladrc_td_v1(i) = PX4_ISFINITE(measured_rate(i)) ? measured_rate(i) : 0.f;
+			}
+		}
+
+		_ladrc_td_v2.zero();
+		_ladrc_td_initialized = true;
+		return _ladrc_td_v1;
+	}
+
+	const float roll_w = use_slow_profile ? _param_mc_ladrc_td_sw_r.get() : _param_mc_ladrc_td_fw_r.get();
+	const float pitch_w = use_slow_profile ? _param_mc_ladrc_td_sw_p.get() : _param_mc_ladrc_td_fw_p.get();
+	const float roll_acc = use_slow_profile ? _param_mc_ladrc_td_sa_r.get() : _param_mc_ladrc_td_fa_r.get();
+	const float pitch_acc = use_slow_profile ? _param_mc_ladrc_td_sa_p.get() : _param_mc_ladrc_td_fa_p.get();
+	const Vector3f w_td(
+		math::constrain(roll_w, 0.1f, 40.0f),
+		math::constrain(pitch_w, 0.1f, 40.0f),
+		math::constrain(_param_mc_ladrc_td_w_y.get(), 0.1f, 40.0f));
+	const Vector3f acc_limit(
+		math::constrain(roll_acc, 0.1f, 200.0f),
+		math::constrain(pitch_acc, 0.1f, 200.0f),
+		math::constrain(_param_mc_ladrc_td_a_y.get(), 0.1f, 200.0f));
+	const float zeta = math::constrain(_param_mc_ladrc_td_zeta.get(), 0.5f, 2.0f);
+
+	for (int i = 0; i < 3; i++) {
+		const float fallback_rate = PX4_ISFINITE(measured_rate(i)) ? measured_rate(i) : 0.f;
+		const float input = PX4_ISFINITE(input_sp(i)) ? input_sp(i) : fallback_rate;
+
+		if (!PX4_ISFINITE(_ladrc_td_v1(i)) || !PX4_ISFINITE(_ladrc_td_v2(i))) {
+			_ladrc_td_v1(i) = fallback_rate;
+			_ladrc_td_v2(i) = 0.f;
+		}
+
+		const float v2_dot = -2.f * zeta * w_td(i) * _ladrc_td_v2(i)
+				     + w_td(i) * w_td(i) * (input - _ladrc_td_v1(i));
+		const float v2_new = _ladrc_td_v2(i) + dt * v2_dot;
+
+		_ladrc_td_v2(i) = PX4_ISFINITE(v2_new)
+				   ? math::constrain(v2_new, -acc_limit(i), acc_limit(i))
+				   : 0.f;
+
+		const float v1_new = _ladrc_td_v1(i) + dt * _ladrc_td_v2(i);
+		_ladrc_td_v1(i) = PX4_ISFINITE(v1_new) ? v1_new : fallback_rate;
+	}
+
+	return _ladrc_td_v1;
+}
+
 void
 MulticopterRateControl::Run()
 {
@@ -261,6 +353,9 @@ MulticopterRateControl::Run()
 			const Eulerf attitude_euler(Quatf(vehicle_attitude.q));
 			const float roll = attitude_euler.phi();
 			const float pitch = attitude_euler.theta();
+			_attitude_roll = roll;
+			_attitude_pitch = pitch;
+			_attitude_timestamp = vehicle_attitude.timestamp;
 
 			// RBF global learning gate: do not learn from large-attitude recovery or incipient loss of control.
 			_rbf_attitude_gate_ok = PX4_ISFINITE(roll)
@@ -345,6 +440,12 @@ MulticopterRateControl::Run()
 				_rbf_last_rate_error_filtered.zero();
 				_rbf_last_target.zero();
 				_rbf_freeze_time_remaining_s.zero();
+				_ladrc_td_v1.zero();
+				_ladrc_td_v2.zero();
+				_ladrc_td_airborne_time_s = 0.f;
+				_ladrc_td_blend = 0.f;
+				_ladrc_td_initialized = false;
+				_attitude_timestamp = 0;
 				_torque_saturation_positive = Vector<bool, 3>{};
 				_torque_saturation_negative = Vector<bool, 3>{};
 				_rbf_attitude_gate_ok = false;
@@ -392,19 +493,112 @@ MulticopterRateControl::Run()
 			const bool on_ground = _maybe_landed || _landed;
 			rate_ctrl_status_s rate_ctrl_status{};
 			Vector3f torque_setpoint{};
+			Vector3f ladrc_rate_sp = _rates_setpoint;
+			int32_t ladrc_td_mode = math::constrain(_param_mc_ladrc_td_mode.get(), kLadrcTDModeOff, kLadrcTDModeHoverOnly);
+			bool ladrc_td_safe_to_enable = false;
+			bool ladrc_td_delay_ok = false;
+			bool ladrc_td_attitude_ok = false;
+			bool ladrc_td_rate_error_ok = false;
+			bool ladrc_td_body_rate_ok = false;
+			bool ladrc_td_torque_ok = false;
+
+			if (_use_ladrc) {
+				const bool reset_td = on_ground || !_vehicle_control_mode.flag_armed || !dt_valid;
+
+				if (ladrc_td_mode > kLadrcTDModeOff) {
+					if (reset_td) {
+						_ladrc_td_airborne_time_s = 0.f;
+						_ladrc_td_blend = 0.f;
+
+					} else {
+						_ladrc_td_airborne_time_s += dt;
+					}
+
+					const float td_delay_s = fmaxf(_param_mc_ladrc_td_dly.get(), 0.f);
+					const float td_ramp_s = fmaxf(_param_mc_ladrc_td_ramp.get(), 0.f);
+					const float td_att_limit = fmaxf(_param_mc_ladrc_td_att.get(), 0.f);
+					const float td_rate_limit = fmaxf(_param_mc_ladrc_td_rate.get(), 0.f);
+					const float td_error_limit = fmaxf(_param_mc_ladrc_td_err.get(), 0.f);
+					const Vector3f raw_rate_error = _rates_setpoint - rates;
+					bool torque_saturated = false;
+
+					for (size_t axis = 0; axis < 3; axis++) {
+						torque_saturated = torque_saturated
+								   || _torque_saturation_positive(axis)
+								   || _torque_saturation_negative(axis);
+					}
+
+					const bool attitude_recent = _attitude_timestamp != 0
+								     && hrt_elapsed_time(&_attitude_timestamp) < kLadrcTDAttitudeTimeout;
+					const bool attitude_ok = attitude_recent
+								 && PX4_ISFINITE(_attitude_roll)
+								 && PX4_ISFINITE(_attitude_pitch)
+								 && fabsf(_attitude_roll) < td_att_limit
+								 && fabsf(_attitude_pitch) < td_att_limit;
+					const bool rate_error_ok = PX4_ISFINITE(raw_rate_error(0))
+								   && PX4_ISFINITE(raw_rate_error(1))
+								   && fabsf(raw_rate_error(0)) < td_error_limit
+								   && fabsf(raw_rate_error(1)) < td_error_limit;
+					const bool body_rate_ok = PX4_ISFINITE(rates(0))
+								  && PX4_ISFINITE(rates(1))
+								  && fabsf(rates(0)) < td_rate_limit
+								  && fabsf(rates(1)) < td_rate_limit;
+					ladrc_td_delay_ok = !reset_td && _ladrc_td_airborne_time_s > td_delay_s;
+					ladrc_td_attitude_ok = attitude_ok;
+					ladrc_td_rate_error_ok = rate_error_ok;
+					ladrc_td_body_rate_ok = body_rate_ok;
+					ladrc_td_torque_ok = !torque_saturated;
+					const bool td_gate_safe_to_enable = ladrc_td_delay_ok
+									    && attitude_ok
+									    && rate_error_ok
+									    && body_rate_ok
+									    && !torque_saturated;
+					const bool use_slow_td_profile = ladrc_td_mode == kLadrcTDModeHoverOnly;
+
+					if (ladrc_td_mode == kLadrcTDModeAlways) {
+						ladrc_td_safe_to_enable = !reset_td;
+
+					} else {
+						ladrc_td_safe_to_enable = td_gate_safe_to_enable;
+					}
+
+					if (ladrc_td_safe_to_enable) {
+						if (ladrc_td_mode == kLadrcTDModeAlways || td_ramp_s <= FLT_EPSILON) {
+							_ladrc_td_blend = 1.f;
+
+						} else {
+							_ladrc_td_blend = math::constrain(_ladrc_td_blend + dt / td_ramp_s, 0.f, 1.f);
+						}
+
+						const Vector3f ladrc_rate_sp_td = updateLadrcTD(_rates_setpoint, rates, dt,
+										 reset_td, use_slow_td_profile);
+						ladrc_rate_sp = _rates_setpoint * (1.f - _ladrc_td_blend) + ladrc_rate_sp_td * _ladrc_td_blend;
+
+					} else {
+						_ladrc_td_blend = 0.f;
+						(void)updateLadrcTD(_rates_setpoint, rates, dt, true, use_slow_td_profile);
+						ladrc_rate_sp = _rates_setpoint;
+					}
+
+				} else {
+					_ladrc_td_airborne_time_s = 0.f;
+					_ladrc_td_blend = 0.f;
+					_ladrc_td_initialized = false;
+				}
+			}
 
 			if (_use_ladrc && !_last_control_cycle_ladrc && !on_ground && _vehicle_control_mode.flag_armed) {
-				_ladrc_rate_control.initializeBumpless(rates, _rates_setpoint, _last_published_torque);
+				_ladrc_rate_control.initializeBumpless(rates, ladrc_rate_sp, _last_published_torque);
 			}
 
 			if (_use_ladrc) {
-				torque_setpoint = _ladrc_rate_control.update(rates, _rates_setpoint, angular_accel, dt, on_ground);
+				torque_setpoint = _ladrc_rate_control.update(rates, ladrc_rate_sp, angular_accel, dt, on_ground);
 				_ladrc_rate_control.getRateControlStatus(rate_ctrl_status);
 
 				if (_use_rbf_ladrc) {
 					RbfResidualCompensation::LadrcBridgeInput rbf_input{};
 					rbf_input.rate = rates;
-					rbf_input.rate_sp = _rates_setpoint;
+					rbf_input.rate_sp = ladrc_rate_sp;
 					rbf_input.angular_accel = angular_accel;
 					rbf_input.ladrc_torque = torque_setpoint;
 					rbf_input.ladrc_disturbance_compensation = Vector3f(rate_ctrl_status.rollspeed_integ,
@@ -413,7 +607,7 @@ MulticopterRateControl::Run()
 					rbf_input.applied_torque = _last_published_torque;
 
 					RbfResidualCompensation::ResidualLearningTarget learning_target{};
-					const Vector3f rate_error = _rates_setpoint - rates;
+					const Vector3f rate_error = ladrc_rate_sp - rates;
 					const Vector3f disturbance_compensation = rbf_input.ladrc_disturbance_compensation;
 					const Vector3f b0(_param_mc_ladrc_b0_r.get(), _param_mc_ladrc_b0_p.get(), _param_mc_ladrc_b0_y.get());
 					const Vector3f rbf_limit(
@@ -455,7 +649,7 @@ MulticopterRateControl::Run()
 					if (!_last_control_cycle_rbf_ladrc) {
 						_rbf_rate_error_lpf.reset(rate_error);
 						_rbf_residual_accel_lpf.reset(residual_accel);
-						_rbf_last_rates_setpoint = _rates_setpoint;
+						_rbf_last_rates_setpoint = ladrc_rate_sp;
 						_rbf_last_rates_setpoint_valid = false;
 						_rbf_last_rate_error_filtered.zero();
 						_rbf_last_target.zero();
@@ -510,10 +704,10 @@ MulticopterRateControl::Run()
 					const bool rate_sp_dot_valid = _rbf_last_rates_setpoint_valid && dt_valid;
 
 					if (rate_sp_dot_valid) {
-						rate_sp_dot = (_rates_setpoint - _rbf_last_rates_setpoint) * (1.f / dt);
+						rate_sp_dot = (ladrc_rate_sp - _rbf_last_rates_setpoint) * (1.f / dt);
 					}
 
-					_rbf_last_rates_setpoint = _rates_setpoint;
+					_rbf_last_rates_setpoint = ladrc_rate_sp;
 					_rbf_last_rates_setpoint_valid = true;
 
 					const float e_min = fmaxf(_param_mc_rbf_e_min.get(), 0.f);
@@ -701,6 +895,10 @@ MulticopterRateControl::Run()
 					_rate_control.resetIntegral();
 				}
 
+				_ladrc_td_airborne_time_s = 0.f;
+				_ladrc_td_blend = 0.f;
+				_ladrc_td_initialized = false;
+
 				if (_last_control_cycle_rbf_ladrc) {
 					_rbf_residual_compensation.reset();
 					_rbf_rate_error_lpf.reset(Vector3f{});
@@ -748,6 +946,36 @@ MulticopterRateControl::Run()
 						vehicle_torque_setpoint.xyz[i] = math::constrain(vehicle_torque_setpoint.xyz[i] * _battery_status_scale, -1.f, 1.f);
 					}
 				}
+			}
+
+			if (_use_ladrc) {
+				debug_array_s td_debug{};
+				td_debug.timestamp = hrt_absolute_time();
+				td_debug.id = kLadrcTDDebugArrayId;
+				memset(td_debug.name, 0, sizeof(td_debug.name));
+				strncpy(td_debug.name, kLadrcTDDebugArrayName, sizeof(td_debug.name) - 1);
+				td_debug.data[LADRC_TD_RAW_ROLL] = _rates_setpoint(0);
+				td_debug.data[LADRC_TD_RAW_PITCH] = _rates_setpoint(1);
+				td_debug.data[LADRC_TD_RAW_YAW] = _rates_setpoint(2);
+				td_debug.data[LADRC_TD_SP_ROLL] = ladrc_rate_sp(0);
+				td_debug.data[LADRC_TD_SP_PITCH] = ladrc_rate_sp(1);
+				td_debug.data[LADRC_TD_SP_YAW] = ladrc_rate_sp(2);
+				td_debug.data[LADRC_TD_V2_ROLL] = _ladrc_td_v2(0);
+				td_debug.data[LADRC_TD_V2_PITCH] = _ladrc_td_v2(1);
+				td_debug.data[LADRC_TD_V2_YAW] = _ladrc_td_v2(2);
+				td_debug.data[LADRC_TD_TORQUE_ROLL] = vehicle_torque_setpoint.xyz[0];
+				td_debug.data[LADRC_TD_TORQUE_PITCH] = vehicle_torque_setpoint.xyz[1];
+				td_debug.data[LADRC_TD_TORQUE_YAW] = vehicle_torque_setpoint.xyz[2];
+				td_debug.data[LADRC_TD_BLEND] = _ladrc_td_blend;
+				td_debug.data[LADRC_TD_AIRBORNE_TIME] = _ladrc_td_airborne_time_s;
+				td_debug.data[LADRC_TD_MODE] = (float)ladrc_td_mode;
+				td_debug.data[LADRC_TD_SAFE] = ladrc_td_safe_to_enable ? 1.f : 0.f;
+				td_debug.data[LADRC_TD_DELAY_OK] = ladrc_td_delay_ok ? 1.f : 0.f;
+				td_debug.data[LADRC_TD_ATT_OK] = ladrc_td_attitude_ok ? 1.f : 0.f;
+				td_debug.data[LADRC_TD_ERR_OK] = ladrc_td_rate_error_ok ? 1.f : 0.f;
+				td_debug.data[LADRC_TD_RATE_OK] = ladrc_td_body_rate_ok ? 1.f : 0.f;
+				td_debug.data[LADRC_TD_TORQUE_OK] = ladrc_td_torque_ok ? 1.f : 0.f;
+				_ladrc_td_debug_pub.publish(td_debug);
 			}
 
 			vehicle_thrust_setpoint.timestamp_sample = angular_velocity.timestamp_sample;

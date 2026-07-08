@@ -37,6 +37,7 @@
 #include "GZMixingInterfaceServo.hpp"
 #include "GZMixingInterfaceWheel.hpp"
 #include "GZGimbal.hpp"
+#include "GZSuspendedLoadJointBridge.hpp"
 
 #include <px4_platform_common/atomic.h>
 #include <px4_platform_common/defines.h>
@@ -148,6 +149,7 @@ private:
 	GZMixingInterfaceWheel _mixing_interface_wheel{_node};
 
 	GZGimbal _gimbal{_node};
+	GZSuspendedLoadJointBridge _suspended_load_joint_bridge{_node};
 
 	MapProjection _pos_ref{};
 	double _alt_ref{};

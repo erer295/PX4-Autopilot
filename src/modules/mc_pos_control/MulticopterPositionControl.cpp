@@ -200,6 +200,28 @@ void MulticopterPositionControl::parameters_update(bool force)
 			Vector3f(_param_mpc_xy_vel_d_acc.get(), _param_mpc_xy_vel_d_acc.get(), _param_mpc_z_vel_d_acc.get()));
 		_control.setHorizontalThrustMargin(_param_mpc_thr_xy_marg.get());
 		_control.decoupleHorizontalAndVecticalAcceleration(_param_mpc_acc_decouple.get());
+
+		SuspendedLoadAntiSwing::Parameters anti_swing_parameters{};
+		anti_swing_parameters.enabled = _param_mc_hang_as_en.get();
+		anti_swing_parameters.rope_length = _param_mc_hang_len.get();
+		anti_swing_parameters.angle_gain = _param_mc_hang_k_ang.get();
+		anti_swing_parameters.rate_gain = _param_mc_hang_k_rate.get();
+		anti_swing_parameters.acceleration_limit = _param_mc_hang_acc_lim.get();
+		anti_swing_parameters.acceleration_slew_rate = _param_mc_hang_acc_slw.get();
+		anti_swing_parameters.filter_cutoff_hz = _param_mc_hang_lpf_hz.get();
+		anti_swing_parameters.sign_x = _param_mc_hang_sign_x.get();
+		anti_swing_parameters.sign_y = _param_mc_hang_sign_y.get();
+		anti_swing_parameters.max_angle = _param_mc_hang_max_ang.get();
+		anti_swing_parameters.timeout_s = _param_mc_hang_timeout.get();
+		anti_swing_parameters.activation_delay = _param_mc_hang_act_dly.get();
+		anti_swing_parameters.activation_max_angle = _param_mc_hang_act_ang.get();
+		anti_swing_parameters.activation_max_rate = _param_mc_hang_act_r.get();
+		anti_swing_parameters.activation_stable_time = _param_mc_hang_act_t.get();
+		anti_swing_parameters.ramp_time = _param_mc_hang_ramp_t.get();
+		anti_swing_parameters.safety_angle = _param_mc_hang_safe_a.get();
+		anti_swing_parameters.rearm_delay = _param_mc_hang_rearm.get();
+		_control.setSuspendedLoadAntiSwingParameters(anti_swing_parameters);
+
 		_goto_control.setParamMpcAccHor(_param_mpc_acc_hor.get());
 		_goto_control.setParamMpcAccDownMax(_param_mpc_acc_down_max.get());
 		_goto_control.setParamMpcAccUpMax(_param_mpc_acc_up_max.get());
@@ -433,6 +455,7 @@ void MulticopterPositionControl::Run()
 		}
 
 		_trajectory_setpoint_sub.update(&_setpoint);
+		updateSuspendedLoadJointState();
 
 		adjustSetpointForEKFResets(vehicle_local_position, _setpoint);
 
@@ -496,6 +519,9 @@ void MulticopterPositionControl::Run()
 			const bool not_taken_off             = (_takeoff.getTakeoffState() < TakeoffState::rampup);
 			const bool flying                    = (_takeoff.getTakeoffState() >= TakeoffState::flight);
 			const bool flying_but_ground_contact = (flying && _vehicle_land_detected.ground_contact);
+			const bool anti_swing_mode_allowed = !_param_mc_hang_offb.get()
+							     || _vehicle_control_mode.flag_control_offboard_enabled;
+			_control.setSuspendedLoadAntiSwingFlying(flying && !flying_but_ground_contact && anti_swing_mode_allowed);
 
 			if (!flying) {
 				_control.setHoverThrust(_param_mpc_thr_hover.get());
@@ -594,6 +620,8 @@ void MulticopterPositionControl::Run()
 				}
 			}
 
+			publishSuspendedLoadAntiSwingStatus();
+
 			// Publish internal position control setpoints
 			// on top of the input/feed-forward setpoints these containt the PID corrections
 			// This message is used by other modules (such as Landdetector) to determine vehicle intention.
@@ -612,6 +640,7 @@ void MulticopterPositionControl::Run()
 			// an update is necessary here because otherwise the takeoff state doesn't get skipped with non-altitude-controlled modes
 			_takeoff.updateTakeoffState(_vehicle_control_mode.flag_armed, _vehicle_land_detected.landed, false, 10.f, true,
 						    vehicle_local_position.timestamp_sample);
+			_control.setSuspendedLoadAntiSwingFlying(false);
 			_control.resetIntegral();
 		}
 
@@ -628,6 +657,28 @@ void MulticopterPositionControl::Run()
 	}
 
 	perf_end(_cycle_perf);
+}
+
+void MulticopterPositionControl::updateSuspendedLoadJointState()
+{
+	for (auto &subscription : _suspended_load_joint_state_subs) {
+		debug_array_s debug_array{};
+
+		if (subscription.update(&debug_array)) {
+			SuspendedLoadAntiSwing::JointState joint_state{};
+
+			if (suspended_load_joint_state_bridge::toJointState(debug_array, joint_state)) {
+				_control.setSuspendedLoadJointState(joint_state);
+			}
+		}
+	}
+}
+
+void MulticopterPositionControl::publishSuspendedLoadAntiSwingStatus()
+{
+	debug_array_s debug_array{};
+	suspended_load_anti_swing_status_bridge::fromStatus(_control.suspendedLoadAntiSwingStatus(), debug_array);
+	_suspended_load_anti_swing_status_pub.publish(debug_array);
 }
 
 trajectory_setpoint_s MulticopterPositionControl::generateFailsafeSetpoint(const hrt_abstime &now,

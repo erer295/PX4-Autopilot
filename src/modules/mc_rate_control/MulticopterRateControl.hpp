@@ -54,6 +54,7 @@
 #include <uORB/topics/actuator_motors.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/control_allocator_status.h>
+#include <uORB/topics/debug_array.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/rate_ctrl_status.h>
@@ -98,6 +99,12 @@ private:
 
 	void updateRateControllerSelection();
 
+	matrix::Vector3f updateLadrcTD(const matrix::Vector3f &input_sp,
+				       const matrix::Vector3f &measured_rate,
+				       float dt,
+				       bool reset_td,
+				       bool use_slow_profile);
+
 	void updateActuatorControlsStatus(const vehicle_torque_setpoint_s &vehicle_torque_setpoint, float dt);
 
 	RateControl _rate_control; ///< class for rate control calculations
@@ -119,6 +126,7 @@ private:
 	uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
 
 	uORB::Publication<actuator_controls_status_s>	_actuator_controls_status_pub{ORB_ID(actuator_controls_status_0)};
+	uORB::PublicationMulti<debug_array_s>	_ladrc_td_debug_pub{ORB_ID(debug_array)};
 	uORB::PublicationMulti<rate_ctrl_status_s>	_controller_status_pub{ORB_ID(rate_ctrl_status)};
 	uORB::Publication<vehicle_rates_setpoint_s>	_vehicle_rates_setpoint_pub{ORB_ID(vehicle_rates_setpoint)};
 	uORB::Publication<vehicle_torque_setpoint_s>	_vehicle_torque_setpoint_pub;
@@ -129,6 +137,9 @@ private:
 
 	bool _landed{true};
 	bool _maybe_landed{true};
+	float _attitude_roll{0.f};
+	float _attitude_pitch{0.f};
+	hrt_abstime _attitude_timestamp{0};
 
 	hrt_abstime _last_run{0};
 
@@ -152,6 +163,14 @@ private:
 
 	// Last published torque is used to initialize LADRC when switching from PID.
 	matrix::Vector3f _last_published_torque{};
+
+	// LADRC tracking differentiator state. v1 is the smoothed rate setpoint,
+	// and v2 is its rate of change, equivalent to desired angular acceleration.
+	matrix::Vector3f _ladrc_td_v1{};
+	matrix::Vector3f _ladrc_td_v2{};
+	float _ladrc_td_airborne_time_s{0.f};
+	float _ladrc_td_blend{0.f};
+	bool _ladrc_td_initialized{false};
 
 	// RBF learning gate state.
 	AlphaFilter<matrix::Vector3f> _rbf_rate_error_lpf;
@@ -238,6 +257,26 @@ private:
 		(ParamFloat<px4::params::MC_LADRC_D_R>) _param_mc_ladrc_d_r,
 		(ParamFloat<px4::params::MC_LADRC_D_P>) _param_mc_ladrc_d_p,
 		(ParamFloat<px4::params::MC_LADRC_D_Y>) _param_mc_ladrc_d_y,
+
+		// LADRC tracking differentiator for rate setpoints
+		(ParamInt<px4::params::MC_LADRC_TD_MODE>) _param_mc_ladrc_td_mode,
+		(ParamFloat<px4::params::MC_LADRC_TD_FW_R>) _param_mc_ladrc_td_fw_r,
+		(ParamFloat<px4::params::MC_LADRC_TD_FW_P>) _param_mc_ladrc_td_fw_p,
+		(ParamFloat<px4::params::MC_LADRC_TD_FA_R>) _param_mc_ladrc_td_fa_r,
+		(ParamFloat<px4::params::MC_LADRC_TD_FA_P>) _param_mc_ladrc_td_fa_p,
+		(ParamFloat<px4::params::MC_LADRC_TD_SW_R>) _param_mc_ladrc_td_sw_r,
+		(ParamFloat<px4::params::MC_LADRC_TD_SW_P>) _param_mc_ladrc_td_sw_p,
+		(ParamFloat<px4::params::MC_LADRC_TD_SA_R>) _param_mc_ladrc_td_sa_r,
+		(ParamFloat<px4::params::MC_LADRC_TD_SA_P>) _param_mc_ladrc_td_sa_p,
+		(ParamFloat<px4::params::MC_LADRC_TD_W_Y>) _param_mc_ladrc_td_w_y,
+		(ParamFloat<px4::params::MC_LADRC_TD_ZETA>) _param_mc_ladrc_td_zeta,
+		(ParamFloat<px4::params::MC_LADRC_TD_A_Y>) _param_mc_ladrc_td_a_y,
+		(ParamFloat<px4::params::MC_LADRC_TD_DLY>) _param_mc_ladrc_td_dly,
+		(ParamFloat<px4::params::MC_LADRC_TD_RAMP>) _param_mc_ladrc_td_ramp,
+		(ParamFloat<px4::params::MC_LADRC_TD_ATT>) _param_mc_ladrc_td_att,
+		(ParamFloat<px4::params::MC_LADRC_TD_RATE>) _param_mc_ladrc_td_rate,
+		(ParamFloat<px4::params::MC_LADRC_TD_ERR>) _param_mc_ladrc_td_err,
+		(ParamFloat<px4::params::MC_LADRC_TD_FF>) _param_mc_ladrc_td_ff,
 
 		// RBF residual compensation for LADRC
 		(ParamBool<px4::params::MC_RBF_EN>) _param_mc_rbf_en,

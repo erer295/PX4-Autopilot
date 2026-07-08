@@ -525,6 +525,279 @@ PARAM_DEFINE_FLOAT(MC_LADRC_D_P, 0.0f);
 PARAM_DEFINE_FLOAT(MC_LADRC_D_Y, 0.0f);
 
 /**
+ * LADRC TD operating mode
+ *
+ * Selects when the tracking differentiator is allowed to shape the LADRC body
+ * rate setpoint. This switch is only active when MC_LADRC_EN is enabled.
+ *
+ * 0: disabled, LADRC uses raw rate setpoints
+ * 1: always enabled in flight, not recommended for takeoff tests
+ * 2: enabled after takeoff delay and stability checks, recommended
+ * 3: enabled only in stable hover/anti-swing conditions
+ *
+ * @min 0
+ * @max 3
+ * @value 0 Disabled
+ * @value 1 Always
+ * @value 2 Safe ramp
+ * @value 3 Hover only
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_INT32(MC_LADRC_TD_MODE, 0);
+
+/**
+ * LADRC TD fast roll bandwidth
+ *
+ * Fast roll TD bandwidth used by MC_LADRC_TD_MODE 1 and 2. The short parameter
+ * name means W_FAST_R.
+ *
+ * @min 0.1
+ * @max 40.0
+ * @unit rad/s
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_FW_R, 15.0f);
+
+/**
+ * LADRC TD fast pitch bandwidth
+ *
+ * Fast pitch TD bandwidth used by MC_LADRC_TD_MODE 1 and 2. The short parameter
+ * name means W_FAST_P.
+ *
+ * @min 0.1
+ * @max 40.0
+ * @unit rad/s
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_FW_P, 15.0f);
+
+/**
+ * LADRC TD fast roll acceleration limit
+ *
+ * Fast roll TD v2 limit used by MC_LADRC_TD_MODE 1 and 2. The short parameter
+ * name means A_FAST_R.
+ *
+ * @min 0.1
+ * @max 200.0
+ * @unit rad/s^2
+ * @decimal 2
+ * @increment 1.0
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_FA_R, 80.0f);
+
+/**
+ * LADRC TD fast pitch acceleration limit
+ *
+ * Fast pitch TD v2 limit used by MC_LADRC_TD_MODE 1 and 2. The short parameter
+ * name means A_FAST_P.
+ *
+ * @min 0.1
+ * @max 200.0
+ * @unit rad/s^2
+ * @decimal 2
+ * @increment 1.0
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_FA_P, 80.0f);
+
+/**
+ * LADRC TD slow roll bandwidth
+ *
+ * Slow roll TD bandwidth used by MC_LADRC_TD_MODE 3. The short parameter name
+ * means W_SLOW_R.
+ *
+ * @min 0.1
+ * @max 40.0
+ * @unit rad/s
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_SW_R, 8.0f);
+
+/**
+ * LADRC TD slow pitch bandwidth
+ *
+ * Slow pitch TD bandwidth used by MC_LADRC_TD_MODE 3. The short parameter name
+ * means W_SLOW_P.
+ *
+ * @min 0.1
+ * @max 40.0
+ * @unit rad/s
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_SW_P, 8.0f);
+
+/**
+ * LADRC TD slow roll acceleration limit
+ *
+ * Slow roll TD v2 limit used by MC_LADRC_TD_MODE 3. The short parameter name
+ * means A_SLOW_R.
+ *
+ * @min 0.1
+ * @max 200.0
+ * @unit rad/s^2
+ * @decimal 2
+ * @increment 1.0
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_SA_R, 30.0f);
+
+/**
+ * LADRC TD slow pitch acceleration limit
+ *
+ * Slow pitch TD v2 limit used by MC_LADRC_TD_MODE 3. The short parameter name
+ * means A_SLOW_P.
+ *
+ * @min 0.1
+ * @max 200.0
+ * @unit rad/s^2
+ * @decimal 2
+ * @increment 1.0
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_SA_P, 30.0f);
+
+/**
+ * LADRC TD yaw bandwidth
+ *
+ * Yaw has weaker direct coupling into suspended-load swing than roll/pitch, so
+ * it can usually use a higher TD bandwidth.
+ *
+ * @min 0.1
+ * @max 20.0
+ * @unit rad/s
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_W_Y, 5.0f);
+
+/**
+ * LADRC TD damping ratio
+ *
+ * 1.0 gives a critically damped second-order command filter.
+ *
+ * @min 0.5
+ * @max 2.0
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_ZETA, 1.0f);
+
+/**
+ * LADRC TD yaw acceleration limit
+ *
+ * Limits the rate of change of the smoothed yaw rate setpoint. This is the TD
+ * v2 state and is equivalent to desired yaw angular acceleration.
+ *
+ * @min 0.1
+ * @max 200.0
+ * @unit rad/s^2
+ * @decimal 2
+ * @increment 0.5
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_A_Y, 8.0f);
+
+/**
+ * LADRC TD activation delay after takeoff
+ *
+ * Keeps the TD bypassed for the first seconds after liftoff. In modes 2 and 3
+ * the TD can only ramp in after this delay and the stability checks pass.
+ *
+ * @min 0.0
+ * @max 20.0
+ * @unit s
+ * @decimal 2
+ * @increment 0.5
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_DLY, 4.0f);
+
+/**
+ * LADRC TD blend-in ramp time
+ *
+ * Smoothly blends from raw rate setpoint to TD-smoothed rate setpoint while the
+ * TD safety gate remains true. Set to 0 for immediate activation.
+ *
+ * @min 0.0
+ * @max 20.0
+ * @unit s
+ * @decimal 2
+ * @increment 0.5
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_RAMP, 4.0f);
+
+/**
+ * LADRC TD attitude gate
+ *
+ * Roll and pitch must both be below this threshold before modes 2 and 3 are
+ * allowed to ramp TD into the LADRC rate setpoint.
+ *
+ * @min 0.0
+ * @max 0.8
+ * @unit rad
+ * @decimal 3
+ * @increment 0.01
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_ATT, 0.15f);
+
+/**
+ * LADRC TD body-rate gate
+ *
+ * Roll and pitch body rates must both be below this threshold before modes 2
+ * and 3 are allowed to ramp TD into the LADRC rate setpoint.
+ *
+ * @min 0.0
+ * @max 5.0
+ * @unit rad/s
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_RATE, 0.5f);
+
+/**
+ * LADRC TD rate-error gate
+ *
+ * Roll and pitch rate errors must both be below this threshold before modes 2
+ * and 3 are allowed to ramp TD into the LADRC rate setpoint.
+ *
+ * @min 0.0
+ * @max 5.0
+ * @unit rad/s
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_ERR, 0.5f);
+
+/**
+ * LADRC TD feed-forward gain
+ *
+ * Reserved for a later LADRC extension that feeds TD v2 into the controller.
+ * Keep at zero for the initial suspended-load TD-LADRC tests.
+ *
+ * @min 0.0
+ * @max 1.0
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Rate Control
+ */
+PARAM_DEFINE_FLOAT(MC_LADRC_TD_FF, 0.0f);
+
+/**
  * Enable RBF residual compensation after LADRC
  *
  * This switch is only active when MC_LADRC_EN is also enabled.

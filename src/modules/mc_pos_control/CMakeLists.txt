@@ -32,6 +32,7 @@
 ############################################################################
 
 add_subdirectory(GotoControl)
+add_subdirectory(SuspendedLoadAntiSwing)
 add_subdirectory(PositionControl)
 add_subdirectory(Takeoff)
 
