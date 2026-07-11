@@ -9,6 +9,7 @@
 #include <float.h>
 #include <math.h>
 
+#include <lib/geo/geo.h>
 #include <lib/mathlib/mathlib.h>
 #include <px4_platform_common/defines.h>
 
@@ -23,6 +24,7 @@ constexpr float kMaxRopeLength = 10.f;
 constexpr float kMaxAccelerationLimit = 10.f;
 constexpr float kMaxAccelerationSlewRate = 100.f;
 constexpr float kMaxGain = 100.f;
+constexpr float kMaxDampingRatio = 2.f;
 constexpr float kMaxFilterCutoffHz = 50.f;
 constexpr float kMaxTimeoutS = 5.f;
 constexpr float kMaxActivationDelayS = 30.f;
@@ -38,32 +40,49 @@ constexpr uint64_t kUsecPerSecond = 1000000ULL;
 void SuspendedLoadAntiSwing::setParameters(const Parameters &parameters)
 {
 	_parameters.enabled = parameters.enabled;
+
+	switch (parameters.mode) {
+	case Mode::Off:
+	case Mode::LegacyPD:
+	case Mode::EnergyDamping:
+		_parameters.mode = parameters.mode;
+		break;
+
+	default:
+		_parameters.mode = Mode::Off;
+		break;
+	}
+
 	_parameters.rope_length = math::constrain(sanitizeFinite(parameters.rope_length, 0.6f), kMinRopeLength, kMaxRopeLength);
 	_parameters.angle_gain = math::constrain(sanitizeFinite(parameters.angle_gain, 0.f), 0.f, kMaxGain);
 	_parameters.rate_gain = math::constrain(sanitizeFinite(parameters.rate_gain, 1.5f), 0.f, kMaxGain);
+	_parameters.energy_damping_ratio = math::constrain(sanitizeFinite(parameters.energy_damping_ratio, 0.25f), 0.f,
+					   kMaxDampingRatio);
+	_parameters.energy_gate_start = math::max(sanitizeFinite(parameters.energy_gate_start, 0.f), 0.f);
+	_parameters.energy_gate_full = math::max(sanitizeFinite(parameters.energy_gate_full, 0.02f), 0.f);
 	_parameters.acceleration_limit = math::constrain(sanitizeFinite(parameters.acceleration_limit, 0.6f), 0.f,
-					   kMaxAccelerationLimit);
+					 kMaxAccelerationLimit);
 	_parameters.acceleration_slew_rate = math::constrain(sanitizeFinite(parameters.acceleration_slew_rate, 2.f), 0.f,
 					     kMaxAccelerationSlewRate);
 	_parameters.filter_cutoff_hz = math::constrain(sanitizeFinite(parameters.filter_cutoff_hz, 4.f), 0.f,
-				      kMaxFilterCutoffHz);
+				       kMaxFilterCutoffHz);
 	_parameters.max_angle = math::constrain(sanitizeFinite(parameters.max_angle, 0.8f), 0.f, kPi);
 	_parameters.timeout_s = math::constrain(sanitizeFinite(parameters.timeout_s, 0.2f), 0.f, kMaxTimeoutS);
 	_parameters.activation_delay = math::constrain(sanitizeFinite(parameters.activation_delay, 3.f), 0.f,
 				       kMaxActivationDelayS);
 	_parameters.activation_max_angle = math::constrain(sanitizeFinite(parameters.activation_max_angle, 0.05f), 0.f,
-					      kPi);
+					   kPi);
 	_parameters.activation_max_rate = math::constrain(sanitizeFinite(parameters.activation_max_rate, 0.08f), 0.f,
-					   kMaxActivationRate);
+					  kMaxActivationRate);
 	_parameters.activation_stable_time = math::constrain(sanitizeFinite(parameters.activation_stable_time, 2.f), 0.f,
 					     kMaxActivationStableTimeS);
 	_parameters.ramp_time = math::constrain(sanitizeFinite(parameters.ramp_time, 2.f), 0.f, kMaxRampTimeS);
-	_parameters.safety_angle = math::constrain(sanitizeFinite(parameters.safety_angle, 0.12f), 0.f, kPi);
+	_parameters.abort_angle = math::constrain(sanitizeFinite(parameters.abort_angle, 0.8f), 0.f, kPi);
 	_parameters.rearm_delay = math::constrain(sanitizeFinite(parameters.rearm_delay, 1.f), 0.f, kMaxRearmDelayS);
 	_parameters.sign_x = parameters.sign_x;
 	_parameters.sign_y = parameters.sign_y;
 
-	if (!_parameters.enabled || _parameters.acceleration_limit <= FLT_EPSILON) {
+	if (!_parameters.enabled || _parameters.mode == Mode::Off || _parameters.acceleration_limit <= FLT_EPSILON) {
 		reset();
 	}
 }
@@ -74,6 +93,14 @@ void SuspendedLoadAntiSwing::setJointState(const JointState &joint_state)
 
 	if (!_joint_state.valid) {
 		_active = false;
+	}
+}
+
+void SuspendedLoadAntiSwing::setAppliedAccelerationNed(const Vector2f &applied_acceleration)
+{
+	if (PX4_ISFINITE(applied_acceleration(0)) && PX4_ISFINITE(applied_acceleration(1))) {
+		_applied_acceleration_ned = applied_acceleration;
+		_status.acceleration_applied_ned = applied_acceleration;
 	}
 }
 
@@ -106,6 +133,7 @@ Vector2f SuspendedLoadAntiSwing::update(float dt, uint64_t now, float yaw, bool 
 
 	if (_engaged && safetyLimitExceeded()) {
 		safetyDisengage(now);
+		slewRequestedAccelerationToZero(dt);
 		updateStatus(now);
 		return _last_acceleration_ned;
 	}
@@ -113,7 +141,16 @@ Vector2f SuspendedLoadAntiSwing::update(float dt, uint64_t now, float yaw, bool 
 	if (!_engaged) {
 		if (!activationReady(now)) {
 			_active = false;
-			_last_acceleration_ned.zero();
+
+			if (_rearming_after_safety) {
+				slewRequestedAccelerationToZero(dt);
+
+			} else {
+				_last_acceleration_ned.zero();
+			}
+
+			_raw_acceleration_ned.zero();
+			_applied_acceleration_ned.zero();
 			_last_ramp_scale = 0.f;
 			updateStatus(now);
 			return _last_acceleration_ned;
@@ -126,19 +163,35 @@ Vector2f SuspendedLoadAntiSwing::update(float dt, uint64_t now, float yaw, bool 
 		_last_acceleration_ned.zero();
 	}
 
-	const bool angle_model_valid = _parameters.max_angle <= FLT_EPSILON
-				       || _angle_filtered.norm() <= _parameters.max_angle;
-	const Vector2f angle_feedback = angle_model_valid ? _angle_filtered : Vector2f{};
+	Vector2f acceleration_body{};
 
-	Vector2f acceleration_body =
-		(angle_feedback * _parameters.angle_gain + _rate_filtered * _parameters.rate_gain) * _parameters.rope_length;
+	if (_parameters.mode == Mode::LegacyPD) {
+		const bool angle_model_valid = _parameters.max_angle <= FLT_EPSILON
+					       || _angle_filtered.norm() <= _parameters.max_angle;
+		const Vector2f angle_feedback = angle_model_valid ? _angle_filtered : Vector2f{};
+		acceleration_body =
+			(angle_feedback * _parameters.angle_gain + _rate_filtered * _parameters.rate_gain) * _parameters.rope_length;
+
+	} else if (_parameters.mode == Mode::EnergyDamping) {
+		const float damping_gain = 2.f * _parameters.energy_damping_ratio
+					   * sqrtf(CONSTANTS_ONE_G * _parameters.rope_length);
+		const float energy = perUnitMassEnergy(_angle_filtered, _rate_filtered, _parameters.rope_length);
+		acceleration_body = damping_gain * _rate_filtered
+				    * energyGate(energy, _parameters.energy_gate_start, _parameters.energy_gate_full);
+	}
+
+	Vector2f acceleration_ned_raw{};
+	const float yaw_cos = cosf(yaw);
+	const float yaw_sin = sinf(yaw);
+	acceleration_ned_raw(0) = yaw_cos * acceleration_body(0) - yaw_sin * acceleration_body(1);
+	acceleration_ned_raw(1) = yaw_sin * acceleration_body(0) + yaw_cos * acceleration_body(1);
+	_raw_acceleration_ned = acceleration_ned_raw;
+
 	acceleration_body = constrainNorm(acceleration_body, _parameters.acceleration_limit);
 	_last_ramp_scale = activationRamp(now);
 	acceleration_body *= _last_ramp_scale;
 
 	Vector2f acceleration_ned{};
-	const float yaw_cos = cosf(yaw);
-	const float yaw_sin = sinf(yaw);
 	acceleration_ned(0) = yaw_cos * acceleration_body(0) - yaw_sin * acceleration_body(1);
 	acceleration_ned(1) = yaw_sin * acceleration_body(0) + yaw_cos * acceleration_body(1);
 
@@ -149,6 +202,7 @@ Vector2f SuspendedLoadAntiSwing::update(float dt, uint64_t now, float yaw, bool 
 	}
 
 	_last_acceleration_ned = constrainNorm(acceleration_ned, _parameters.acceleration_limit);
+	_applied_acceleration_ned = _last_acceleration_ned;
 	_active = _last_acceleration_ned.norm_squared() > FLT_EPSILON;
 	updateStatus(now);
 
@@ -165,7 +219,9 @@ void SuspendedLoadAntiSwing::resetActivation(bool reset_flying_since)
 {
 	_angle_filtered.zero();
 	_rate_filtered.zero();
+	_raw_acceleration_ned.zero();
 	_last_acceleration_ned.zero();
+	_applied_acceleration_ned.zero();
 
 	if (reset_flying_since) {
 		_flying_since = 0;
@@ -185,7 +241,6 @@ void SuspendedLoadAntiSwing::resetActivation(bool reset_flying_since)
 
 void SuspendedLoadAntiSwing::safetyDisengage(uint64_t now)
 {
-	_last_acceleration_ned.zero();
 	_activation_ready_since = 0;
 	_engaged_since = 0;
 	_safety_rearm_since = now;
@@ -196,14 +251,40 @@ void SuspendedLoadAntiSwing::safetyDisengage(uint64_t now)
 	_safety_limited = true;
 }
 
+void SuspendedLoadAntiSwing::slewRequestedAccelerationToZero(float dt)
+{
+	_raw_acceleration_ned.zero();
+
+	if (_parameters.acceleration_slew_rate > FLT_EPSILON && PX4_ISFINITE(dt) && dt > FLT_EPSILON) {
+		const float max_delta = _parameters.acceleration_slew_rate * dt;
+		_last_acceleration_ned += constrainNorm(-_last_acceleration_ned, max_delta);
+
+	} else {
+		_last_acceleration_ned.zero();
+	}
+
+	_applied_acceleration_ned = _last_acceleration_ned;
+}
+
 void SuspendedLoadAntiSwing::updateStatus(uint64_t now)
 {
 	_status.angle_filtered = _angle_filtered;
 	_status.rate_filtered = _rate_filtered;
-	_status.acceleration_ned = _last_acceleration_ned;
+	_status.acceleration_raw_ned = _raw_acceleration_ned;
+	_status.acceleration_requested_ned = _last_acceleration_ned;
+	_status.acceleration_applied_ned = _applied_acceleration_ned;
 	_status.timestamp_sample = now;
 	_status.ramp_scale = _last_ramp_scale;
 	_status.angle_norm = _angle_filtered.norm();
+	_status.natural_frequency = naturalFrequency(_parameters.rope_length);
+	_status.energy_per_mass = perUnitMassEnergy(_angle_filtered, _rate_filtered, _parameters.rope_length);
+	_status.energy_gate = _parameters.mode == Mode::EnergyDamping
+			      ? energyGate(_status.energy_per_mass, _parameters.energy_gate_start, _parameters.energy_gate_full)
+			      : 0.f;
+	_status.damping_gain = _parameters.mode == Mode::EnergyDamping
+			       ? 2.f * _parameters.energy_damping_ratio * sqrtf(CONSTANTS_ONE_G * _parameters.rope_length)
+			       : 0.f;
+	_status.mode = (_parameters.enabled ? _parameters.mode : Mode::Off);
 	_status.active = _active;
 	_status.engaged = _engaged;
 	_status.rearming = _rearming_after_safety;
@@ -281,6 +362,7 @@ bool SuspendedLoadAntiSwing::measurementFresh(uint64_t now) const
 bool SuspendedLoadAntiSwing::measurementUsable(uint64_t now, bool flying) const
 {
 	return _parameters.enabled
+	       && _parameters.mode != Mode::Off
 	       && flying
 	       && _joint_state.valid
 	       && measurementFresh(now)
@@ -301,8 +383,10 @@ bool SuspendedLoadAntiSwing::activationReady(uint64_t now)
 				 || _angle_filtered.norm() <= _parameters.activation_max_angle;
 	const bool rate_ready = _parameters.activation_max_rate <= FLT_EPSILON
 				|| _rate_filtered.norm() <= _parameters.activation_max_rate;
+	const bool below_abort_angle = _parameters.abort_angle <= FLT_EPSILON
+				       || _angle_filtered.norm() <= _parameters.abort_angle;
 
-	if (!delay_ready || !angle_ready || !rate_ready) {
+	if (!delay_ready || !angle_ready || !rate_ready || !below_abort_angle) {
 		_activation_ready_since = 0;
 		return false;
 	}
@@ -321,8 +405,44 @@ bool SuspendedLoadAntiSwing::activationReady(uint64_t now)
 
 bool SuspendedLoadAntiSwing::safetyLimitExceeded() const
 {
-	return _parameters.safety_angle > FLT_EPSILON
-	       && _angle_filtered.norm() > _parameters.safety_angle;
+	return _parameters.abort_angle > FLT_EPSILON
+	       && _angle_filtered.norm() > _parameters.abort_angle;
+}
+
+float SuspendedLoadAntiSwing::naturalFrequency(float rope_length)
+{
+	if (!PX4_ISFINITE(rope_length) || rope_length < kMinRopeLength) {
+		return 0.f;
+	}
+
+	return sqrtf(CONSTANTS_ONE_G / rope_length);
+}
+
+float SuspendedLoadAntiSwing::perUnitMassEnergy(const Vector2f &angle, const Vector2f &rate, float rope_length)
+{
+	if (!PX4_ISFINITE(angle(0)) || !PX4_ISFINITE(angle(1))
+	    || !PX4_ISFINITE(rate(0)) || !PX4_ISFINITE(rate(1))
+	    || !PX4_ISFINITE(rope_length) || rope_length < kMinRopeLength) {
+		return 0.f;
+	}
+
+	const float kinetic = 0.5f * rope_length * rope_length * rate.norm_squared();
+	const float potential = CONSTANTS_ONE_G * rope_length
+				* (2.f - cosf(angle(0)) - cosf(angle(1)));
+	return fmaxf(kinetic + potential, 0.f);
+}
+
+float SuspendedLoadAntiSwing::energyGate(float energy, float gate_start, float gate_full)
+{
+	if (!PX4_ISFINITE(energy) || energy <= gate_start) {
+		return 0.f;
+	}
+
+	if (!PX4_ISFINITE(gate_full) || gate_full <= gate_start + FLT_EPSILON) {
+		return 1.f;
+	}
+
+	return math::constrain((energy - gate_start) / (gate_full - gate_start), 0.f, 1.f);
 }
 
 Vector2f SuspendedLoadAntiSwing::jointStateToBodyAngle() const

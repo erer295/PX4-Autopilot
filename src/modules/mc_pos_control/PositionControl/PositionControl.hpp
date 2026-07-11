@@ -39,6 +39,10 @@
 
 #pragma once
 
+#include "LadrcPositionControl.hpp"
+
+#include <stdint.h>
+
 #include <lib/mathlib/mathlib.h>
 #include <matrix/matrix/math.hpp>
 #include <uORB/topics/trajectory_setpoint.h>
@@ -77,9 +81,17 @@ struct PositionControlStates {
 class PositionControl
 {
 public:
+	enum class ControllerMode : int32_t {
+		PID = 0,
+		LadrcSecondOrder = 2,
+		HybridLadrcSecondOrderXY = 3,
+	};
 
 	PositionControl() = default;
 	~PositionControl() = default;
+
+	static ControllerMode sanitizeControllerMode(int32_t mode);
+	static const char *controllerModeName(ControllerMode mode);
 
 	/**
 	 * Set the position control gains
@@ -94,6 +106,24 @@ public:
 	 * @param D 3D vector of derivative gains
 	 */
 	void setVelocityGains(const matrix::Vector3f &P, const matrix::Vector3f &I, const matrix::Vector3f &D);
+
+	/**
+	 * Configure the optional LADRC position/velocity controller.
+	 */
+	void setLadrcPositionControlParameters(const LadrcPositionControl::Parameters &parameters)
+	{
+		_ladrc_position_control.setParameters(parameters);
+	}
+
+	void setControllerMode(ControllerMode mode);
+	ControllerMode controllerMode() const { return _controller_mode; }
+	bool ladrcPositionControlEnabled() const { return _controller_mode != ControllerMode::PID; }
+	void resetLadrcPositionControl();
+	const LadrcPositionControl &ladrcPositionControl() const { return _ladrc_position_control; }
+	const matrix::Vector3f &lastAppliedAcceleration() const { return _last_applied_acceleration; }
+	const matrix::Vector3f &controllerRawAcceleration() const { return _controller_raw_acceleration; }
+	const matrix::Vector3f &finalAccelerationCommand() const { return _final_acceleration_command; }
+	const matrix::Vector3f &velocityIntegral() const { return _vel_int; }
 
 	/**
 	 * Set the maximum velocity to execute with feed forward and position control
@@ -115,6 +145,7 @@ public:
 	 * @param margin of normalized thrust that is kept for horizontal control e.g. 0.3
 	 */
 	void setHorizontalThrustMargin(const float margin);
+	void setHorizontalAccelerationLimit(float limit) { _lim_acc_horizontal = math::max(limit, 0.f); }
 
 	/**
 	 * Set the maximum tilt angle in radians the output attitude is allowed to have
@@ -186,7 +217,7 @@ public:
 	 * @param dt time in seconds since last iteration
 	 * @return true if update succeeded and output setpoint is executable, false if not
 	 */
-	bool update(const float dt);
+	bool update(const float dt, uint64_t now = 0);
 
 	/**
 	 * Set the integral term in xy to 0.
@@ -230,6 +261,12 @@ private:
 
 	void _positionControl(); ///< Position proportional control
 	void _velocityControl(const float dt); ///< Velocity PID control
+	void _secondOrderLadrcPositionControl(const float dt); ///< Position/velocity second-order LADRC control
+	void _hybridSecondOrderLadrcXYControl(const float dt); ///< XY second-order LADRC plus original Z PID
+	void _accelerationControlAndThrustSaturation(const float dt,
+			matrix::Vector3f vel_error,
+			bool update_velocity_integral,
+			bool update_horizontal_integral = true);
 	void _accelerationControl(); ///< Acceleration setpoint processing
 
 	// Gains
@@ -237,6 +274,7 @@ private:
 	matrix::Vector3f _gain_vel_p; ///< Velocity control proportional gain
 	matrix::Vector3f _gain_vel_i; ///< Velocity control integral gain
 	matrix::Vector3f _gain_vel_d; ///< Velocity control derivative gain
+	LadrcPositionControl _ladrc_position_control{}; ///< optional LADRC replacement for velocity PID
 
 	// Limits
 	float _lim_vel_horizontal{}; ///< Horizontal velocity limit with feed forward and position control
@@ -246,6 +284,7 @@ private:
 	float _lim_thr_max{}; ///< Maximum collective thrust allowed as output [-1,0] e.g. -0.1
 	float _lim_thr_xy_margin{}; ///< Margin to keep for horizontal control when saturating prioritized vertical thrust
 	float _lim_tilt{}; ///< Maximum tilt from level the output attitude is allowed to have
+	float _lim_acc_horizontal{100.f}; ///< total horizontal acceleration budget
 
 	float _hover_thrust{}; ///< Thrust [HOVER_THRUST_MIN, HOVER_THRUST_MAX] with which the vehicle hovers not accelerating down or up with level orientation
 	bool _decouple_horizontal_and_vertical_acceleration{true}; ///< Ignore vertical acceleration setpoint to remove its effect on the tilt setpoint
@@ -255,7 +294,12 @@ private:
 	matrix::Vector3f _vel; /**< current velocity */
 	matrix::Vector3f _vel_dot; /**< velocity derivative (replacement for acceleration estimate) */
 	matrix::Vector3f _vel_int; /**< integral term of the velocity controller */
+	matrix::Vector3f _last_acc_sp_velocity{}; /**< last velocity-loop acceleration correction */
+	matrix::Vector3f _last_applied_acceleration{}; /**< acceleration reconstructed from final saturated thrust */
+	matrix::Vector3f _controller_raw_acceleration{}; /**< controller correction before anti-swing composition */
+	matrix::Vector3f _final_acceleration_command{}; /**< acceleration after anti-swing composition */
 	float _yaw{}; /**< current heading */
+	uint64_t _control_timestamp{0}; /**< caller-provided monotonic time for anti-swing freshness checks */
 
 	// Setpoints
 	matrix::Vector3f _pos_sp; /**< desired position */
@@ -267,4 +311,6 @@ private:
 
 	SuspendedLoadAntiSwing _suspended_load_anti_swing{};
 	bool _suspended_load_anti_swing_flying{false};
+	ControllerMode _controller_mode{ControllerMode::PID};
+	ControllerMode _last_controller_mode{ControllerMode::PID};
 };

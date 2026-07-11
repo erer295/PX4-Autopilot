@@ -57,6 +57,7 @@
 #include <px4_platform_common/posix.h>
 #include <px4_platform_common/tasks.h>
 #include <uORB/Publication.hpp>
+#include <uORB/PublicationMulti.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
@@ -88,12 +89,15 @@ public:
 
 	/** @see ModuleBase */
 	static int print_usage(const char *reason = nullptr);
+	int print_status() override;
 
 	bool init();
 
 private:
 	void Run() override;
+	void updatePositionControllerSelection();
 	void updateSuspendedLoadJointState();
+	void publishPositionLadrcStatus();
 	void publishSuspendedLoadAntiSwingStatus();
 
 	TakeoffHandling _takeoff; /**< state machine and ramp to bring the vehicle off the ground without jumps */
@@ -103,7 +107,12 @@ private:
 	uORB::PublicationData<takeoff_status_s>              _takeoff_status_pub{ORB_ID(takeoff_status)};
 	uORB::Publication<vehicle_attitude_setpoint_s>	     _vehicle_attitude_setpoint_pub{ORB_ID(vehicle_attitude_setpoint)};
 	uORB::Publication<vehicle_local_position_setpoint_s> _local_pos_sp_pub{ORB_ID(vehicle_local_position_setpoint)};	/**< vehicle local position setpoint publication */
-	uORB::Publication<debug_array_s> _suspended_load_anti_swing_status_pub{ORB_ID(debug_array)};
+	// Keep controller diagnostics in dedicated uORB instances. Instance 0 is
+	// occupied by the Gazebo suspended-load joint-state bridge, so publishing
+	// these messages on the primary instance overwrites that bridge (and makes
+	// the status streams ambiguous in a ULog).
+	uORB::PublicationMulti<debug_array_s> _position_ladrc_status_pub{ORB_ID(debug_array)};
+	uORB::PublicationMulti<debug_array_s> _suspended_load_anti_swing_status_pub{ORB_ID(debug_array)};
 
 	uORB::SubscriptionCallbackWorkItem _local_pos_sub{this, ORB_ID(vehicle_local_position)};	/**< vehicle local position */
 
@@ -148,6 +157,24 @@ private:
 		(ParamFloat<px4::params::MPC_Z_VEL_P_ACC>)  _param_mpc_z_vel_p_acc,
 		(ParamFloat<px4::params::MPC_Z_VEL_I_ACC>)  _param_mpc_z_vel_i_acc,
 		(ParamFloat<px4::params::MPC_Z_VEL_D_ACC>)  _param_mpc_z_vel_d_acc,
+		(ParamInt<px4::params::MC_PLADRC_EN>)       _param_mc_pladrc_en,
+		(ParamFloat<px4::params::MC_PLADRC_B0_XY>)  _param_mc_pladrc_b0_xy,
+		(ParamFloat<px4::params::MC_PLADRC_B0_Z>)   _param_mc_pladrc_b0_z,
+		(ParamFloat<px4::params::MC_PLADRC_WC_XY>)  _param_mc_pladrc_wc_xy,
+		(ParamFloat<px4::params::MC_PLADRC_WC_Z>)   _param_mc_pladrc_wc_z,
+		(ParamFloat<px4::params::MC_PLADRC_WO_XY>)  _param_mc_pladrc_wo_xy,
+		(ParamFloat<px4::params::MC_PLADRC_WO_Z>)   _param_mc_pladrc_wo_z,
+		(ParamFloat<px4::params::MC_PLADRC_LIM_XY>) _param_mc_pladrc_lim_xy,
+		(ParamFloat<px4::params::MC_PLADRC_LIM_UP>) _param_mc_pladrc_lim_up,
+		(ParamFloat<px4::params::MC_PLADRC_LIM_DN>) _param_mc_pladrc_lim_dn,
+		(ParamFloat<px4::params::MC_PLADRC_D_XY>)   _param_mc_pladrc_d_xy,
+		(ParamFloat<px4::params::MC_PLADRC_D_Z>)    _param_mc_pladrc_d_z,
+		(ParamBool<px4::params::MC_PLADRC_TD_EN>)   _param_mc_pladrc_td_en,
+		(ParamFloat<px4::params::MC_PLADRC_TD_WXY>) _param_mc_pladrc_td_wxy,
+		(ParamFloat<px4::params::MC_PLADRC_TD_WZ>)  _param_mc_pladrc_td_wz,
+		(ParamFloat<px4::params::MC_PLADRC_TD_AXY>) _param_mc_pladrc_td_axy,
+		(ParamFloat<px4::params::MC_PLADRC_TD_AZ>)  _param_mc_pladrc_td_az,
+		(ParamFloat<px4::params::MC_PLADRC_TD_DMP>) _param_mc_pladrc_td_dmp,
 		(ParamFloat<px4::params::MPC_XY_VEL_MAX>)   _param_mpc_xy_vel_max,
 		(ParamFloat<px4::params::MPC_Z_V_AUTO_UP>)  _param_mpc_z_v_auto_up,
 		(ParamFloat<px4::params::MPC_Z_VEL_MAX_UP>) _param_mpc_z_vel_max_up,
@@ -200,10 +227,14 @@ private:
 
 		// Optional suspended-load anti-swing outer loop
 		(ParamBool<px4::params::MC_HANG_AS_EN>) _param_mc_hang_as_en,
+		(ParamInt<px4::params::MC_HANG_MODE>) _param_mc_hang_mode,
 		(ParamBool<px4::params::MC_HANG_OFFB>) _param_mc_hang_offb,
 		(ParamFloat<px4::params::MC_HANG_LEN>) _param_mc_hang_len,
 		(ParamFloat<px4::params::MC_HANG_K_ANG>) _param_mc_hang_k_ang,
 		(ParamFloat<px4::params::MC_HANG_K_RATE>) _param_mc_hang_k_rate,
+		(ParamFloat<px4::params::MC_HANG_ZETA>) _param_mc_hang_zeta,
+		(ParamFloat<px4::params::MC_HANG_E_MIN>) _param_mc_hang_e_min,
+		(ParamFloat<px4::params::MC_HANG_E_FULL>) _param_mc_hang_e_full,
 		(ParamFloat<px4::params::MC_HANG_ACC_LIM>) _param_mc_hang_acc_lim,
 		(ParamFloat<px4::params::MC_HANG_ACC_SLW>) _param_mc_hang_acc_slw,
 		(ParamFloat<px4::params::MC_HANG_LPF_HZ>) _param_mc_hang_lpf_hz,
@@ -217,7 +248,12 @@ private:
 		(ParamFloat<px4::params::MC_HANG_ACT_T>) _param_mc_hang_act_t,
 		(ParamFloat<px4::params::MC_HANG_RAMP_T>) _param_mc_hang_ramp_t,
 		(ParamFloat<px4::params::MC_HANG_SAFE_A>) _param_mc_hang_safe_a,
-		(ParamFloat<px4::params::MC_HANG_REARM>) _param_mc_hang_rearm
+		(ParamFloat<px4::params::MC_HANG_REARM>) _param_mc_hang_rearm,
+		(ParamBool<px4::params::MC_HANG_FRQ_EN>) _param_mc_hang_frq_en,
+		(ParamFloat<px4::params::MC_HANG_WC_R>) _param_mc_hang_wc_r,
+		(ParamFloat<px4::params::MC_HANG_WO_R>) _param_mc_hang_wo_r,
+		(ParamFloat<px4::params::MC_HANG_WO_MIN>) _param_mc_hang_wo_min,
+		(ParamFloat<px4::params::MC_HANG_TOT_A>) _param_mc_hang_tot_a
 	);
 
 	math::WelfordMean<float> _sample_interval_s{};
@@ -237,6 +273,9 @@ private:
 	hrt_abstime _last_warn{0}; /**< timer when the last warn message was sent out */
 
 	bool _hover_thrust_initialized{false};
+	PositionControl::ControllerMode _position_controller_mode{PositionControl::ControllerMode::PID};
+	bool _position_controller_selection_initialized{false};
+	bool _reported_position_ladrc_td_en{false};
 
 	/** Timeout in us for trajectory data to get considered invalid */
 	static constexpr uint64_t TRAJECTORY_STREAM_TIMEOUT_US = 500_ms;

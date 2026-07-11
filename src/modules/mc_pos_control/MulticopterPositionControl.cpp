@@ -37,9 +37,46 @@
 #include <lib/mathlib/mathlib.h>
 #include <lib/matrix/matrix/math.hpp>
 #include <px4_platform_common/events.h>
+#include <string.h>
 #include "PositionControl/ControlMath.hpp"
 
 using namespace matrix;
+
+namespace
+{
+
+constexpr uint16_t kPositionLadrcDebugArrayId = 683;
+constexpr const char kPositionLadrcDebugArrayName[] = "posladrc";
+
+enum PositionLadrcDebugArrayIndex : uint8_t {
+	POS_LADRC_TD_VX = 0,
+	POS_LADRC_TD_VY,
+	POS_LADRC_TD_VZ,
+	POS_LADRC_TD_AX,
+	POS_LADRC_TD_AY,
+	POS_LADRC_TD_AZ,
+	POS_LADRC_ACC_X,
+	POS_LADRC_ACC_Y,
+	POS_LADRC_ACC_Z,
+	POS_LADRC_DIST_X,
+	POS_LADRC_DIST_Y,
+	POS_LADRC_DIST_Z,
+	POS_LADRC_ENABLED,
+	POS_LADRC_TD_ENABLED,
+	POS_LADRC_MODE,
+	POS_LADRC_OBS_IN_X,
+	POS_LADRC_OBS_IN_Y,
+	POS_LADRC_RAW_X,
+	POS_LADRC_RAW_Y,
+	POS_LADRC_FINAL_X,
+	POS_LADRC_FINAL_Y,
+	POS_LADRC_APPLIED_X,
+	POS_LADRC_APPLIED_Y,
+	POS_LADRC_WC_XY,
+	POS_LADRC_WO_XY,
+};
+
+} // namespace
 
 MulticopterPositionControl::MulticopterPositionControl(bool vtol) :
 	ModuleParams(nullptr),
@@ -68,6 +105,30 @@ bool MulticopterPositionControl::init()
 	ScheduleNow();
 
 	return true;
+}
+
+void MulticopterPositionControl::updatePositionControllerSelection()
+{
+	const PositionControl::ControllerMode controller_mode =
+		PositionControl::sanitizeControllerMode(_param_mc_pladrc_en.get());
+	const bool td_enabled = _param_mc_pladrc_td_en.get();
+
+	if (_param_mc_pladrc_en.get() == 1) {
+		PX4_WARN("MC_PLADRC_EN=1 was removed; using PID (select 2 or 3 for LADRC2)");
+	}
+
+	if (!_position_controller_selection_initialized
+	    || controller_mode != _position_controller_mode
+	    || td_enabled != _reported_position_ladrc_td_en) {
+		_position_controller_mode = controller_mode;
+		_reported_position_ladrc_td_en = td_enabled;
+		_position_controller_selection_initialized = true;
+
+		PX4_INFO("MC position outer loop: %s (MC_PLADRC_EN=%d, MC_PLADRC_TD_EN=%d)",
+			 PositionControl::controllerModeName(_position_controller_mode),
+			 (int)_param_mc_pladrc_en.get(),
+			 (int)td_enabled);
+	}
 }
 
 void MulticopterPositionControl::parameters_update(bool force)
@@ -198,14 +259,65 @@ void MulticopterPositionControl::parameters_update(bool force)
 			Vector3f(_param_mpc_xy_vel_p_acc.get(), _param_mpc_xy_vel_p_acc.get(), _param_mpc_z_vel_p_acc.get()),
 			Vector3f(_param_mpc_xy_vel_i_acc.get(), _param_mpc_xy_vel_i_acc.get(), _param_mpc_z_vel_i_acc.get()),
 			Vector3f(_param_mpc_xy_vel_d_acc.get(), _param_mpc_xy_vel_d_acc.get(), _param_mpc_z_vel_d_acc.get()));
+
+		LadrcPositionControl::Parameters position_ladrc_parameters{};
+		float horizontal_wc = _param_mc_pladrc_wc_xy.get();
+		float horizontal_wo = _param_mc_pladrc_wo_xy.get();
+		const float horizontal_acceleration_budget = math::min(_param_mpc_acc_hor_max.get(),
+										 _param_mc_hang_tot_a.get());
+
+		if (_param_mc_hang_frq_en.get()) {
+			const float natural_frequency = SuspendedLoadAntiSwing::naturalFrequency(_param_mc_hang_len.get());
+			LadrcPositionControl::frequencyScheduledXYBandwidths(horizontal_wc, horizontal_wo, natural_frequency,
+					_param_mc_hang_wc_r.get(), _param_mc_hang_wo_r.get(), _param_mc_hang_wo_min.get(),
+					horizontal_wc, horizontal_wo);
+		}
+
+		position_ladrc_parameters.b0 = Vector3f(_param_mc_pladrc_b0_xy.get(),
+							_param_mc_pladrc_b0_xy.get(),
+							_param_mc_pladrc_b0_z.get());
+		position_ladrc_parameters.wc = Vector3f(horizontal_wc,
+							horizontal_wc,
+							_param_mc_pladrc_wc_z.get());
+		position_ladrc_parameters.wo = Vector3f(horizontal_wo,
+							horizontal_wo,
+							_param_mc_pladrc_wo_z.get());
+		position_ladrc_parameters.acceleration_damping = Vector3f(_param_mc_pladrc_d_xy.get(),
+				_param_mc_pladrc_d_xy.get(),
+				_param_mc_pladrc_d_z.get());
+		// MC_HANG_TOT_A is the total vehicle horizontal-acceleration budget,
+		// including the primary LADRC command. Keep the LADRC-specific limit as
+		// an additional, never larger bound.
+		position_ladrc_parameters.horizontal_acceleration_limit = math::min(_param_mc_pladrc_lim_xy.get(),
+											 horizontal_acceleration_budget);
+		position_ladrc_parameters.upward_acceleration_limit = _param_mc_pladrc_lim_up.get();
+		position_ladrc_parameters.downward_acceleration_limit = _param_mc_pladrc_lim_dn.get();
+		position_ladrc_parameters.td_enabled = _param_mc_pladrc_td_en.get();
+		position_ladrc_parameters.td_bandwidth = Vector3f(_param_mc_pladrc_td_wxy.get(),
+				_param_mc_pladrc_td_wxy.get(),
+				_param_mc_pladrc_td_wz.get());
+		position_ladrc_parameters.td_acceleration_limit = Vector3f(_param_mc_pladrc_td_axy.get(),
+				_param_mc_pladrc_td_axy.get(),
+				_param_mc_pladrc_td_az.get());
+		position_ladrc_parameters.td_damping_ratio = _param_mc_pladrc_td_dmp.get();
+
+		_control.setLadrcPositionControlParameters(position_ladrc_parameters);
+		_control.setControllerMode(PositionControl::sanitizeControllerMode(_param_mc_pladrc_en.get()));
+		_control.setHorizontalAccelerationLimit(horizontal_acceleration_budget);
+		updatePositionControllerSelection();
+
 		_control.setHorizontalThrustMargin(_param_mpc_thr_xy_marg.get());
 		_control.decoupleHorizontalAndVecticalAcceleration(_param_mpc_acc_decouple.get());
 
 		SuspendedLoadAntiSwing::Parameters anti_swing_parameters{};
 		anti_swing_parameters.enabled = _param_mc_hang_as_en.get();
+		anti_swing_parameters.mode = static_cast<SuspendedLoadAntiSwing::Mode>(_param_mc_hang_mode.get());
 		anti_swing_parameters.rope_length = _param_mc_hang_len.get();
 		anti_swing_parameters.angle_gain = _param_mc_hang_k_ang.get();
 		anti_swing_parameters.rate_gain = _param_mc_hang_k_rate.get();
+		anti_swing_parameters.energy_damping_ratio = _param_mc_hang_zeta.get();
+		anti_swing_parameters.energy_gate_start = _param_mc_hang_e_min.get();
+		anti_swing_parameters.energy_gate_full = _param_mc_hang_e_full.get();
 		anti_swing_parameters.acceleration_limit = _param_mc_hang_acc_lim.get();
 		anti_swing_parameters.acceleration_slew_rate = _param_mc_hang_acc_slw.get();
 		anti_swing_parameters.filter_cutoff_hz = _param_mc_hang_lpf_hz.get();
@@ -218,7 +330,7 @@ void MulticopterPositionControl::parameters_update(bool force)
 		anti_swing_parameters.activation_max_rate = _param_mc_hang_act_r.get();
 		anti_swing_parameters.activation_stable_time = _param_mc_hang_act_t.get();
 		anti_swing_parameters.ramp_time = _param_mc_hang_ramp_t.get();
-		anti_swing_parameters.safety_angle = _param_mc_hang_safe_a.get();
+		anti_swing_parameters.abort_angle = _param_mc_hang_safe_a.get();
 		anti_swing_parameters.rearm_delay = _param_mc_hang_rearm.get();
 		_control.setSuspendedLoadAntiSwingParameters(anti_swing_parameters);
 
@@ -540,6 +652,7 @@ void MulticopterPositionControl::Run()
 
 				// prevent any integrator windup
 				_control.resetIntegral();
+				_control.resetLadrcPositionControl();
 			}
 
 			// limit tilt during takeoff ramupup
@@ -594,7 +707,7 @@ void MulticopterPositionControl::Run()
 			const hrt_abstime now = hrt_absolute_time();
 
 			// Run position control
-			if (_control.update(dt)) {
+			if (_control.update(dt, now)) {
 
 				// Valid control update - store for fallback
 				_last_valid_setpoint = _setpoint;
@@ -609,17 +722,18 @@ void MulticopterPositionControl::Run()
 				}
 
 				// Still failing / not within timeout - Go to failsafe
-				if (!_control.update(dt)) {
+				if (!_control.update(dt, now)) {
 
 					_vehicle_constraints = {0, NAN, NAN, false, {}}; // reset constraints
 
 					_control.setInputSetpoint(generateFailsafeSetpoint(vehicle_local_position.timestamp_sample, states, true));
 					_control.setVelocityLimits(_param_mpc_xy_vel_max.get(), _param_mpc_z_vel_max_up.get(), _param_mpc_z_vel_max_dn.get());
 
-					_control.update(dt);
+					_control.update(dt, now);
 				}
 			}
 
+			publishPositionLadrcStatus();
 			publishSuspendedLoadAntiSwingStatus();
 
 			// Publish internal position control setpoints
@@ -642,6 +756,7 @@ void MulticopterPositionControl::Run()
 						    vehicle_local_position.timestamp_sample);
 			_control.setSuspendedLoadAntiSwingFlying(false);
 			_control.resetIntegral();
+			_control.resetLadrcPositionControl();
 		}
 
 		// Publish takeoff status
@@ -672,6 +787,55 @@ void MulticopterPositionControl::updateSuspendedLoadJointState()
 			}
 		}
 	}
+}
+
+void MulticopterPositionControl::publishPositionLadrcStatus()
+{
+	if (!_control.ladrcPositionControlEnabled()) {
+		return;
+	}
+
+	const LadrcPositionControl &position_ladrc = _control.ladrcPositionControl();
+	const Vector3f &velocity_sp_td = position_ladrc.velocitySetpointTD();
+	const Vector3f &td_velocity_derivative = position_ladrc.tdVelocityDerivative();
+	const Vector3f &acceleration_sp = position_ladrc.accelerationSetpoint();
+	const Vector3f &disturbance_compensation = position_ladrc.disturbanceCompensation();
+	const Vector3f &observer_input = position_ladrc.observerInput();
+	const Vector3f &controller_raw = _control.controllerRawAcceleration();
+	const Vector3f &final_command = _control.finalAccelerationCommand();
+	const Vector3f &applied_acceleration = _control.lastAppliedAcceleration();
+
+	debug_array_s debug_array{};
+	debug_array.timestamp = hrt_absolute_time();
+	debug_array.id = kPositionLadrcDebugArrayId;
+	memset(debug_array.name, 0, sizeof(debug_array.name));
+	strncpy(debug_array.name, kPositionLadrcDebugArrayName, sizeof(debug_array.name) - 1);
+	debug_array.data[POS_LADRC_TD_VX] = velocity_sp_td(0);
+	debug_array.data[POS_LADRC_TD_VY] = velocity_sp_td(1);
+	debug_array.data[POS_LADRC_TD_VZ] = velocity_sp_td(2);
+	debug_array.data[POS_LADRC_TD_AX] = td_velocity_derivative(0);
+	debug_array.data[POS_LADRC_TD_AY] = td_velocity_derivative(1);
+	debug_array.data[POS_LADRC_TD_AZ] = td_velocity_derivative(2);
+	debug_array.data[POS_LADRC_ACC_X] = acceleration_sp(0);
+	debug_array.data[POS_LADRC_ACC_Y] = acceleration_sp(1);
+	debug_array.data[POS_LADRC_ACC_Z] = acceleration_sp(2);
+	debug_array.data[POS_LADRC_DIST_X] = disturbance_compensation(0);
+	debug_array.data[POS_LADRC_DIST_Y] = disturbance_compensation(1);
+	debug_array.data[POS_LADRC_DIST_Z] = disturbance_compensation(2);
+	debug_array.data[POS_LADRC_ENABLED] = _control.ladrcPositionControlEnabled() ? 1.f : 0.f;
+	debug_array.data[POS_LADRC_TD_ENABLED] = _param_mc_pladrc_td_en.get() ? 1.f : 0.f;
+	debug_array.data[POS_LADRC_MODE] = static_cast<float>(static_cast<int32_t>(_control.controllerMode()));
+	debug_array.data[POS_LADRC_OBS_IN_X] = observer_input(0);
+	debug_array.data[POS_LADRC_OBS_IN_Y] = observer_input(1);
+	debug_array.data[POS_LADRC_RAW_X] = controller_raw(0);
+	debug_array.data[POS_LADRC_RAW_Y] = controller_raw(1);
+	debug_array.data[POS_LADRC_FINAL_X] = final_command(0);
+	debug_array.data[POS_LADRC_FINAL_Y] = final_command(1);
+	debug_array.data[POS_LADRC_APPLIED_X] = applied_acceleration(0);
+	debug_array.data[POS_LADRC_APPLIED_Y] = applied_acceleration(1);
+	debug_array.data[POS_LADRC_WC_XY] = position_ladrc.controllerBandwidth()(0);
+	debug_array.data[POS_LADRC_WO_XY] = position_ladrc.observerBandwidth()(0);
+	_position_ladrc_status_pub.publish(debug_array);
 }
 
 void MulticopterPositionControl::publishSuspendedLoadAntiSwingStatus()
@@ -808,6 +972,16 @@ int MulticopterPositionControl::task_spawn(int argc, char *argv[])
 	return PX4_ERROR;
 }
 
+int MulticopterPositionControl::print_status()
+{
+	PX4_INFO("MC position outer loop: %s (MC_PLADRC_EN=%d, MC_PLADRC_TD_EN=%d)",
+		 PositionControl::controllerModeName(_position_controller_mode),
+		 (int)_param_mc_pladrc_en.get(),
+		 (int)_param_mc_pladrc_td_en.get());
+
+	return 0;
+}
+
 int MulticopterPositionControl::custom_command(int argc, char *argv[])
 {
 	return print_usage("unknown command");
@@ -825,6 +999,14 @@ int MulticopterPositionControl::print_usage(const char *reason)
 The controller has two loops: a P loop for position error and a PID loop for velocity error.
 Output of the velocity controller is thrust vector that is split to thrust direction
 (i.e. rotation matrix for multicopter orientation) and thrust scalar (i.e. multicopter thrust itself).
+
+The default outer-loop implementation is the original PX4 position P plus velocity PID path.
+Set MC_PLADRC_EN=0 for PID, 2 for all-axis second-order LADRC, or 3 for
+second-order LADRC on X/Y plus original PX4 PID on Z. Value 1 is retired and
+falls back to PID. The second-order LADRC uses position, velocity and
+disturbance ESO states and directly generates the acceleration correction.
+Set MC_PLADRC_TD_EN=1 to shape the LADRC velocity-setpoint input with the
+tracking differentiator.
 
 The controller doesn't use Euler angles for its work, they are generated only for more human-friendly control and
 logging.

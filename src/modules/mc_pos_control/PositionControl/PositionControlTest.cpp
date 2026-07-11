@@ -81,10 +81,10 @@ public:
 		_position_control.setHoverThrust(.5f);
 	}
 
-	bool runController()
+	bool runController(uint64_t now = 0)
 	{
 		_position_control.setInputSetpoint(_input_setpoint);
-		const bool ret = _position_control.update(.1f);
+		const bool ret = _position_control.update(.1f, now);
 		_position_control.getLocalPositionSetpoint(_output_setpoint);
 		_position_control.getAttitudeSetpoint(_attitude);
 		return ret;
@@ -383,4 +383,143 @@ TEST_F(PositionControlBasicTest, IntegratorWindupWithInvalidSetpoint)
 	Eulerf euler_att(Quatf(_attitude.q_d));
 	EXPECT_FLOAT_EQ(euler_att.phi(), 0.f);
 	EXPECT_FLOAT_EQ(euler_att.theta(), 0.f);
+}
+
+TEST_F(PositionControlBasicTest, HybridSecondOrderLadrcKeepsOriginalZPid)
+{
+	LadrcPositionControl::Parameters ladrc_parameters{};
+	ladrc_parameters.td_enabled = false;
+	_position_control.setLadrcPositionControlParameters(ladrc_parameters);
+	_position_control.setControllerMode(PositionControl::ControllerMode::HybridLadrcSecondOrderXY);
+
+	Vector3f(0.2f, -0.15f, -0.2f).copyTo(_input_setpoint.position);
+	EXPECT_TRUE(runController());
+	EXPECT_TRUE(runController());
+
+	EXPECT_FLOAT_EQ(_position_control.velocityIntegral()(0), 0.f);
+	EXPECT_FLOAT_EQ(_position_control.velocityIntegral()(1), 0.f);
+	EXPECT_NE(_position_control.velocityIntegral()(2), 0.f);
+	EXPECT_EQ(_position_control.ladrcPositionControl().observerInput(),
+		  _position_control.lastAppliedAcceleration());
+	EXPECT_EQ(_position_control.controllerMode(), PositionControl::ControllerMode::HybridLadrcSecondOrderXY);
+}
+
+TEST_F(PositionControlBasicTest, HybridSecondOrderLadrcAppliesZPidOnTakeoffStep)
+{
+	LadrcPositionControl::Parameters ladrc_parameters{};
+	ladrc_parameters.td_enabled = false;
+	_position_control.setLadrcPositionControlParameters(ladrc_parameters);
+	_position_control.setControllerMode(PositionControl::ControllerMode::HybridLadrcSecondOrderXY);
+
+	// In NED coordinates a negative Z setpoint commands a climb. The first
+	// hybrid update must retain the original Z velocity-PID command instead of
+	// cancelling it with a mode-entry integrator adjustment.
+	Vector3f(0.f, 0.f, -0.2f).copyTo(_input_setpoint.position);
+	EXPECT_TRUE(runController());
+
+	EXPECT_LT(_output_setpoint.acceleration[2], -0.1f);
+	EXPECT_LT(_output_setpoint.thrust[2], -0.5f);
+}
+
+TEST_F(PositionControlBasicTest, AntiSwingUsesOnlyRemainingHorizontalAccelerationBudget)
+{
+	_position_control.setHorizontalAccelerationLimit(3.f);
+
+	SuspendedLoadAntiSwing::Parameters anti_swing_parameters{};
+	anti_swing_parameters.enabled = true;
+	anti_swing_parameters.mode = SuspendedLoadAntiSwing::Mode::EnergyDamping;
+	anti_swing_parameters.energy_damping_ratio = 0.5f;
+	anti_swing_parameters.energy_gate_start = 0.f;
+	anti_swing_parameters.energy_gate_full = 0.f;
+	anti_swing_parameters.acceleration_limit = 0.6f;
+	anti_swing_parameters.acceleration_slew_rate = 0.f;
+	anti_swing_parameters.filter_cutoff_hz = 0.f;
+	anti_swing_parameters.activation_delay = 0.f;
+	anti_swing_parameters.activation_max_angle = 0.f;
+	anti_swing_parameters.activation_max_rate = 0.f;
+	anti_swing_parameters.activation_stable_time = 0.f;
+	anti_swing_parameters.ramp_time = 0.f;
+	anti_swing_parameters.abort_angle = 0.8f;
+	_position_control.setSuspendedLoadAntiSwingParameters(anti_swing_parameters);
+	_position_control.setSuspendedLoadAntiSwingFlying(true);
+
+	SuspendedLoadAntiSwing::JointState joint_state{};
+	joint_state.pitch_angle = 0.1f;
+	joint_state.pitch_rate = 0.5f;
+	joint_state.timestamp_sample = 1000000;
+	joint_state.valid = true;
+	_position_control.setSuspendedLoadJointState(joint_state);
+
+	Vector3f{}.copyTo(_input_setpoint.velocity);
+	Vector3f(2.9f, 0.f, 0.f).copyTo(_input_setpoint.acceleration);
+	EXPECT_TRUE(runController(joint_state.timestamp_sample));
+
+	const auto &status = _position_control.suspendedLoadAntiSwingStatus();
+	EXPECT_LE(_position_control.finalAccelerationCommand().xy().norm(), 3.00001f);
+	EXPECT_GT(status.acceleration_requested_ned.norm(), 0.f);
+	EXPECT_NEAR(status.acceleration_applied_ned.norm(), status.acceleration_requested_ned.norm(), 1e-4f);
+}
+
+TEST_F(PositionControlBasicTest, HorizontalAccelerationBudgetLimitsBaseCommandWithoutAntiSwing)
+{
+	_position_control.setHorizontalAccelerationLimit(0.8f);
+	Vector3f(1.f, 0.f, 0.f).copyTo(_input_setpoint.velocity);
+
+	EXPECT_TRUE(runController());
+	EXPECT_LE(_position_control.finalAccelerationCommand().xy().norm(), 0.80001f);
+	EXPECT_NEAR(_position_control.finalAccelerationCommand()(0), 0.8f, 1e-4f);
+}
+
+TEST(PositionControlModeTest, SanitizesAndNamesHybridMode)
+{
+	EXPECT_EQ(PositionControl::sanitizeControllerMode(1), PositionControl::ControllerMode::PID);
+	EXPECT_EQ(PositionControl::sanitizeControllerMode(3),
+		  PositionControl::ControllerMode::HybridLadrcSecondOrderXY);
+	EXPECT_STREQ(PositionControl::controllerModeName(PositionControl::ControllerMode::HybridLadrcSecondOrderXY),
+		     "LADRC2-XY+PID-Z");
+	EXPECT_EQ(PositionControl::sanitizeControllerMode(99), PositionControl::ControllerMode::PID);
+}
+
+TEST(LadrcPositionControlTest, LargePositionStepDoesNotSeedDisturbanceEstimate)
+{
+	LadrcPositionControl controller;
+	LadrcPositionControl::Parameters parameters{};
+	parameters.td_enabled = false;
+	controller.setParameters(parameters);
+	controller.setEnabled(true);
+
+	const Vector3f position{};
+	const Vector3f velocity{};
+	const Vector3f velocity_dot{};
+	const Vector3f position_setpoint{0.f, 0.f, -10.f};
+	const Vector3f velocity_setpoint{};
+	const Vector3f applied_acceleration{};
+
+	controller.initializeSecondOrderBumpless(position, velocity, position_setpoint, velocity_setpoint,
+			applied_acceleration);
+	const Vector3f acceleration = controller.updateSecondOrder(position, velocity, position_setpoint, velocity_setpoint,
+				      velocity_dot, 0.01f, false);
+
+	EXPECT_LT(acceleration(2), 0.f);
+	EXPECT_NEAR(controller.disturbanceCompensation()(2), 0.f, 1e-6f);
+}
+
+TEST(PositionControlModeTest, FrequencyScheduleTracksRopeNaturalFrequency)
+{
+	float previous_wc = 100.f;
+	float previous_wo = 100.f;
+
+	for (const float rope_length : {0.4f, 0.6f, 0.8f}) {
+		float effective_wc = 0.f;
+		float effective_wo = 0.f;
+		LadrcPositionControl::frequencyScheduledXYBandwidths(10.f, 20.f,
+				SuspendedLoadAntiSwing::naturalFrequency(rope_length), 0.45f, 1.5f, 2.5f,
+				effective_wc, effective_wo);
+
+		EXPECT_LT(effective_wc, previous_wc);
+		EXPECT_LT(effective_wo, previous_wo);
+		EXPECT_GE(effective_wo, 2.5f * effective_wc);
+		previous_wc = effective_wc;
+		previous_wo = effective_wo;
+	}
 }

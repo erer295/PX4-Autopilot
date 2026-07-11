@@ -37,3 +37,5 @@ px4_add_library(SuspendedLoadAntiSwing
 	SuspendedLoadJointStateDebugArray.hpp
 )
 target_include_directories(SuspendedLoadAntiSwing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+px4_add_unit_gtest(SRC SuspendedLoadAntiSwingTest.cpp LINKLIBS SuspendedLoadAntiSwing)

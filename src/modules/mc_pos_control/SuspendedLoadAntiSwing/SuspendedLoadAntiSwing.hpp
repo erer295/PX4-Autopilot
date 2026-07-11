@@ -21,11 +21,21 @@
 class SuspendedLoadAntiSwing
 {
 public:
+	enum class Mode : int32_t {
+		Off = 0,
+		LegacyPD = 1,
+		EnergyDamping = 2,
+	};
+
 	struct Parameters {
 		bool enabled{false};
+		Mode mode{Mode::LegacyPD};
 		float rope_length{0.6f};
 		float angle_gain{0.f};
 		float rate_gain{1.5f};
+		float energy_damping_ratio{0.25f};
+		float energy_gate_start{0.f};
+		float energy_gate_full{0.02f};
 		float acceleration_limit{0.6f};
 		float acceleration_slew_rate{2.f};
 		float filter_cutoff_hz{4.f};
@@ -36,7 +46,7 @@ public:
 		float activation_max_rate{0.08f};
 		float activation_stable_time{2.f};
 		float ramp_time{2.f};
-		float safety_angle{0.12f};
+		float abort_angle{0.8f};
 		float rearm_delay{1.f};
 		int sign_x{1};
 		int sign_y{1};
@@ -54,10 +64,17 @@ public:
 	struct Status {
 		matrix::Vector2f angle_filtered{};
 		matrix::Vector2f rate_filtered{};
-		matrix::Vector2f acceleration_ned{};
+		matrix::Vector2f acceleration_raw_ned{};
+		matrix::Vector2f acceleration_requested_ned{};
+		matrix::Vector2f acceleration_applied_ned{};
 		uint64_t timestamp_sample{0};
 		float ramp_scale{0.f};
 		float angle_norm{0.f};
+		float natural_frequency{0.f};
+		float energy_per_mass{0.f};
+		float energy_gate{0.f};
+		float damping_gain{0.f};
+		Mode mode{Mode::Off};
 		bool active{false};
 		bool engaged{false};
 		bool rearming{false};
@@ -66,9 +83,16 @@ public:
 
 	void setParameters(const Parameters &parameters);
 	void setJointState(const JointState &joint_state);
+	void setAppliedAccelerationNed(const matrix::Vector2f &applied_acceleration);
 
 	matrix::Vector2f update(float dt, uint64_t now, float yaw, bool flying);
 	void reset();
+
+	static float naturalFrequency(float rope_length);
+	static float perUnitMassEnergy(const matrix::Vector2f &angle,
+				       const matrix::Vector2f &rate,
+				       float rope_length);
+	static float energyGate(float energy, float gate_start, float gate_full);
 
 	const matrix::Vector2f &lastAccelerationNed() const { return _last_acceleration_ned; }
 	const Status &status() const { return _status; }
@@ -87,6 +111,7 @@ private:
 	bool activationReady(uint64_t now);
 	void resetActivation(bool reset_flying_since);
 	void safetyDisengage(uint64_t now);
+	void slewRequestedAccelerationToZero(float dt);
 	void updateStatus(uint64_t now);
 	bool safetyLimitExceeded() const;
 	matrix::Vector2f jointStateToBodyAngle() const;
@@ -97,7 +122,9 @@ private:
 
 	matrix::Vector2f _angle_filtered{};
 	matrix::Vector2f _rate_filtered{};
+	matrix::Vector2f _raw_acceleration_ned{};
 	matrix::Vector2f _last_acceleration_ned{};
+	matrix::Vector2f _applied_acceleration_ned{};
 	Status _status{};
 
 	uint64_t _flying_since{0};

@@ -90,12 +90,21 @@ enum DataIndex : uint8_t {
 	ANGLE_BODY_Y,
 	RATE_BODY_X,
 	RATE_BODY_Y,
-	ACCEL_NORTH,
-	ACCEL_EAST,
+	ACCEL_REQUESTED_NORTH,
+	ACCEL_REQUESTED_EAST,
 	ACTIVE,
 	ENGAGED,
 	RAMP_SCALE,
 	SAFETY_STATE,
+	NATURAL_FREQUENCY,
+	ENERGY_PER_MASS,
+	ENERGY_GATE,
+	DAMPING_GAIN,
+	ACCEL_RAW_NORTH,
+	ACCEL_RAW_EAST,
+	ACCEL_APPLIED_NORTH,
+	ACCEL_APPLIED_EAST,
+	MODE,
 	DATA_COUNT
 };
 
@@ -115,12 +124,21 @@ inline void fromStatus(const SuspendedLoadAntiSwing::Status &status, debug_array
 	debug_array.data[ANGLE_BODY_Y] = status.angle_filtered(1);
 	debug_array.data[RATE_BODY_X] = status.rate_filtered(0);
 	debug_array.data[RATE_BODY_Y] = status.rate_filtered(1);
-	debug_array.data[ACCEL_NORTH] = status.acceleration_ned(0);
-	debug_array.data[ACCEL_EAST] = status.acceleration_ned(1);
+	debug_array.data[ACCEL_REQUESTED_NORTH] = status.acceleration_requested_ned(0);
+	debug_array.data[ACCEL_REQUESTED_EAST] = status.acceleration_requested_ned(1);
 	debug_array.data[ACTIVE] = status.active ? 1.f : 0.f;
 	debug_array.data[ENGAGED] = status.engaged ? 1.f : 0.f;
 	debug_array.data[RAMP_SCALE] = status.ramp_scale;
 	debug_array.data[SAFETY_STATE] = status.safety_limited ? 2.f : (status.rearming ? 1.f : 0.f);
+	debug_array.data[NATURAL_FREQUENCY] = status.natural_frequency;
+	debug_array.data[ENERGY_PER_MASS] = status.energy_per_mass;
+	debug_array.data[ENERGY_GATE] = status.energy_gate;
+	debug_array.data[DAMPING_GAIN] = status.damping_gain;
+	debug_array.data[ACCEL_RAW_NORTH] = status.acceleration_raw_ned(0);
+	debug_array.data[ACCEL_RAW_EAST] = status.acceleration_raw_ned(1);
+	debug_array.data[ACCEL_APPLIED_NORTH] = status.acceleration_applied_ned(0);
+	debug_array.data[ACCEL_APPLIED_EAST] = status.acceleration_applied_ned(1);
+	debug_array.data[MODE] = static_cast<float>(static_cast<int32_t>(status.mode));
 }
 
 } // namespace suspended_load_anti_swing_status_bridge

@@ -281,7 +281,10 @@ void LoggedTopics::add_high_rate_topics()
 
 void LoggedTopics::add_debug_topics()
 {
-	add_topic("debug_array");
+	// debug_array instance 0 carries the suspended-load joint state, while
+	// controller diagnostics use dedicated multi-instances. Log all of them so
+	// a ULog retains both the plant state and the LADRC/anti-swing evidence.
+	add_topic_multi("debug_array");
 	add_topic("debug_key_value");
 	add_topic("debug_value");
 	add_topic("debug_vect");

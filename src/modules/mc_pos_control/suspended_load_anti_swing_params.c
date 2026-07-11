@@ -18,6 +18,26 @@
 PARAM_DEFINE_INT32(MC_HANG_AS_EN, 0);
 
 /**
+ * Suspended-load anti-swing algorithm
+ *
+ * LegacyPD preserves the existing angle/rate controller. EnergyDamping uses
+ * rope-length-scaled swing-rate feedback with a directly verifiable negative
+ * control contribution to the pendulum energy derivative.
+ *
+ * 0: disabled
+ * 1: legacy angle/rate PD
+ * 2: energy damping
+ *
+ * @min 0
+ * @max 2
+ * @value 0 Disabled
+ * @value 1 LegacyPD
+ * @value 2 EnergyDamping
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_INT32(MC_HANG_MODE, 1);
+
+/**
  * Suspended-load anti-swing OFFBOARD-only gate
  *
  * When enabled, the optional anti-swing outer loop can only engage while the
@@ -71,6 +91,47 @@ PARAM_DEFINE_FLOAT(MC_HANG_K_ANG, 0.0f);
  * @group Multicopter Position Control
  */
 PARAM_DEFINE_FLOAT(MC_HANG_K_RATE, 1.5f);
+
+/**
+ * Suspended-load energy damping ratio
+ *
+ * The energy mode rate gain is kd=2*zeta*sqrt(g*L). Start conservatively and
+ * increase only after the joint-state sign is verified in a single-axis test.
+ *
+ * @min 0
+ * @max 2
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_ZETA, 0.25f);
+
+/**
+ * Suspended-load energy gate start
+ *
+ * Per-unit-mass swing energy below this value produces no energy-mode output.
+ *
+ * @min 0
+ * @max 20
+ * @decimal 3
+ * @increment 0.005
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_E_MIN, 0.0f);
+
+/**
+ * Suspended-load energy gate full threshold
+ *
+ * Per-unit-mass swing energy at which the energy-mode output reaches full
+ * authority. Values between E_MIN and E_FULL are blended linearly.
+ *
+ * @min 0
+ * @max 20
+ * @decimal 3
+ * @increment 0.005
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_E_FULL, 0.02f);
 
 /**
  * Suspended-load anti-swing acceleration limit
@@ -200,7 +261,7 @@ PARAM_DEFINE_FLOAT(MC_HANG_ACT_DLY, 3.0f);
  * @increment 0.05
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MC_HANG_ACT_ANG, 0.05f);
+PARAM_DEFINE_FLOAT(MC_HANG_ACT_ANG, 0.0f);
 
 /**
  * Suspended-load anti-swing activation rate
@@ -216,7 +277,7 @@ PARAM_DEFINE_FLOAT(MC_HANG_ACT_ANG, 0.05f);
  * @increment 0.02
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MC_HANG_ACT_R, 0.08f);
+PARAM_DEFINE_FLOAT(MC_HANG_ACT_R, 0.0f);
 
 /**
  * Suspended-load anti-swing activation stable time
@@ -231,7 +292,7 @@ PARAM_DEFINE_FLOAT(MC_HANG_ACT_R, 0.08f);
  * @increment 0.5
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MC_HANG_ACT_T, 2.0f);
+PARAM_DEFINE_FLOAT(MC_HANG_ACT_T, 0.0f);
 
 /**
  * Suspended-load anti-swing ramp time
@@ -249,11 +310,12 @@ PARAM_DEFINE_FLOAT(MC_HANG_ACT_T, 2.0f);
 PARAM_DEFINE_FLOAT(MC_HANG_RAMP_T, 2.0f);
 
 /**
- * Suspended-load anti-swing safety angle
+ * Suspended-load anti-swing abort angle
  *
  * If the anti-swing correction is engaged and the filtered swing angle norm
- * exceeds this value, the correction is disabled and waits for a stable
- * re-engagement condition. Set to zero to disable this safety gate.
+ * exceeds this extreme angle, the correction slews to zero and waits for a
+ * safe re-engagement condition. This is separate from MC_HANG_MAX_ANG, which
+ * only disables the LegacyPD angle term outside the small-angle region.
  *
  * @unit rad
  * @min 0
@@ -262,7 +324,7 @@ PARAM_DEFINE_FLOAT(MC_HANG_RAMP_T, 2.0f);
  * @increment 0.02
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MC_HANG_SAFE_A, 0.12f);
+PARAM_DEFINE_FLOAT(MC_HANG_SAFE_A, 0.8f);
 
 /**
  * Suspended-load anti-swing safety re-arm delay
@@ -280,3 +342,71 @@ PARAM_DEFINE_FLOAT(MC_HANG_SAFE_A, 0.12f);
  * @group Multicopter Position Control
  */
 PARAM_DEFINE_FLOAT(MC_HANG_REARM, 1.0f);
+
+/**
+ * Suspended-load frequency scheduling enable
+ *
+ * When enabled, the horizontal LADRC controller and observer bandwidths are
+ * capped using the known rope natural frequency. This is fixed-parameter
+ * scheduling, not online rope-length estimation.
+ *
+ * @boolean
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_INT32(MC_HANG_FRQ_EN, 0);
+
+/**
+ * Horizontal LADRC frequency ratio
+ *
+ * Caps wc_xy at this ratio times sqrt(g/L).
+ *
+ * @min 0.05
+ * @max 5
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_WC_R, 0.45f);
+
+/**
+ * Horizontal LESO frequency ratio
+ *
+ * Caps wo_xy at this ratio times sqrt(g/L).
+ *
+ * @min 0.1
+ * @max 10
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_WO_R, 1.50f);
+
+/**
+ * Horizontal LESO minimum bandwidth ratio
+ *
+ * Enforces wo_xy greater than or equal to this ratio times wc_xy after
+ * frequency scheduling.
+ *
+ * @min 1
+ * @max 10
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_WO_MIN, 2.5f);
+
+/**
+ * Suspended-load total horizontal acceleration
+ *
+ * Total horizontal acceleration budget used while anti-swing is requesting
+ * acceleration. The effective limit is the lower of this value and
+ * MPC_ACC_HOR_MAX. Trajectory control has priority within this budget.
+ *
+ * @unit m/s^2
+ * @min 0.1
+ * @max 30
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_TOT_A, 3.0f);

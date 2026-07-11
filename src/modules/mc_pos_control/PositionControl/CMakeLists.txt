@@ -34,6 +34,8 @@
 px4_add_library(PositionControl
 	ControlMath.cpp
 	ControlMath.hpp
+	LadrcPositionControl.cpp
+	LadrcPositionControl.hpp
 	PositionControl.cpp
 	PositionControl.hpp
 )
