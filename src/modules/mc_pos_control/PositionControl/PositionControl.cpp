@@ -342,7 +342,35 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
 		bool update_velocity_integral,
 		bool update_horizontal_integral)
 {
+	_coordination_status = {};
+	_coordination_status.timestamp_sample = _control_timestamp;
+	_coordination_status.ladrc_nominal_ned = _ladrc_position_control.nominalControl().xy();
+	_coordination_status.ladrc_nominal_position_ned = _ladrc_position_control.nominalPositionControl().xy();
+	_coordination_status.ladrc_nominal_velocity_reference_ned =
+		_ladrc_position_control.nominalVelocityReferenceControl().xy();
+	_coordination_status.ladrc_nominal_velocity_state_ned =
+		_ladrc_position_control.nominalVelocityStateControl().xy();
+	_coordination_status.ladrc_nominal_acceleration_damping_ned =
+		_ladrc_position_control.nominalAccelerationDampingControl().xy();
+	_coordination_status.ladrc_velocity_setpoint_ned = _ladrc_position_control.velocityFeedbackSetpoint().xy();
+	_coordination_status.ladrc_velocity_ekf_ned = _ladrc_position_control.velocityFeedbackMeasurement().xy();
+	_coordination_status.ladrc_velocity_z2_ned = _ladrc_position_control.observerStateZ2().xy();
+	_coordination_status.ladrc_velocity_feedback_ned = _ladrc_position_control.velocityFeedbackState().xy();
+	_coordination_status.ladrc_velocity_tracking_ned = _ladrc_position_control.velocityTrackingControl().xy();
+	_coordination_status.ladrc_velocity_observer_error_ned =
+		_ladrc_position_control.velocityObserverErrorControl().xy();
+	_coordination_status.ladrc_velocity_total_ned = _ladrc_position_control.velocityTotalControl().xy();
+	_coordination_status.ladrc_vfb_requested_weight =
+		_ladrc_position_control.velocityFeedbackRequestedWeight().xy();
+	_coordination_status.ladrc_vfb_effective_weight =
+		_ladrc_position_control.velocityFeedbackEffectiveWeight().xy();
+	_coordination_status.ladrc_vfb_velocity_valid = _ladrc_position_control.velocityFeedbackValid().xy();
+	_coordination_status.ladrc_vfb_fallback = _ladrc_position_control.velocityFeedbackFallback().xy();
+	_coordination_status.ladrc_dist_raw_ned = _ladrc_position_control.disturbanceCompensationRaw().xy();
+	_coordination_status.ladrc_dist_selected_ned = _ladrc_position_control.disturbanceCompensationSelected().xy();
+
 	Vector2f base_acceleration(_acc_sp);
+	bool total_acc_saturated = false;
 
 	// The suspended-load total acceleration budget applies even while the
 	// optional anti-swing term is disabled. Otherwise a primary LADRC command
@@ -350,34 +378,104 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
 	// load, which defeats the payload-safe acceleration envelope.
 	if (_lim_acc_horizontal > FLT_EPSILON && base_acceleration.norm() > _lim_acc_horizontal) {
 		base_acceleration = base_acceleration.normalized() * _lim_acc_horizontal;
+		total_acc_saturated = true;
 	}
 
 	const Vector2f anti_swing_requested =
 		_suspended_load_anti_swing.update(dt, _control_timestamp, _yaw, _suspended_load_anti_swing_flying);
+	_coordination_status.anti_swing_requested_ned = anti_swing_requested;
+	const SuspendedLoadAntiSwing::Status &anti_swing_status = _suspended_load_anti_swing.status();
+	const Vector2f passivity_candidate = base_acceleration + anti_swing_requested;
+	const Vector2f position_error_ned{
+		_pos_sp(0) - _pos(0),
+		_pos_sp(1) - _pos(1)
+	};
+	const SuspendedLoadEnergySupervisor::Status &energy_supervisor_status = _suspended_load_energy_supervisor.update(
+				dt, passivity_candidate, anti_swing_status.rate_filtered, position_error_ned, _yaw,
+				anti_swing_status.rope_length, anti_swing_status.energy_per_mass,
+				anti_swing_status.engaged, anti_swing_status.measurement_valid);
+	_coordination_status.passivity_shadow_correction_norm = energy_supervisor_status.correction_shadow_ned.norm();
+	_coordination_status.passivity_shadow_correction_ned = energy_supervisor_status.correction_shadow_ned;
+	_coordination_status.passivity_candidate_acceleration_ned = energy_supervisor_status.candidate_acceleration_ned;
+	_coordination_status.passivity_active_correction_ned = energy_supervisor_status.correction_active_ned;
+	_coordination_status.passivity_projected_acceleration_ned = energy_supervisor_status.projected_acceleration_ned;
+	_coordination_status.passivity_candidate_power = energy_supervisor_status.candidate_power;
+	_coordination_status.passivity_positive_power_filtered = energy_supervisor_status.positive_power_filtered;
+	_coordination_status.passivity_projected_power_shadow = energy_supervisor_status.projected_power_shadow;
+	_coordination_status.passivity_projected_power = energy_supervisor_status.projected_power;
+	_coordination_status.passivity_raw_correction_power = energy_supervisor_status.raw_correction_power;
+	_coordination_status.passivity_position_limited_power = energy_supervisor_status.position_limited_power;
+	_coordination_status.position_error_ned = energy_supervisor_status.position_error_ned;
+	_coordination_status.position_direction_ned = energy_supervisor_status.position_direction_ned;
+	_coordination_status.position_error_norm = energy_supervisor_status.position_error_ned.norm();
+	_coordination_status.passivity_candidate_recovery_component = energy_supervisor_status.candidate_recovery_component;
+	_coordination_status.passivity_raw_parallel_component = energy_supervisor_status.raw_parallel_component;
+	_coordination_status.passivity_limited_parallel_component = energy_supervisor_status.limited_parallel_component;
+	_coordination_status.passivity_perpendicular_component_norm = energy_supervisor_status.perpendicular_component_norm;
+	_coordination_status.passivity_position_limiter_ratio = energy_supervisor_status.position_limiter_ratio;
+	_coordination_status.passivity_raw_correction_ned = energy_supervisor_status.correction_raw_ned;
+	_coordination_status.passivity_position_limited_correction_ned =
+		energy_supervisor_status.correction_position_limited_ned;
+	_coordination_status.swing_energy_per_mass = energy_supervisor_status.energy_per_mass;
+	_coordination_status.passivity_dwell_elapsed = energy_supervisor_status.dwell_elapsed;
+	_coordination_status.passivity_mode = static_cast<int32_t>(energy_supervisor_status.mode);
+	_coordination_status.passivity_shadow_gate_active = energy_supervisor_status.gate_active;
+	_coordination_status.passivity_limit_hit = energy_supervisor_status.correction_limit_hit;
+	_coordination_status.passivity_slew_active = energy_supervisor_status.correction_slew_active;
+	_coordination_status.passivity_position_limiter_active = energy_supervisor_status.position_limiter_active;
+	_coordination_status.base_acceleration_ned = base_acceleration;
+
+	// OFF and SHADOW return a strict zero here. ACTIVE reuses the exact same
+	// computed correction and inserts it before the existing total XY envelope.
+	const Vector2f passivity_active_requested = energy_supervisor_status.correction_active_ned;
+	const Vector2f swing_management_requested = anti_swing_requested + passivity_active_requested;
 	Vector2f combined_acceleration{};
 	Vector2f anti_swing_applied = anti_swing_requested;
+	Vector2f passivity_active_applied = passivity_active_requested;
 
 	if (_lim_acc_horizontal > FLT_EPSILON) {
-		// Once energy damping is active, reserve its bounded correction first.
-		// Giving an already-saturated primary LADRC command absolute priority
-		// leaves no actuator authority for the damping term, so the load energy
-		// cannot decrease even though the anti-swing controller is engaged.
-		if (anti_swing_requested.norm() >= _lim_acc_horizontal) {
-			anti_swing_applied = anti_swing_requested.normalized() * _lim_acc_horizontal;
-			combined_acceleration = anti_swing_applied;
+		if ((base_acceleration + swing_management_requested).norm() > _lim_acc_horizontal) {
+			total_acc_saturated = true;
+		}
+
+		// Reserve the bounded swing-management request first. If it alone
+		// exceeds the envelope, scale AS and ACTIVE together so their relative
+		// direction is preserved; otherwise the base controller uses the rest.
+		if (swing_management_requested.norm() >= _lim_acc_horizontal) {
+			const float management_scale = _lim_acc_horizontal / swing_management_requested.norm();
+			anti_swing_applied *= management_scale;
+			passivity_active_applied *= management_scale;
+			combined_acceleration = anti_swing_applied + passivity_active_applied;
 
 		} else {
-			combined_acceleration = ControlMath::constrainXY(anti_swing_requested, base_acceleration,
+			combined_acceleration = ControlMath::constrainXY(swing_management_requested, base_acceleration,
 										  _lim_acc_horizontal);
 		}
 
 	} else {
-		combined_acceleration = base_acceleration + anti_swing_requested;
+		combined_acceleration = base_acceleration + swing_management_requested;
 	}
 
 	_suspended_load_anti_swing.setAppliedAccelerationNed(anti_swing_applied);
 	_acc_sp.xy() = combined_acceleration;
 	_final_acceleration_command = _acc_sp;
+	_coordination_status.anti_swing_applied_ned = anti_swing_applied;
+	_coordination_status.passivity_active_correction_applied_ned = passivity_active_applied;
+	_coordination_status.passivity_active = passivity_active_applied.norm() > FLT_EPSILON;
+	_coordination_status.final_command_ned = combined_acceleration;
+	_coordination_status.total_acc_saturated = total_acc_saturated;
+
+	if (_suspended_load_jerk_valid && PX4_ISFINITE(dt) && dt > FLT_EPSILON) {
+		_coordination_status.base_jerk_ned = (base_acceleration - _last_suspended_load_base_acceleration) / dt;
+		_coordination_status.final_jerk_ned = (combined_acceleration - _last_suspended_load_final_acceleration) / dt;
+	}
+
+	_suspended_load_jerk_valid = base_acceleration.isAllFinite() && combined_acceleration.isAllFinite();
+
+	if (_suspended_load_jerk_valid) {
+		_last_suspended_load_base_acceleration = base_acceleration;
+		_last_suspended_load_final_acceleration = combined_acceleration;
+	}
 
 	_accelerationControl();
 
@@ -457,6 +555,99 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
 	}
 
 	_ladrc_position_control.setAppliedAcceleration(_last_applied_acceleration);
+	_coordination_status.thrust_reconstructed_ned = _last_applied_acceleration.xy();
+	_updateSuspendedLoadCoordinationStatus();
+}
+
+float PositionControl::horizontalSwingPower(const Vector2f &acceleration_ned,
+		const Vector2f &swing_rate_heading,
+		float yaw,
+		float rope_length)
+{
+	if (!acceleration_ned.isAllFinite() || !swing_rate_heading.isAllFinite()
+	    || !PX4_ISFINITE(yaw) || !PX4_ISFINITE(rope_length) || rope_length < 0.05f) {
+		return NAN;
+	}
+
+	const float yaw_cos = cosf(yaw);
+	const float yaw_sin = sinf(yaw);
+	const Vector2f acceleration_heading{
+		yaw_cos * acceleration_ned(0) + yaw_sin * acceleration_ned(1),
+		-yaw_sin * acceleration_ned(0) + yaw_cos * acceleration_ned(1)
+	};
+
+	return -rope_length * acceleration_heading.dot(swing_rate_heading);
+}
+
+void PositionControl::_updateSuspendedLoadCoordinationStatus()
+{
+	const SuspendedLoadAntiSwing::Status &anti_swing_status = _suspended_load_anti_swing.status();
+	_coordination_status.swing_rate_norm = anti_swing_status.rate_filtered.norm();
+	_coordination_status.selector_mode = 0;
+	_coordination_status.selector_blend = 0.f;
+	_coordination_status.valid = anti_swing_status.measurement_valid
+				     && anti_swing_status.rate_filtered.isAllFinite()
+				     && PX4_ISFINITE(_yaw)
+				     && PX4_ISFINITE(anti_swing_status.rope_length)
+				     && anti_swing_status.rope_length >= 0.05f;
+
+	if (!_coordination_status.valid) {
+		_coordination_status.power_nominal = NAN;
+		_coordination_status.power_nominal_position = NAN;
+		_coordination_status.power_nominal_velocity_reference = NAN;
+		_coordination_status.power_nominal_velocity_state = NAN;
+		_coordination_status.power_nominal_velocity_error = NAN;
+		_coordination_status.power_nominal_acceleration_damping = NAN;
+		_coordination_status.power_velocity_tracking = NAN;
+		_coordination_status.power_velocity_observer_error = NAN;
+		_coordination_status.power_velocity_total = NAN;
+		_coordination_status.power_dist_raw = NAN;
+		_coordination_status.power_dist_selected = NAN;
+		_coordination_status.power_anti_requested = NAN;
+		_coordination_status.power_anti_applied = NAN;
+		_coordination_status.power_passivity_applied = NAN;
+		_coordination_status.power_final_command = NAN;
+		_coordination_status.power_thrust_reconstructed = NAN;
+		_coordination_status.passivity_final_power = NAN;
+		return;
+	}
+
+	const Vector2f &rate_heading = anti_swing_status.rate_filtered;
+	const float rope_length = anti_swing_status.rope_length;
+	_coordination_status.power_nominal = horizontalSwingPower(
+			_coordination_status.ladrc_nominal_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_nominal_position = horizontalSwingPower(
+			_coordination_status.ladrc_nominal_position_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_nominal_velocity_reference = horizontalSwingPower(
+			_coordination_status.ladrc_nominal_velocity_reference_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_nominal_velocity_state = horizontalSwingPower(
+			_coordination_status.ladrc_nominal_velocity_state_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_nominal_velocity_error = horizontalSwingPower(
+			_coordination_status.ladrc_nominal_velocity_reference_ned
+			+ _coordination_status.ladrc_nominal_velocity_state_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_nominal_acceleration_damping = horizontalSwingPower(
+			_coordination_status.ladrc_nominal_acceleration_damping_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_velocity_tracking = horizontalSwingPower(
+			_coordination_status.ladrc_velocity_tracking_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_velocity_observer_error = horizontalSwingPower(
+			_coordination_status.ladrc_velocity_observer_error_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_velocity_total = horizontalSwingPower(
+			_coordination_status.ladrc_velocity_total_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_dist_raw = horizontalSwingPower(
+			_coordination_status.ladrc_dist_raw_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_dist_selected = horizontalSwingPower(
+			_coordination_status.ladrc_dist_selected_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_anti_requested = horizontalSwingPower(
+			_coordination_status.anti_swing_requested_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_anti_applied = horizontalSwingPower(
+			_coordination_status.anti_swing_applied_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_passivity_applied = horizontalSwingPower(
+			_coordination_status.passivity_active_correction_applied_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.power_final_command = horizontalSwingPower(
+			_coordination_status.final_command_ned, rate_heading, _yaw, rope_length);
+	_coordination_status.passivity_final_power = _coordination_status.power_final_command;
+	_coordination_status.power_thrust_reconstructed = horizontalSwingPower(
+			_coordination_status.thrust_reconstructed_ned, rate_heading, _yaw, rope_length);
 }
 
 void PositionControl::_accelerationControl()

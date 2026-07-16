@@ -68,6 +68,12 @@ param set-default MPC_ACC_HOR 1.2
 param set-default MPC_JERK_AUTO 2.0
 param set-default NAV_DLL_ACT 2
 
+# Gazebo reports the gimbal joint axes in FLU, while the anti-swing controller
+# uses PX4 body FRD. Both horizontal suspended-load joint channels therefore
+# need inversion before they are rotated into local NED.
+param set-default MC_HANG_SIGN_X -1
+param set-default MC_HANG_SIGN_Y -1
+
 # Conservative LADRC defaults for the suspended payload model. The hanging load
 # is sensitive to fast rate-loop torque changes, so keep the effective WC/B0
 # gain between the original ZD680 setting and the PID rate gain.

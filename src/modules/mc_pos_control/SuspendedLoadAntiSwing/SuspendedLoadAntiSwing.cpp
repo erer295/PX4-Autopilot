@@ -107,8 +107,10 @@ void SuspendedLoadAntiSwing::setAppliedAccelerationNed(const Vector2f &applied_a
 Vector2f SuspendedLoadAntiSwing::update(float dt, uint64_t now, float yaw, bool flying)
 {
 	_safety_limited = false;
+	_measurement_usable = measurementUsable(now, flying);
 
-	if (!measurementUsable(now, flying) || !PX4_ISFINITE(dt) || dt <= FLT_EPSILON || !PX4_ISFINITE(yaw)) {
+	if (!_measurement_usable || !PX4_ISFINITE(dt) || dt <= FLT_EPSILON || !PX4_ISFINITE(yaw)) {
+		_measurement_usable = false;
 		resetActivation(true);
 		updateStatus(now);
 		return _last_acceleration_ned;
@@ -236,6 +238,7 @@ void SuspendedLoadAntiSwing::resetActivation(bool reset_flying_since)
 	_active = false;
 	_rearming_after_safety = false;
 	_safety_limited = false;
+	_measurement_usable = false;
 	updateStatus(0);
 }
 
@@ -284,7 +287,9 @@ void SuspendedLoadAntiSwing::updateStatus(uint64_t now)
 	_status.damping_gain = _parameters.mode == Mode::EnergyDamping
 			       ? 2.f * _parameters.energy_damping_ratio * sqrtf(CONSTANTS_ONE_G * _parameters.rope_length)
 			       : 0.f;
+	_status.rope_length = _parameters.rope_length;
 	_status.mode = (_parameters.enabled ? _parameters.mode : Mode::Off);
+	_status.measurement_valid = _measurement_usable;
 	_status.active = _active;
 	_status.engaged = _engaged;
 	_status.rearming = _rearming_after_safety;

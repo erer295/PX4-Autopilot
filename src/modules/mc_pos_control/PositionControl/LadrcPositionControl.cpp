@@ -70,6 +70,11 @@ static inline float safeAccelerationDamping(float value)
 	return math::constrain(value, 0.f, kMaxAccelerationDamping);
 }
 
+static inline float safeVelocityFeedbackWeight(float value)
+{
+	return isFinite(value) ? math::constrain(value, 0.f, 1.f) : 0.f;
+}
+
 } // namespace
 
 void LadrcPositionControl::setParameters(const Parameters &parameters)
@@ -92,6 +97,7 @@ void LadrcPositionControl::setParameters(const Parameters &parameters)
 		safeAccelerationLimit(parameters.downward_acceleration_limit, _parameters.downward_acceleration_limit);
 	_parameters.td_enabled = parameters.td_enabled;
 	_parameters.td_damping_ratio = math::constrain(parameters.td_damping_ratio, 0.5f, 2.f);
+	_parameters.velocity_feedback_weight = safeVelocityFeedbackWeight(parameters.velocity_feedback_weight);
 
 	updateObserverGains();
 }
@@ -181,7 +187,23 @@ void LadrcPositionControl::initializeSecondOrderBumpless(const Vector3f &positio
 			 ? bumpless_disturbance : 0.f;
 		_u_observer(i) = applied_acceleration_safe(i);
 		_acceleration_sp(i) = applied_acceleration_safe(i);
-		_disturbance_compensation(i) = -_z3(i) / _parameters.b0(i);
+		_nominal_control(i) = reference_acceleration / _parameters.b0(i);
+		_nominal_position_control(i) = kp * (desired_position - measured_position) / _parameters.b0(i);
+		_nominal_velocity_reference_control(i) = kd * desired_velocity / _parameters.b0(i);
+		_nominal_velocity_state_control(i) = -kd * measured_velocity / _parameters.b0(i);
+		_nominal_acceleration_damping_control(i) = 0.f;
+		_velocity_feedback_setpoint(i) = desired_velocity;
+		_velocity_feedback_measurement(i) = velocity(i);
+		_velocity_feedback_state(i) = measured_velocity;
+		_velocity_tracking_control(i) = kd * (desired_velocity - measured_velocity) / _parameters.b0(i);
+		_velocity_observer_error_control(i) = 0.f;
+		_velocity_total_control(i) = _velocity_tracking_control(i);
+		_velocity_feedback_requested_weight(i) = i < 2 ? _parameters.velocity_feedback_weight : 0.f;
+		_velocity_feedback_effective_weight(i) = 0.f;
+		_velocity_feedback_valid(i) = isFinite(velocity(i)) && fabsf(velocity(i)) <= kMaxVelocityEstimate ? 1.f : 0.f;
+		_velocity_feedback_fallback(i) = 0.f;
+		_disturbance_compensation_raw(i) = -_z3(i) / _parameters.b0(i);
+		_disturbance_compensation_selected(i) = _disturbance_compensation_raw(i);
 		_velocity_sp_td(i) = desired_velocity;
 		_td_velocity_derivative(i) = 0.f;
 		_second_order_axis_active[i] = true;
@@ -241,7 +263,23 @@ Vector3f LadrcPositionControl::updateSecondOrder(const Vector3f &position,
 			_z1(i) = 0.f;
 			_z2(i) = 0.f;
 			_z3(i) = 0.f;
-			_disturbance_compensation(i) = 0.f;
+			_nominal_control(i) = 0.f;
+			_nominal_position_control(i) = 0.f;
+			_nominal_velocity_reference_control(i) = 0.f;
+			_nominal_velocity_state_control(i) = 0.f;
+			_nominal_acceleration_damping_control(i) = 0.f;
+			_velocity_feedback_setpoint(i) = 0.f;
+			_velocity_feedback_measurement(i) = 0.f;
+			_velocity_feedback_state(i) = 0.f;
+			_velocity_tracking_control(i) = 0.f;
+			_velocity_observer_error_control(i) = 0.f;
+			_velocity_total_control(i) = 0.f;
+			_velocity_feedback_requested_weight(i) = i < 2 ? _parameters.velocity_feedback_weight : 0.f;
+			_velocity_feedback_effective_weight(i) = 0.f;
+			_velocity_feedback_valid(i) = 0.f;
+			_velocity_feedback_fallback(i) = i < 2 && _parameters.velocity_feedback_weight > 0.f ? 1.f : 0.f;
+			_disturbance_compensation_raw(i) = 0.f;
+			_disturbance_compensation_selected(i) = 0.f;
 			_second_order_axis_active[i] = false;
 			continue;
 		}
@@ -268,14 +306,39 @@ Vector3f LadrcPositionControl::updateSecondOrder(const Vector3f &position,
 				_z2(i) = math::constrain(z2_new, -z2_limit, z2_limit);
 			}
 
-			float u = (_parameters.wc(i) * (velocity_sp_control(i) - _z1(i)) - _z2(i)) / _parameters.b0(i);
+			const float u_position = 0.f;
+			const float u_velocity_reference = _parameters.wc(i) * velocity_sp_control(i) / _parameters.b0(i);
+			const float u_velocity_state = -_parameters.wc(i) * _z1(i) / _parameters.b0(i);
+			float u_acceleration_damping = 0.f;
+			float u_nominal = _parameters.wc(i) * (velocity_sp_control(i) - _z1(i)) / _parameters.b0(i);
 
 			if (_parameters.acceleration_damping(i) > 0.f && isFinite(velocity_dot(i))) {
-				u -= _parameters.acceleration_damping(i) * velocity_dot(i);
+				u_acceleration_damping = -_parameters.acceleration_damping(i) * velocity_dot(i);
+				u_nominal += u_acceleration_damping;
 			}
 
+			const float u_disturbance_raw = -_z2(i) / _parameters.b0(i);
+			const float u_disturbance_selected = u_disturbance_raw;
+			const float u = u_nominal + u_disturbance_selected;
+
 			acceleration_sp(i) = isFinite(u) ? u : 0.f;
-			_disturbance_compensation(i) = -_z2(i) / _parameters.b0(i);
+			_nominal_control(i) = isFinite(u_nominal) ? u_nominal : 0.f;
+			_nominal_position_control(i) = u_position;
+			_nominal_velocity_reference_control(i) = isFinite(u_velocity_reference) ? u_velocity_reference : 0.f;
+			_nominal_velocity_state_control(i) = isFinite(u_velocity_state) ? u_velocity_state : 0.f;
+			_nominal_acceleration_damping_control(i) = isFinite(u_acceleration_damping) ? u_acceleration_damping : 0.f;
+			_velocity_feedback_setpoint(i) = velocity_sp_control(i);
+			_velocity_feedback_measurement(i) = velocity(i);
+			_velocity_feedback_state(i) = _z1(i);
+			_velocity_tracking_control(i) = _parameters.wc(i) * (velocity_sp_control(i) - velocity(i)) / _parameters.b0(i);
+			_velocity_observer_error_control(i) = _parameters.wc(i) * (velocity(i) - _z1(i)) / _parameters.b0(i);
+			_velocity_total_control(i) = _velocity_tracking_control(i) + _velocity_observer_error_control(i);
+			_velocity_feedback_requested_weight(i) = 0.f;
+			_velocity_feedback_effective_weight(i) = 0.f;
+			_velocity_feedback_valid(i) = 1.f;
+			_velocity_feedback_fallback(i) = 0.f;
+			_disturbance_compensation_raw(i) = isFinite(u_disturbance_raw) ? u_disturbance_raw : 0.f;
+			_disturbance_compensation_selected(i) = isFinite(u_disturbance_selected) ? u_disturbance_selected : 0.f;
 			_z3(i) = 0.f;
 			_second_order_axis_active[i] = false;
 			continue;
@@ -312,16 +375,56 @@ Vector3f LadrcPositionControl::updateSecondOrder(const Vector3f &position,
 		const float desired_velocity = velocity_controlled ? velocity_sp_control(i) : 0.f;
 		const float kp = _parameters.wc(i) * _parameters.wc(i);
 		const float kd = 2.f * _parameters.wc(i);
-		float u = (kp * (position_sp(i) - _z1(i))
-			   + kd * (desired_velocity - _z2(i))
-			   - _z3(i)) / _parameters.b0(i);
+		const float u_position = kp * (position_sp(i) - _z1(i)) / _parameters.b0(i);
+		const float requested_weight = i < 2 ? _parameters.velocity_feedback_weight : 0.f;
+		const bool measured_velocity_valid = isFinite(velocity(i)) && fabsf(velocity(i)) <= kMaxVelocityEstimate;
+		const float effective_weight = measured_velocity_valid ? requested_weight : 0.f;
+		// Preserve the legacy arithmetic path exactly for weight zero and for
+		// safety fallback. This makes the feature opt-in and bit-for-bit neutral
+		// at its default value.
+		const float velocity_feedback = effective_weight > 0.f
+				? (1.f - effective_weight) * _z2(i) + effective_weight * velocity(i)
+				: _z2(i);
+		const float u_velocity_reference = kd * desired_velocity / _parameters.b0(i);
+		const float u_velocity_state = -kd * velocity_feedback / _parameters.b0(i);
+		const float u_velocity_tracking = measured_velocity_valid
+				? kd * (desired_velocity - velocity(i)) / _parameters.b0(i)
+				: kd * (desired_velocity - _z2(i)) / _parameters.b0(i);
+		const float u_velocity_observer_error = measured_velocity_valid
+				? (1.f - effective_weight) * kd * (velocity(i) - _z2(i)) / _parameters.b0(i)
+				: 0.f;
+		const float u_velocity_total = kd * (desired_velocity - velocity_feedback) / _parameters.b0(i);
+		float u_acceleration_damping = 0.f;
+		float u_nominal = (kp * (position_sp(i) - _z1(i))
+				   + kd * (desired_velocity - velocity_feedback)) / _parameters.b0(i);
 
 		if (_parameters.acceleration_damping(i) > 0.f && isFinite(velocity_dot(i))) {
-			u -= _parameters.acceleration_damping(i) * velocity_dot(i);
+			u_acceleration_damping = -_parameters.acceleration_damping(i) * velocity_dot(i);
+			u_nominal += u_acceleration_damping;
 		}
 
+		const float u_disturbance_raw = -_z3(i) / _parameters.b0(i);
+		const float u_disturbance_selected = u_disturbance_raw;
+		const float u = u_nominal + u_disturbance_selected;
+
 		acceleration_sp(i) = isFinite(u) ? u : 0.f;
-		_disturbance_compensation(i) = -_z3(i) / _parameters.b0(i);
+		_nominal_control(i) = isFinite(u_nominal) ? u_nominal : 0.f;
+		_nominal_position_control(i) = isFinite(u_position) ? u_position : 0.f;
+		_nominal_velocity_reference_control(i) = isFinite(u_velocity_reference) ? u_velocity_reference : 0.f;
+		_nominal_velocity_state_control(i) = isFinite(u_velocity_state) ? u_velocity_state : 0.f;
+		_nominal_acceleration_damping_control(i) = isFinite(u_acceleration_damping) ? u_acceleration_damping : 0.f;
+		_velocity_feedback_setpoint(i) = desired_velocity;
+		_velocity_feedback_measurement(i) = velocity(i);
+		_velocity_feedback_state(i) = velocity_feedback;
+		_velocity_tracking_control(i) = isFinite(u_velocity_tracking) ? u_velocity_tracking : 0.f;
+		_velocity_observer_error_control(i) = isFinite(u_velocity_observer_error) ? u_velocity_observer_error : 0.f;
+		_velocity_total_control(i) = isFinite(u_velocity_total) ? u_velocity_total : 0.f;
+		_velocity_feedback_requested_weight(i) = requested_weight;
+		_velocity_feedback_effective_weight(i) = effective_weight;
+		_velocity_feedback_valid(i) = measured_velocity_valid ? 1.f : 0.f;
+		_velocity_feedback_fallback(i) = requested_weight > 0.f && !measured_velocity_valid ? 1.f : 0.f;
+		_disturbance_compensation_raw(i) = isFinite(u_disturbance_raw) ? u_disturbance_raw : 0.f;
+		_disturbance_compensation_selected(i) = isFinite(u_disturbance_selected) ? u_disturbance_selected : 0.f;
 		_second_order_axis_active[i] = true;
 	}
 
@@ -342,7 +445,23 @@ void LadrcPositionControl::reset()
 	_z3.zero();
 	_u_observer.zero();
 	_acceleration_sp.zero();
-	_disturbance_compensation.zero();
+	_nominal_control.zero();
+	_nominal_position_control.zero();
+	_nominal_velocity_reference_control.zero();
+	_nominal_velocity_state_control.zero();
+	_nominal_acceleration_damping_control.zero();
+	_velocity_feedback_setpoint.zero();
+	_velocity_feedback_measurement.zero();
+	_velocity_feedback_state.zero();
+	_velocity_tracking_control.zero();
+	_velocity_observer_error_control.zero();
+	_velocity_total_control.zero();
+	_velocity_feedback_requested_weight.zero();
+	_velocity_feedback_effective_weight.zero();
+	_velocity_feedback_valid.zero();
+	_velocity_feedback_fallback.zero();
+	_disturbance_compensation_raw.zero();
+	_disturbance_compensation_selected.zero();
 	_velocity_sp_td.zero();
 	_td_velocity_derivative.zero();
 	_initialized = false;
@@ -421,7 +540,13 @@ void LadrcPositionControl::resetVelocityOnlyAxis(int axis, const Vector3f &veloc
 	_z2(axis) = 0.f;
 	_z3(axis) = 0.f;
 	_u_observer(axis) = 0.f;
-	_disturbance_compensation(axis) = 0.f;
+	_nominal_control(axis) = 0.f;
+	_nominal_position_control(axis) = 0.f;
+	_nominal_velocity_reference_control(axis) = 0.f;
+	_nominal_velocity_state_control(axis) = 0.f;
+	_nominal_acceleration_damping_control(axis) = 0.f;
+	_disturbance_compensation_raw(axis) = 0.f;
+	_disturbance_compensation_selected(axis) = 0.f;
 	_second_order_axis_active[axis] = false;
 }
 
@@ -440,7 +565,13 @@ void LadrcPositionControl::resetSecondOrderAxis(int axis,
 	_z2(axis) = measured_velocity;
 	_z3(axis) = 0.f;
 	_u_observer(axis) = 0.f;
-	_disturbance_compensation(axis) = 0.f;
+	_nominal_control(axis) = 0.f;
+	_nominal_position_control(axis) = 0.f;
+	_nominal_velocity_reference_control(axis) = 0.f;
+	_nominal_velocity_state_control(axis) = 0.f;
+	_nominal_acceleration_damping_control(axis) = 0.f;
+	_disturbance_compensation_raw(axis) = 0.f;
+	_disturbance_compensation_selected(axis) = 0.f;
 	_second_order_axis_active[axis] = true;
 }
 

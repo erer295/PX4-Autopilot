@@ -366,7 +366,7 @@ PARAM_DEFINE_INT32(MC_HANG_FRQ_EN, 0);
  * @increment 0.05
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MC_HANG_WC_R, 0.45f);
+PARAM_DEFINE_FLOAT(MC_HANG_WC_R, 0.25f);
 
 /**
  * Horizontal LESO frequency ratio
@@ -379,7 +379,7 @@ PARAM_DEFINE_FLOAT(MC_HANG_WC_R, 0.45f);
  * @increment 0.05
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MC_HANG_WO_R, 1.50f);
+PARAM_DEFINE_FLOAT(MC_HANG_WO_R, 0.60f);
 
 /**
  * Horizontal LESO minimum bandwidth ratio
@@ -393,14 +393,15 @@ PARAM_DEFINE_FLOAT(MC_HANG_WO_R, 1.50f);
  * @increment 0.1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MC_HANG_WO_MIN, 2.5f);
+PARAM_DEFINE_FLOAT(MC_HANG_WO_MIN, 2.0f);
 
 /**
  * Suspended-load total horizontal acceleration
  *
- * Total horizontal acceleration budget used while anti-swing is requesting
- * acceleration. The effective limit is the lower of this value and
- * MPC_ACC_HOR_MAX. Trajectory control has priority within this budget.
+ * Total horizontal acceleration budget used while swing-management is
+ * requesting acceleration. The effective limit is the lower of this value
+ * and MPC_ACC_HOR_MAX. Swing-management requests keep priority within this
+ * budget and the base position controller uses the remaining authority.
  *
  * @unit m/s^2
  * @min 0.1
@@ -410,3 +411,166 @@ PARAM_DEFINE_FLOAT(MC_HANG_WO_MIN, 2.5f);
  * @group Multicopter Position Control
  */
 PARAM_DEFINE_FLOAT(MC_HANG_TOT_A, 3.0f);
+
+/**
+ * Suspended-load energy supervisor mode
+ *
+ * SHADOW computes and logs the correction without changing the command.
+ * ACTIVE applies the same correction before the total horizontal acceleration
+ * envelope. OFF and SHADOW preserve the previous closed loop.
+ *
+ * 0: disabled
+ * 1: shadow diagnostics only
+ * 2: active command correction
+ *
+ * @min 0
+ * @max 2
+ * @value 0 Disabled
+ * @value 1 Shadow
+ * @value 2 Active
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_INT32(MC_HANG_PAS_MD, 0);
+
+/**
+ * Energy supervisor activation energy
+ *
+ * The energy correction is gated off below this per-unit-mass swing energy.
+ *
+ * @min 0
+ * @max 20
+ * @decimal 4
+ * @increment 0.001
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_E, 0.005f);
+
+/**
+ * Energy supervisor minimum swing rate
+ *
+ * Prevents the projection denominator becoming ill-conditioned near zero
+ * swing rate.
+ *
+ * @unit rad/s
+ * @min 0
+ * @max 20
+ * @decimal 3
+ * @increment 0.01
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_R, 0.05f);
+
+/**
+ * Energy supervisor correction gain
+ *
+ * Gain applied to the limited minimum-power correction. Use 1.0 for the
+ * FAST-1/FAST-2 limits to equal the effective applied correction limits.
+ *
+ * @min 0
+ * @max 1.0
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_K, 0.20f);
+
+/**
+ * Energy supervisor correction limit
+ *
+ * Maximum raw correction norm before applying PAS_K. With PAS_K=1 this is
+ * also the final ACTIVE correction limit.
+ *
+ * @unit m/s^2
+ * @min 0
+ * @max 5
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_LIM, 0.15f);
+
+/**
+ * Energy supervisor correction slew rate
+ *
+ * @unit m/s^3
+ * @min 0
+ * @max 20
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_SLW, 0.50f);
+
+/**
+ * Energy supervisor positive-power filter
+ *
+ * First-order low-pass cutoff for max(P_candidate, 0). Zero bypasses the
+ * filter.
+ *
+ * @unit Hz
+ * @min 0
+ * @max 20
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_LPF, 1.0f);
+
+/**
+ * Energy supervisor positive-power deadband
+ *
+ * @min 0
+ * @max 10
+ * @decimal 4
+ * @increment 0.0005
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_P, 0.0005f);
+
+/**
+ * Energy supervisor positive-power dwell
+ *
+ * All gates must remain satisfied for this short duration before a correction
+ * is produced. When any gate clears, slew limiting returns it smoothly to zero.
+ *
+ * @unit s
+ * @min 0
+ * @max 10
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_DLY, 0.10f);
+
+/**
+ * Energy supervisor position-recovery protection
+ *
+ * In ACTIVE mode, preserve part of the candidate acceleration toward the
+ * position setpoint when the energy correction would oppose that recovery.
+ * SHADOW and OFF are intentionally unaffected.
+ *
+ * 0: disabled (third-stage FAST-2 behavior)
+ * 1: enabled
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disabled
+ * @value 1 Enabled
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_INT32(MC_HANG_PAS_POS, 0);
+
+/**
+ * Maximum position-recovery acceleration cancelled by ACTIVE
+ *
+ * When position protection is enabled, ACTIVE may oppose at most this
+ * fraction of the candidate acceleration toward the position setpoint.
+ * 0.40 retains at least 60 percent of the candidate recovery component.
+ *
+ * @min 0
+ * @max 1
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_PAS_PR, 0.40f);

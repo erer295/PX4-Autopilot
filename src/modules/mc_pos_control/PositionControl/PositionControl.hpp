@@ -50,6 +50,8 @@
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 
 #include <SuspendedLoadAntiSwing.hpp>
+#include <SuspendedLoadEnergySupervisor.hpp>
+#include <SuspendedLoadCoordinationStatus.hpp>
 
 struct PositionControlStates {
 	matrix::Vector3f position;
@@ -124,6 +126,18 @@ public:
 	const matrix::Vector3f &controllerRawAcceleration() const { return _controller_raw_acceleration; }
 	const matrix::Vector3f &finalAccelerationCommand() const { return _final_acceleration_command; }
 	const matrix::Vector3f &velocityIntegral() const { return _vel_int; }
+	const SuspendedLoadCoordinationStatus &suspendedLoadCoordinationStatus() const { return _coordination_status; }
+
+	/**
+	 * Predicted specific swing power from a NED horizontal acceleration.
+	 *
+	 * The swing rate is expressed in the heading-aligned horizontal frame.
+	 * Only yaw is used for the NED-to-heading rotation (small-tilt model).
+	 */
+	static float horizontalSwingPower(const matrix::Vector2f &acceleration_ned,
+					  const matrix::Vector2f &swing_rate_heading,
+					  float yaw,
+					  float rope_length);
 
 	/**
 	 * Set the maximum velocity to execute with feed forward and position control
@@ -189,6 +203,10 @@ public:
 	void setSuspendedLoadAntiSwingParameters(const SuspendedLoadAntiSwing::Parameters &parameters)
 	{
 		_suspended_load_anti_swing.setParameters(parameters);
+	}
+	void setSuspendedLoadEnergySupervisorParameters(const SuspendedLoadEnergySupervisor::Parameters &parameters)
+	{
+		_suspended_load_energy_supervisor.setParameters(parameters);
 	}
 
 	void setSuspendedLoadJointState(const SuspendedLoadAntiSwing::JointState &joint_state)
@@ -268,6 +286,7 @@ private:
 			bool update_velocity_integral,
 			bool update_horizontal_integral = true);
 	void _accelerationControl(); ///< Acceleration setpoint processing
+	void _updateSuspendedLoadCoordinationStatus();
 
 	// Gains
 	matrix::Vector3f _gain_pos_p; ///< Position control proportional gain
@@ -310,6 +329,11 @@ private:
 	float _yawspeed_sp{}; /** desired yaw-speed */
 
 	SuspendedLoadAntiSwing _suspended_load_anti_swing{};
+	SuspendedLoadEnergySupervisor _suspended_load_energy_supervisor{};
+	SuspendedLoadCoordinationStatus _coordination_status{};
+	matrix::Vector2f _last_suspended_load_base_acceleration{};
+	matrix::Vector2f _last_suspended_load_final_acceleration{};
+	bool _suspended_load_jerk_valid{false};
 	bool _suspended_load_anti_swing_flying{false};
 	ControllerMode _controller_mode{ControllerMode::PID};
 	ControllerMode _last_controller_mode{ControllerMode::PID};

@@ -34,6 +34,10 @@
 px4_add_library(SuspendedLoadAntiSwing
 	SuspendedLoadAntiSwing.cpp
 	SuspendedLoadAntiSwing.hpp
+	SuspendedLoadEnergySupervisor.cpp
+	SuspendedLoadEnergySupervisor.hpp
+	SuspendedLoadCoordinationDebugArray.hpp
+	SuspendedLoadCoordinationStatus.hpp
 	SuspendedLoadJointStateDebugArray.hpp
 )
 target_include_directories(SuspendedLoadAntiSwing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

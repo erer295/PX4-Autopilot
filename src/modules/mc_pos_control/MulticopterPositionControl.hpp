@@ -38,7 +38,10 @@
 #pragma once
 
 #include "PositionControl/PositionControl.hpp"
+#include "SuspendedLoadAntiSwing/SuspendedLoadCoordinationDebugArray.hpp"
+#include "SuspendedLoadAntiSwing/SuspendedLoadCoordinationPositionDebugArray.hpp"
 #include "SuspendedLoadAntiSwing/SuspendedLoadJointStateDebugArray.hpp"
+#include "SuspendedLoadAntiSwing/LadrcVelocityFeedbackDebugArray.hpp"
 #include "Takeoff/Takeoff.hpp"
 #include "GotoControl/GotoControl.hpp"
 
@@ -99,6 +102,9 @@ private:
 	void updateSuspendedLoadJointState();
 	void publishPositionLadrcStatus();
 	void publishSuspendedLoadAntiSwingStatus();
+	void publishSuspendedLoadCoordinationStatus();
+	void publishSuspendedLoadCoordinationPositionStatus();
+	void publishLadrcVelocityFeedbackStatus();
 
 	TakeoffHandling _takeoff; /**< state machine and ramp to bring the vehicle off the ground without jumps */
 
@@ -113,6 +119,9 @@ private:
 	// the status streams ambiguous in a ULog).
 	uORB::PublicationMulti<debug_array_s> _position_ladrc_status_pub{ORB_ID(debug_array)};
 	uORB::PublicationMulti<debug_array_s> _suspended_load_anti_swing_status_pub{ORB_ID(debug_array)};
+	uORB::PublicationMulti<debug_array_s> _suspended_load_coordination_status_pub{ORB_ID(debug_array)};
+	uORB::PublicationMulti<debug_array_s> _suspended_load_coordination_position_status_pub{ORB_ID(debug_array)};
+	uORB::PublicationMulti<debug_array_s> _ladrc_velocity_feedback_status_pub{ORB_ID(debug_array)};
 
 	uORB::SubscriptionCallbackWorkItem _local_pos_sub{this, ORB_ID(vehicle_local_position)};	/**< vehicle local position */
 
@@ -169,6 +178,7 @@ private:
 		(ParamFloat<px4::params::MC_PLADRC_LIM_DN>) _param_mc_pladrc_lim_dn,
 		(ParamFloat<px4::params::MC_PLADRC_D_XY>)   _param_mc_pladrc_d_xy,
 		(ParamFloat<px4::params::MC_PLADRC_D_Z>)    _param_mc_pladrc_d_z,
+		(ParamFloat<px4::params::MC_PLADRC_VFB_W>)  _param_mc_pladrc_vfb_w,
 		(ParamBool<px4::params::MC_PLADRC_TD_EN>)   _param_mc_pladrc_td_en,
 		(ParamFloat<px4::params::MC_PLADRC_TD_WXY>) _param_mc_pladrc_td_wxy,
 		(ParamFloat<px4::params::MC_PLADRC_TD_WZ>)  _param_mc_pladrc_td_wz,
@@ -253,7 +263,18 @@ private:
 		(ParamFloat<px4::params::MC_HANG_WC_R>) _param_mc_hang_wc_r,
 		(ParamFloat<px4::params::MC_HANG_WO_R>) _param_mc_hang_wo_r,
 		(ParamFloat<px4::params::MC_HANG_WO_MIN>) _param_mc_hang_wo_min,
-		(ParamFloat<px4::params::MC_HANG_TOT_A>) _param_mc_hang_tot_a
+		(ParamFloat<px4::params::MC_HANG_TOT_A>) _param_mc_hang_tot_a,
+		(ParamInt<px4::params::MC_HANG_PAS_MD>) _param_mc_hang_pas_md,
+		(ParamFloat<px4::params::MC_HANG_PAS_E>) _param_mc_hang_pas_e,
+		(ParamFloat<px4::params::MC_HANG_PAS_R>) _param_mc_hang_pas_r,
+		(ParamFloat<px4::params::MC_HANG_PAS_K>) _param_mc_hang_pas_k,
+		(ParamFloat<px4::params::MC_HANG_PAS_LIM>) _param_mc_hang_pas_lim,
+		(ParamFloat<px4::params::MC_HANG_PAS_SLW>) _param_mc_hang_pas_slw,
+		(ParamFloat<px4::params::MC_HANG_PAS_LPF>) _param_mc_hang_pas_lpf,
+		(ParamFloat<px4::params::MC_HANG_PAS_P>) _param_mc_hang_pas_p,
+		(ParamFloat<px4::params::MC_HANG_PAS_DLY>) _param_mc_hang_pas_dly,
+		(ParamInt<px4::params::MC_HANG_PAS_POS>) _param_mc_hang_pas_pos,
+		(ParamFloat<px4::params::MC_HANG_PAS_PR>) _param_mc_hang_pas_pr
 	);
 
 	math::WelfordMean<float> _sample_interval_s{};

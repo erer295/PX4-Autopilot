@@ -74,7 +74,9 @@ public:
 		float energy_per_mass{0.f};
 		float energy_gate{0.f};
 		float damping_gain{0.f};
+		float rope_length{0.f};
 		Mode mode{Mode::Off};
+		bool measurement_valid{false};
 		bool active{false};
 		bool engaged{false};
 		bool rearming{false};
@@ -138,4 +140,5 @@ private:
 	bool _active{false};
 	bool _rearming_after_safety{false};
 	bool _safety_limited{false};
+	bool _measurement_usable{false};
 };

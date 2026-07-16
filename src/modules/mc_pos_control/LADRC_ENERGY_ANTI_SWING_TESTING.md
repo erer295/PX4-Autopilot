@@ -141,6 +141,53 @@ acceleration in 6--8, disturbance compensation in 9--11, enable/TD/mode in
 command X/Y in 19--20, thrust-reconstructed applied acceleration X/Y in 21--22,
 and effective `wc_xy`/`wo_xy` in 23--24.
 
+`debug_array` named `hangcoord` (ID 684) is a shadow-only decomposition of the
+horizontal control path. It does not alter the controller output:
+
+```text
+0/1   LADRC nominal north/east
+2/3   raw disturbance compensation north/east
+4/5   selected disturbance compensation north/east (currently equals raw)
+6/7   anti-swing requested north/east
+8/9   anti-swing applied north/east
+10/11 final command north/east
+12/13 thrust-reconstructed north/east
+14    predicted nominal power
+15    predicted raw-disturbance power
+16    predicted selected-disturbance power
+17    predicted requested anti-swing power
+18    predicted applied anti-swing power
+19    predicted final-command power
+20    predicted thrust-reconstructed power
+21    filtered swing-rate norm
+22    diagnostic valid
+23/24 selector mode/blend (both zero in Commit A+B)
+25/26 passivity shadow norm/ACTIVE-control flag (ACTIVE remains zero)
+27    total horizontal acceleration saturation flag
+28/29 passivity SHADOW correction north/east
+30    passivity candidate predicted power
+31    filtered positive candidate power
+32    predicted power after the SHADOW correction
+33    passivity mode (0=OFF, 1=SHADOW)
+34    passivity SHADOW gate active
+35    passivity gate dwell elapsed
+```
+
+Power fields use `-L * dot(a_heading, swing_rate_heading)`. The NED
+acceleration is rotated only by yaw into the heading-aligned horizontal frame,
+matching the current small-tilt anti-swing model. These are command-level
+predictions, not measurements of the true payload energy derivative. Invalid
+or stale suspended-load measurements produce `valid=0` and NaN power fields.
+
+The energy supervisor currently supports only `MC_HANG_PAS_MD=0` (OFF) and
+`MC_HANG_PAS_MD=1` (SHADOW). SHADOW evaluates a gated, limited, slew-limited
+minimum-power correction using the `base LADRC + anti-swing requested`
+candidate. The correction is recorded in indices 28--35 but is never added to
+the final acceleration command; index 26 therefore remains zero. ACTIVE is not
+implemented. When swing management is requesting acceleration, it keeps
+priority inside `MC_HANG_TOT_A`, and the base position controller uses the
+remaining horizontal acceleration budget.
+
 Check that `posladrc[15:16]` equals `[21:22]` each cycle. Compare
 `hangas[4:5]` with `[16:17]` to quantify acceleration-budget clipping. During
 energy-mode sign validation, verify

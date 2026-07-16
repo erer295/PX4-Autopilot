@@ -74,6 +74,14 @@ enum PositionLadrcDebugArrayIndex : uint8_t {
 	POS_LADRC_APPLIED_Y,
 	POS_LADRC_WC_XY,
 	POS_LADRC_WO_XY,
+	POS_LADRC_NOMINAL_POSITION_X,
+	POS_LADRC_NOMINAL_POSITION_Y,
+	POS_LADRC_NOMINAL_VELOCITY_REFERENCE_X,
+	POS_LADRC_NOMINAL_VELOCITY_REFERENCE_Y,
+	POS_LADRC_NOMINAL_VELOCITY_STATE_X,
+	POS_LADRC_NOMINAL_VELOCITY_STATE_Y,
+	POS_LADRC_NOMINAL_ACCELERATION_DAMPING_X,
+	POS_LADRC_NOMINAL_ACCELERATION_DAMPING_Y,
 };
 
 } // namespace
@@ -285,6 +293,7 @@ void MulticopterPositionControl::parameters_update(bool force)
 		position_ladrc_parameters.acceleration_damping = Vector3f(_param_mc_pladrc_d_xy.get(),
 				_param_mc_pladrc_d_xy.get(),
 				_param_mc_pladrc_d_z.get());
+		position_ladrc_parameters.velocity_feedback_weight = _param_mc_pladrc_vfb_w.get();
 		// MC_HANG_TOT_A is the total vehicle horizontal-acceleration budget,
 		// including the primary LADRC command. Keep the LADRC-specific limit as
 		// an additional, never larger bound.
@@ -333,6 +342,20 @@ void MulticopterPositionControl::parameters_update(bool force)
 		anti_swing_parameters.abort_angle = _param_mc_hang_safe_a.get();
 		anti_swing_parameters.rearm_delay = _param_mc_hang_rearm.get();
 		_control.setSuspendedLoadAntiSwingParameters(anti_swing_parameters);
+
+		SuspendedLoadEnergySupervisor::Parameters energy_supervisor_parameters{};
+		energy_supervisor_parameters.mode = static_cast<SuspendedLoadEnergySupervisor::Mode>(_param_mc_hang_pas_md.get());
+		energy_supervisor_parameters.energy_threshold = _param_mc_hang_pas_e.get();
+		energy_supervisor_parameters.rate_min = _param_mc_hang_pas_r.get();
+		energy_supervisor_parameters.gain = _param_mc_hang_pas_k.get();
+		energy_supervisor_parameters.correction_limit = _param_mc_hang_pas_lim.get();
+		energy_supervisor_parameters.correction_slew_rate = _param_mc_hang_pas_slw.get();
+		energy_supervisor_parameters.power_lpf_cutoff_hz = _param_mc_hang_pas_lpf.get();
+		energy_supervisor_parameters.power_deadband = _param_mc_hang_pas_p.get();
+		energy_supervisor_parameters.dwell_time = _param_mc_hang_pas_dly.get();
+		energy_supervisor_parameters.position_recovery_protection_enabled = _param_mc_hang_pas_pos.get() != 0;
+		energy_supervisor_parameters.position_recovery_cancellation_ratio = _param_mc_hang_pas_pr.get();
+		_control.setSuspendedLoadEnergySupervisorParameters(energy_supervisor_parameters);
 
 		_goto_control.setParamMpcAccHor(_param_mpc_acc_hor.get());
 		_goto_control.setParamMpcAccDownMax(_param_mpc_acc_down_max.get());
@@ -735,6 +758,9 @@ void MulticopterPositionControl::Run()
 
 			publishPositionLadrcStatus();
 			publishSuspendedLoadAntiSwingStatus();
+			publishSuspendedLoadCoordinationStatus();
+			publishSuspendedLoadCoordinationPositionStatus();
+			publishLadrcVelocityFeedbackStatus();
 
 			// Publish internal position control setpoints
 			// on top of the input/feed-forward setpoints these containt the PID corrections
@@ -801,6 +827,10 @@ void MulticopterPositionControl::publishPositionLadrcStatus()
 	const Vector3f &acceleration_sp = position_ladrc.accelerationSetpoint();
 	const Vector3f &disturbance_compensation = position_ladrc.disturbanceCompensation();
 	const Vector3f &observer_input = position_ladrc.observerInput();
+	const Vector3f &nominal_position = position_ladrc.nominalPositionControl();
+	const Vector3f &nominal_velocity_reference = position_ladrc.nominalVelocityReferenceControl();
+	const Vector3f &nominal_velocity_state = position_ladrc.nominalVelocityStateControl();
+	const Vector3f &nominal_acceleration_damping = position_ladrc.nominalAccelerationDampingControl();
 	const Vector3f &controller_raw = _control.controllerRawAcceleration();
 	const Vector3f &final_command = _control.finalAccelerationCommand();
 	const Vector3f &applied_acceleration = _control.lastAppliedAcceleration();
@@ -835,6 +865,14 @@ void MulticopterPositionControl::publishPositionLadrcStatus()
 	debug_array.data[POS_LADRC_APPLIED_Y] = applied_acceleration(1);
 	debug_array.data[POS_LADRC_WC_XY] = position_ladrc.controllerBandwidth()(0);
 	debug_array.data[POS_LADRC_WO_XY] = position_ladrc.observerBandwidth()(0);
+	debug_array.data[POS_LADRC_NOMINAL_POSITION_X] = nominal_position(0);
+	debug_array.data[POS_LADRC_NOMINAL_POSITION_Y] = nominal_position(1);
+	debug_array.data[POS_LADRC_NOMINAL_VELOCITY_REFERENCE_X] = nominal_velocity_reference(0);
+	debug_array.data[POS_LADRC_NOMINAL_VELOCITY_REFERENCE_Y] = nominal_velocity_reference(1);
+	debug_array.data[POS_LADRC_NOMINAL_VELOCITY_STATE_X] = nominal_velocity_state(0);
+	debug_array.data[POS_LADRC_NOMINAL_VELOCITY_STATE_Y] = nominal_velocity_state(1);
+	debug_array.data[POS_LADRC_NOMINAL_ACCELERATION_DAMPING_X] = nominal_acceleration_damping(0);
+	debug_array.data[POS_LADRC_NOMINAL_ACCELERATION_DAMPING_Y] = nominal_acceleration_damping(1);
 	_position_ladrc_status_pub.publish(debug_array);
 }
 
@@ -843,6 +881,33 @@ void MulticopterPositionControl::publishSuspendedLoadAntiSwingStatus()
 	debug_array_s debug_array{};
 	suspended_load_anti_swing_status_bridge::fromStatus(_control.suspendedLoadAntiSwingStatus(), debug_array);
 	_suspended_load_anti_swing_status_pub.publish(debug_array);
+}
+
+void MulticopterPositionControl::publishSuspendedLoadCoordinationStatus()
+{
+	debug_array_s debug_array{};
+	suspended_load_coordination_status_bridge::fromStatus(_control.suspendedLoadCoordinationStatus(), debug_array);
+	_suspended_load_coordination_status_pub.publish(debug_array);
+}
+
+void MulticopterPositionControl::publishSuspendedLoadCoordinationPositionStatus()
+{
+	debug_array_s debug_array{};
+	suspended_load_coordination_position_status_bridge::fromStatus(_control.suspendedLoadCoordinationStatus(), debug_array);
+	_suspended_load_coordination_position_status_pub.publish(debug_array);
+}
+
+void MulticopterPositionControl::publishLadrcVelocityFeedbackStatus()
+{
+	if (!_control.ladrcPositionControlEnabled()) {
+		return;
+	}
+
+	const LadrcPositionControl &position_ladrc = _control.ladrcPositionControl();
+	debug_array_s debug_array{};
+	ladrc_velocity_feedback_status_bridge::fromStatus(_control.suspendedLoadCoordinationStatus(),
+			position_ladrc.controllerBandwidth()(0), position_ladrc.observerBandwidth()(0), debug_array);
+	_ladrc_velocity_feedback_status_pub.publish(debug_array);
 }
 
 trajectory_setpoint_s MulticopterPositionControl::generateFailsafeSetpoint(const hrt_abstime &now,

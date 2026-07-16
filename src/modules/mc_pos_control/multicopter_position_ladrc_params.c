@@ -179,6 +179,22 @@ PARAM_DEFINE_FLOAT(MC_PLADRC_D_XY, 0.0f);
 PARAM_DEFINE_FLOAT(MC_PLADRC_D_Z, 0.0f);
 
 /**
+ * Position LADRC horizontal EKF velocity feedback weight
+ *
+ * Blends the second-order LESO velocity state z2 with the estimator velocity
+ * in the horizontal nominal velocity-feedback term. Zero preserves the
+ * original z2-only controller. Invalid estimator velocity automatically
+ * falls back to z2.
+ *
+ * @min 0
+ * @max 1
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_PLADRC_VFB_W, 0.0f);
+
+/**
  * Position LADRC TD enable
  *
  * Enables the tracking differentiator that shapes the velocity setpoint input

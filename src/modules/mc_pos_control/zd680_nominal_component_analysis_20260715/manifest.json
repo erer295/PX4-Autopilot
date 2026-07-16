@@ -1,0 +1,50 @@
+{
+  "runs": [
+    {
+      "label": "L06_VALID",
+      "rope_length_m": 0.6,
+      "run_dir": "/tmp/zd680_nominal_component_diag_20260715/runs/ABL_FULL/2026-07-15/position_offboard_20260715_232318",
+      "quality_valid": true,
+      "rejection_reasons": []
+    },
+    {
+      "label": "L08_VALID",
+      "rope_length_m": 0.8,
+      "run_dir": "/tmp/zd680_nominal_component_diag_20260715_retry/runs/LEN_08_FULL/2026-07-15/position_offboard_20260715_232919",
+      "quality_valid": true,
+      "rejection_reasons": []
+    },
+    {
+      "label": "L08_VERTICAL_INVALID",
+      "rope_length_m": 0.8,
+      "run_dir": "/tmp/zd680_nominal_component_diag_20260715/runs/LEN_08_FULL/2026-07-15/position_offboard_20260715_232546",
+      "quality_valid": false,
+      "rejection_reasons": [
+        "truth_z_peak_le_0_5m",
+        "ekf_truth_z_peak_le_0_3m"
+      ]
+    }
+  ],
+  "band_hz": [
+    0.55,
+    0.75
+  ],
+  "power_definition": "P=-L*a_heading dot theta_dot_heading; positive injects swing energy",
+  "nominal_identity": "a_nominal=a_position+a_velocity_reference+a_velocity_state+a_acceleration_damping",
+  "implemented_second_order_terms": {
+    "a_position": "wc^2*(position_sp-z1)/b0",
+    "a_velocity_reference": "2*wc*velocity_sp_control/b0",
+    "a_velocity_state": "-2*wc*z2/b0",
+    "a_acceleration_damping": "-D*velocity_dot; D=0 in these runs"
+  },
+  "spectral_method": "linear detrend and Hann periodogram per contiguous event, then integrate 0.55-0.75 Hz PSD",
+  "segment_definition": {
+    "motion": "actions 02,04,06,08",
+    "motion_acceleration": "first ramp_time_s of each motion",
+    "motion_cruise": "between the two ramp windows",
+    "motion_deceleration": "last ramp_time_s of each motion",
+    "hover": "actions 01,03,05,07; terminal excluded",
+    "terminal_10s": "action 09",
+    "route": "actions 01 through 09"
+  }
+}
