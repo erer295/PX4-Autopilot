@@ -1,0 +1,50 @@
+[0/1] cd /home/lst/PX4-Autopilot/build/px4_sitl_default/src/modules/simulation/gz_bridge && /usr/bin/cmake -E env PX4_SIM_MODEL=gz_zd680_hang GZ_IP=127.0.0.1 /home/lst/PX4-Autopilot/build/px4_sitl_default/bin/px4
+
+______  __   __    ___ 
+| ___ \ \ \ / /   /   |
+| |_/ /  \ V /   / /| |
+|  __/   /   \  / /_| |
+| |     / /^\ \ \___  |
+\_|     \/   \/     |_/
+
+px4 starting.
+
+[0mINFO  [37m[px4] [0mstartup script: /bin/sh etc/init.d-posix/rcS 0[0m
+INFO  [init] found model autostart file as SYS_AUTOSTART=22002
+[0mINFO  [37m[param] [0mselected parameter default file parameters.bson[0m
+[0mINFO  [37m[param] [0mimporting from 'parameters.bson'[0m
+[0mINFO  [37m[parameters] [0mBSON document size 1300 bytes, decoded 1300 bytes (INT32:28, FLOAT:32)[0m
+[0mINFO  [37m[param] [0mselected parameter backup file parameters_backup.bson[0m
+[0mINFO  [37m[dataman] [0mdata manager file './dataman' size is 1208528 bytes[0m
+INFO  [init] Gazebo simulator
+INFO  [init] Starting gazebo with world: /home/lst/PX4-Autopilot/Tools/simulation/gz/worlds/default.sdf
+INFO  [init] Gazebo world is ready
+INFO  [init] Spawning model
+[0mINFO  [37m[gz_bridge] [0mworld: default, model: zd680_hang_0[0m
+[0mINFO  [37m[gz_bridge] [0msubscribed suspended-load joint_state: /world/default/model/zd680_hang_0/joint_state[0m
+[0mINFO  [37m[lockstep_scheduler] [0msetting initial absolute time to 3084000 us[0m
+[31mERROR [37m[load_mon] [31mwrong type passed to param_get() for param SYS_RGB_MAXBRT[0m
+[0mINFO  [37m[commander] [0mLED: open /dev/led0 failed (22)[0m
+[33mWARN  [37m[health_and_arming_checks] [33mPreflight Fail: ekf2 missing data[0m
+[33mWARN  [37m[health_and_arming_checks] [33mPreflight Fail: No connection to the ground control station	[0m
+[0mINFO  [37m[mc_rate_control] [0mMC rate inner loop: PID (MC_RBF_EN=0, MC_RBF_INJECT_EN=0, MC_RBF_LEARN_EN=0)[0m
+[0mINFO  [37m[mc_pos_control] [0mMC position outer loop: PID (MC_PLADRC_EN=0, MC_PLADRC_TD_EN=0)[0m
+[0mINFO  [37m[tone_alarm] [0mhome set[0m
+[0mINFO  [37m[uxrce_dds_client] [0minit UDP agent IP:127.0.0.1, port:8888[0m
+[0mINFO  [37m[mavlink] [0mmode: Normal, data rate: 4000000 B/s on udp port 18570 remote port 14550[0m
+[0mINFO  [37m[mavlink] [0mmode: Onboard, data rate: 4000000 B/s on udp port 14580 remote port 14540[0m
+[0mINFO  [37m[mavlink] [0mmode: Onboard, data rate: 4000 B/s on udp port 14280 remote port 14030[0m
+[0mINFO  [37m[mavlink] [0mmode: Gimbal, data rate: 400000 B/s on udp port 13030 remote port 13280[0m
+[0mINFO  [37m[logger] [0mlogger started (mode=all)[0m
+[0mINFO  [37m[logger] [0mStart file log (type: full)[0m
+[0mINFO  [37m[logger] [0m[logger] ./log/2026-07-21/07_20_57.ulg	[0m
+[0mINFO  [37m[logger] [0mOpened full log file: ./log/2026-07-21/07_20_57.ulg[0m
+[0mINFO  [37m[mavlink] [0mMAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)[0m
+[0mINFO  [37m[mavlink] [0mMAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)[0m
+[0mINFO  [37m[px4] [0mStartup script returned successfully[0m
+pxh> [33mWARN  [37m[health_and_arming_checks] [33mPreflight Fail: No connection to the ground control station	[0m
+[33mWARN  [37m[health_and_arming_checks] [33mPreflight Fail: No connection to the ground control station	[0m
+[2Kpxh> s[2Kpxh> sh[2Kpxh> shu[2Kpxh> shut[2Kpxh> shutd[2Kpxh> shutdo[2Kpxh> shutdow[2Kpxh> shutdown
+Exiting NOW.
+ninja: build stopped: interrupted by user.
+make: *** [Makefile:232: px4_sitl] 已终止

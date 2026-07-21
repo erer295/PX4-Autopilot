@@ -1,0 +1,8 @@
+{
+  "run_count": 9,
+  "formal_eligible_count": 2,
+  "timing_valid_count": 9,
+  "ladrc_parameter_count": 6,
+  "stage1_formal_pair_count": 0,
+  "note": "Formal paired comparison is empty unless both members passed the strict initial gate."
+}

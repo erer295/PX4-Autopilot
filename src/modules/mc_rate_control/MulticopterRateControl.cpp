@@ -90,6 +90,18 @@ enum LadrcTDDebugArrayIndex : uint8_t {
 	LADRC_TD_ERR_OK,
 	LADRC_TD_RATE_OK,
 	LADRC_TD_TORQUE_OK,
+	LADRC_Z1_ROLL,
+	LADRC_Z1_PITCH,
+	LADRC_Z1_YAW,
+	LADRC_Z2_ROLL,
+	LADRC_Z2_PITCH,
+	LADRC_Z2_YAW,
+	LADRC_U_RAW_ROLL,
+	LADRC_U_RAW_PITCH,
+	LADRC_U_RAW_YAW,
+	LADRC_U_LIMIT_ROLL,
+	LADRC_U_LIMIT_PITCH,
+	LADRC_U_LIMIT_YAW,
 };
 
 static inline float constrainUnitByScale(float value, float scale)
@@ -975,6 +987,22 @@ MulticopterRateControl::Run()
 				td_debug.data[LADRC_TD_ERR_OK] = ladrc_td_rate_error_ok ? 1.f : 0.f;
 				td_debug.data[LADRC_TD_RATE_OK] = ladrc_td_body_rate_ok ? 1.f : 0.f;
 				td_debug.data[LADRC_TD_TORQUE_OK] = ladrc_td_torque_ok ? 1.f : 0.f;
+				const Vector3f &ladrc_z1 = _ladrc_rate_control.getObserverRate();
+				const Vector3f &ladrc_z2 = _ladrc_rate_control.getTotalDisturbance();
+				const Vector3f &ladrc_u_raw = _ladrc_rate_control.getUnconstrainedOutput();
+				const Vector<bool, 3> &ladrc_u_limited = _ladrc_rate_control.getOutputLimited();
+				td_debug.data[LADRC_Z1_ROLL] = ladrc_z1(0);
+				td_debug.data[LADRC_Z1_PITCH] = ladrc_z1(1);
+				td_debug.data[LADRC_Z1_YAW] = ladrc_z1(2);
+				td_debug.data[LADRC_Z2_ROLL] = ladrc_z2(0);
+				td_debug.data[LADRC_Z2_PITCH] = ladrc_z2(1);
+				td_debug.data[LADRC_Z2_YAW] = ladrc_z2(2);
+				td_debug.data[LADRC_U_RAW_ROLL] = ladrc_u_raw(0);
+				td_debug.data[LADRC_U_RAW_PITCH] = ladrc_u_raw(1);
+				td_debug.data[LADRC_U_RAW_YAW] = ladrc_u_raw(2);
+				td_debug.data[LADRC_U_LIMIT_ROLL] = ladrc_u_limited(0) ? 1.f : 0.f;
+				td_debug.data[LADRC_U_LIMIT_PITCH] = ladrc_u_limited(1) ? 1.f : 0.f;
+				td_debug.data[LADRC_U_LIMIT_YAW] = ladrc_u_limited(2) ? 1.f : 0.f;
 				_ladrc_td_debug_pub.publish(td_debug);
 			}
 

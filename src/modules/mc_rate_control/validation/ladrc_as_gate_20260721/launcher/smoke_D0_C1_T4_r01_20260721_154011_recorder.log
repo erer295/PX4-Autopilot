@@ -1,0 +1,47 @@
+Output directory: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048
+attaching to an already running PX4/Gazebo instance
+connecting MAVLink: udpin:0.0.0.0:14540
+hang joint recorder started: /world/default/model/zd680_hang_0/joint_state
+leaving existing PX4 rate-controller parameters unchanged
+leaving existing PX4 position-controller parameters unchanged
+holding current hover point: x=-0.05 m y=0.00 m z=-10.00 m yaw=96.9 deg
+streaming position setpoint NED: x=-0.05 m y=0.00 m z=-10.00 m yaw=96.9 deg
+OFFBOARD mode command sent: ok
+vehicle is already armed; no arm command was sent
+settling for 8.0s
+waiting position: x=0.00 y=0.08 z=-10.06 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=0.07 y=0.03 z=-10.01 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.05 y=-0.00 z=-10.00 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.05 y=0.13 z=-10.06 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=0.08 y=0.17 z=-9.98 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.04 y=-0.02 z=-10.03 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.17 y=0.08 z=-10.03 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=0.02 y=0.11 z=-9.98 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.08 y=-0.02 z=-10.07 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.16 y=0.08 z=-9.99 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.03 y=0.06 z=-10.03 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.13 y=-0.09 z=-10.04 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.14 y=0.04 z=-9.99 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=0.02 y=-0.03 z=-10.06 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+waiting position: x=-0.18 y=-0.08 z=-10.00 target=(-0.05,0.00,-10.00) mode=UNKNOWN
+WARN: position was not stable before timeout
+position stable check: not stable
+abort safety action (position_not_stable): LOITER mode command sent: ok
+wrote hang joint samples: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/hang_joint_samples.csv (1981 rows)
+wrote hang joint samples: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/hang_joint_samples.csv (1981 rows)
+copied ULog: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/position_offboard.ulg
+wrote live samples: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/live_samples.csv
+
+Position OFFBOARD run complete.
+events:  /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/events.csv
+summary: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/summary.csv
+coord:   /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/hangcoord_summary.csv
+posprot: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/hangpos4_summary.csv
+active:  /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/active_summary.json
+validity:/home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/validity.json (not_applicable)
+summary records: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/summaries
+summary index:   /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/summaries/run_index.csv
+live:    /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/live_samples.csv
+hang:    /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/hang_joint_samples.csv
+ulog:    /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/position_offboard.ulg
+console: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C1_T4_r01_20260721_154011/2026-07-21/position_offboard_20260721_154048/px4_console.log

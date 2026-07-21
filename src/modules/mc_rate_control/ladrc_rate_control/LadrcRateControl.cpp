@@ -154,6 +154,8 @@ void LadrcRateControl::initializeBumpless(const Vector3f &rate,
 		_z2(i) = math::constrain(_wc(i) * (desired_rate - measured_rate) - _b0(i) * limited_output,
 					 -z2_limit, z2_limit);
 		_u(i) = limited_output;
+		_u_unconstrained(i) = limited_output;
+		_output_limited(i) = false;
 		_disturbance_compensation(i) = -_z2(i) / _b0(i);
 	}
 
@@ -185,6 +187,8 @@ Vector3f LadrcRateControl::update(const Vector3f &rate,
 	for (int i = 0; i < 3; i++) {
 		if (!isFinite(rate(i)) || !isFinite(rate_sp(i))) {
 			torque_setpoint(i) = 0.f;
+			_u_unconstrained(i) = 0.f;
+			_output_limited(i) = false;
 			_u_observer(i) = 0.f;
 			continue;
 		}
@@ -238,7 +242,10 @@ Vector3f LadrcRateControl::update(const Vector3f &rate,
 			u -= _angular_accel_damping(i) * angular_accel(i);
 		}
 
-		u = math::constrain(u, -_torque_limit(i), _torque_limit(i));
+		_u_unconstrained(i) = isFinite(u) ? u : 0.f;
+		const float constrained_u = math::constrain(_u_unconstrained(i), -_torque_limit(i), _torque_limit(i));
+		_output_limited(i) = fabsf(constrained_u - _u_unconstrained(i)) > FLT_EPSILON;
+		u = constrained_u;
 
 		if (!isFinite(u)) {
 			u = 0.f;
@@ -264,6 +271,8 @@ void LadrcRateControl::reset()
 	_z1.zero();
 	_z2.zero();
 	_u.zero();
+	_u_unconstrained.zero();
+	_output_limited = Vector<bool, 3>{};
 	_u_observer.zero();
 	_disturbance_compensation.zero();
 
@@ -278,6 +287,8 @@ void LadrcRateControl::reset(const Vector3f &rate)
 
 	_z2.zero();
 	_u.zero();
+	_u_unconstrained.zero();
+	_output_limited = Vector<bool, 3>{};
 	_u_observer.zero();
 	_disturbance_compensation.zero();
 

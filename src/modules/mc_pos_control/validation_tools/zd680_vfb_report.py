@@ -20,6 +20,10 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 GENERIC_REPORT = REPO_ROOT / "Tools" / "simulation" / "gz" / "tools" / "zd680_validation_report.py"
 GENERIC = runpy.run_path(str(GENERIC_REPORT), run_name="zd680_vfb_generic_report_api")
 MODES = ("VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W05")
+SUPPORTED_MODES = (
+    "VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W25", "VFB_L08_W05",
+    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
+)
 MOVE_NAMES = ("north", "east", "south", "west")
 Z_OBSERVATION_ONLY_CHECKS = {
     "truth_z_peak_le_0_5m",
@@ -73,6 +77,52 @@ def peak(values: np.ndarray) -> float:
     values = np.asarray(values, dtype=float)
     values = values[np.isfinite(values)]
     return float(np.max(np.abs(values))) if values.size else math.nan
+
+
+def dataset_optional(ulog: ULog, name: str):
+    try:
+        return ulog.get_dataset(name).data
+    except (KeyError, IndexError):
+        return None
+
+
+def quaternion_to_euler_deg(data: Dict[str, np.ndarray], prefix: str = "q") -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Convert PX4 scalar-first quaternions to roll, pitch and yaw in degrees."""
+    w = np.asarray(data[f"{prefix}[0]"], dtype=float)
+    x = np.asarray(data[f"{prefix}[1]"], dtype=float)
+    y = np.asarray(data[f"{prefix}[2]"], dtype=float)
+    z = np.asarray(data[f"{prefix}[3]"], dtype=float)
+    norm = np.sqrt(w * w + x * x + y * y + z * z)
+    norm = np.where(norm > 1.0e-9, norm, np.nan)
+    w, x, y, z = w / norm, x / norm, y / norm, z / norm
+    roll = np.arctan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y))
+    pitch = np.arcsin(np.clip(2.0 * (w * y - z * x), -1.0, 1.0))
+    yaw = np.arctan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+    return np.degrees(roll), np.degrees(pitch), np.degrees(yaw)
+
+
+def quaternion_tracking_error_deg(attitude: Dict[str, np.ndarray], setpoint: Dict[str, np.ndarray],
+                                  start: float, end: float) -> np.ndarray:
+    """Return shortest 3-D quaternion angle between attitude and setpoint."""
+    actual_t = np.asarray(attitude["timestamp"], dtype=float) * 1.0e-6
+    desired_t = np.asarray(setpoint["timestamp"], dtype=float) * 1.0e-6
+    mask = (desired_t >= start) & (desired_t <= end)
+    desired_t = desired_t[mask]
+    if desired_t.size == 0 or actual_t.size < 2:
+        return np.asarray([], dtype=float)
+    actual = np.column_stack([np.interp(desired_t, actual_t, np.asarray(attitude[f"q[{i}]"], dtype=float))
+                              for i in range(4)])
+    desired = np.column_stack([np.asarray(setpoint[f"q_d[{i}]"], dtype=float)[mask] for i in range(4)])
+    actual_norm = np.linalg.norm(actual, axis=1)
+    desired_norm = np.linalg.norm(desired, axis=1)
+    valid = np.isfinite(actual).all(axis=1) & np.isfinite(desired).all(axis=1) \
+        & (actual_norm > 1.0e-9) & (desired_norm > 1.0e-9)
+    if not np.any(valid):
+        return np.asarray([], dtype=float)
+    actual = actual[valid] / actual_norm[valid, None]
+    desired = desired[valid] / desired_norm[valid, None]
+    dot = np.clip(np.abs(np.sum(actual * desired, axis=1)), 0.0, 1.0)
+    return np.degrees(2.0 * np.arccos(dot))
 
 
 def contiguous_slices(t: np.ndarray) -> List[slice]:
@@ -173,7 +223,23 @@ def write_csv(path: Path, rows: Sequence[Dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
-def latest_runs(root: Path) -> Dict[str, Path]:
+def expected_weight(mode: str) -> float:
+    if mode in ("STD_L06_PID_AS", "STD_L06_PID_AS_PAS"):
+        return 0.0
+    if mode == "STD_L06_FULL_W05":
+        return 0.5
+    if mode == "STD_L06_FULL_W10_OBS_DECOUPLE":
+        return 1.0
+    if mode.endswith("W00"):
+        return 0.0
+    if mode.endswith("W25"):
+        return 0.25
+    if mode.endswith("W05"):
+        return 0.5
+    return math.nan
+
+
+def latest_runs(root: Path, modes: Sequence[str] = MODES) -> Dict[str, Path]:
     grouped: Dict[str, List[Path]] = {}
     for metadata_path in root.glob("runs/*/*/*/metadata.json"):
         try:
@@ -181,7 +247,7 @@ def latest_runs(root: Path) -> Dict[str, Path]:
             mode = str(metadata.get("experiment", {}).get("validation_suite", ""))
         except (OSError, json.JSONDecodeError):
             continue
-        if mode in MODES:
+        if mode in modes:
             grouped.setdefault(mode, []).append(metadata_path.parent)
     return {mode: max(paths, key=lambda path: path.stat().st_mtime) for mode, paths in grouped.items()}
 
@@ -277,10 +343,12 @@ def analyze_run(mode: str, run_dir: Path):
     events = GENERIC["read_events"](run_dir / "events.csv")
     windows = action_windows(events)
     ulog = ULog(str(run_dir / "position_offboard.ulg"), [
-        "vehicle_local_position", "debug_array", "estimator_status", "sensor_combined", "cpuload"
+        "vehicle_local_position", "debug_array", "estimator_status", "sensor_combined", "cpuload",
+        "vehicle_attitude", "vehicle_angular_velocity", "vehicle_attitude_setpoint", "vehicle_status",
+        "control_allocator_status", "actuator_motors",
     ])
     vfb = GENERIC["find_debug"](ulog, 686)
-    expected_weight = 0.5 if mode.endswith("W05") else 0.0
+    expected_vfb_weight = expected_weight(mode)
     checks: Dict[str, Dict[str, object]] = {}
     warnings: List[str] = []
 
@@ -319,11 +387,11 @@ def analyze_run(mode: str, run_dir: Path):
         for pair in ACCEL_FIELDS.values() for index in pair
     ])
     check("requested_weight_matches_label", math.isfinite(requested_median)
-          and abs(requested_median - expected_weight) <= 0.002,
-          {"expected": expected_weight, "observed": requested_median})
+          and abs(requested_median - expected_vfb_weight) <= 0.002,
+          {"expected": expected_vfb_weight, "observed": requested_median})
     check("effective_weight_matches_request", math.isfinite(effective_median)
-          and abs(effective_median - expected_weight) <= 0.002,
-          {"expected": expected_weight, "observed": effective_median})
+          and abs(effective_median - expected_vfb_weight) <= 0.002,
+          {"expected": expected_vfb_weight, "observed": effective_median})
     check("control_diagnostics_finite", controls.size > 0 and np.all(np.isfinite(controls)),
           {"samples": int(controls.shape[0]), "nonfinite": int(np.size(controls) - np.isfinite(controls).sum())})
     check("velocity_valid_not_persistent", math.isfinite(velocity_valid_ratio) and velocity_valid_ratio >= 0.99,
@@ -368,6 +436,89 @@ def analyze_run(mode: str, run_dir: Path):
     cpu_t = np.asarray(cpu["timestamp"], dtype=float) * 1.0e-6
     cpu_load = np.asarray(cpu["load"], dtype=float)[(cpu_t >= route[2]) & (cpu_t <= route[3])]
 
+    attitude = dataset_optional(ulog, "vehicle_attitude")
+    angular_velocity = dataset_optional(ulog, "vehicle_angular_velocity")
+    attitude_setpoint = dataset_optional(ulog, "vehicle_attitude_setpoint")
+    vehicle_status = dataset_optional(ulog, "vehicle_status")
+    allocator = dataset_optional(ulog, "control_allocator_status")
+    motors = dataset_optional(ulog, "actuator_motors")
+    attitude_metrics: Dict[str, float] = {}
+    if attitude is not None:
+        attitude_t = np.asarray(attitude["timestamp"], dtype=float) * 1.0e-6
+        attitude_mask = (attitude_t >= route[2]) & (attitude_t <= route[3])
+        roll_deg, pitch_deg, _ = quaternion_to_euler_deg(attitude)
+        tilt_deg = np.degrees(np.arccos(np.clip(
+            1.0 - 2.0 * (np.square(np.asarray(attitude["q[1]"], dtype=float))
+                         + np.square(np.asarray(attitude["q[2]"], dtype=float))), -1.0, 1.0)))
+        attitude_metrics.update({
+            "attitude_sample_count": int(attitude_mask.sum()),
+            "roll_rms_deg": rms(roll_deg[attitude_mask]),
+            "roll_peak_abs_deg": peak(roll_deg[attitude_mask]),
+            "pitch_rms_deg": rms(pitch_deg[attitude_mask]),
+            "pitch_peak_abs_deg": peak(pitch_deg[attitude_mask]),
+            "tilt_rms_deg": rms(tilt_deg[attitude_mask]),
+            "tilt_p95_deg": percentile(tilt_deg[attitude_mask], 95.0),
+            "tilt_peak_deg": peak(tilt_deg[attitude_mask]),
+            "attitude_quat_reset_count": int(np.ptp(np.asarray(attitude["quat_reset_counter"], dtype=np.int64)[attitude_mask]))
+                if attitude_mask.any() else 0,
+        })
+        if attitude_setpoint is not None:
+            tracking_error = quaternion_tracking_error_deg(attitude, attitude_setpoint, route[2], route[3])
+            attitude_metrics.update({
+                "attitude_tracking_error_rms_deg": rms(tracking_error),
+                "attitude_tracking_error_p95_deg": percentile(tracking_error, 95.0),
+                "attitude_tracking_error_peak_deg": peak(tracking_error),
+            })
+    if angular_velocity is not None:
+        angular_t = np.asarray(angular_velocity["timestamp"], dtype=float) * 1.0e-6
+        angular_mask = (angular_t >= route[2]) & (angular_t <= route[3])
+        roll_rate = np.asarray(angular_velocity["xyz[0]"], dtype=float)[angular_mask]
+        pitch_rate = np.asarray(angular_velocity["xyz[1]"], dtype=float)[angular_mask]
+        yaw_rate = np.asarray(angular_velocity["xyz[2]"], dtype=float)[angular_mask]
+        horizontal_rate = np.hypot(roll_rate, pitch_rate)
+        attitude_metrics.update({
+            "horizontal_body_rate_rms_rad_s": rms(horizontal_rate),
+            "horizontal_body_rate_p95_rad_s": percentile(horizontal_rate, 95.0),
+            "horizontal_body_rate_peak_rad_s": peak(horizontal_rate),
+            "yaw_rate_rms_rad_s": rms(yaw_rate),
+            "yaw_rate_peak_abs_rad_s": peak(yaw_rate),
+        })
+    if vehicle_status is not None:
+        status_t = np.asarray(vehicle_status["timestamp"], dtype=float) * 1.0e-6
+        status_mask = (status_t >= route[2]) & (status_t <= route[3])
+        failure_detector = np.asarray(vehicle_status["failure_detector_status"], dtype=np.uint32)[status_mask]
+        status_failsafe = np.asarray(vehicle_status["failsafe"], dtype=bool)[status_mask]
+        attitude_metrics.update({
+            "failure_detector_nonzero_ratio": float(np.mean(failure_detector != 0)) if failure_detector.size else math.nan,
+            "vehicle_status_failsafe_ratio": float(np.mean(status_failsafe)) if status_failsafe.size else math.nan,
+        })
+    if allocator is not None:
+        allocator_t = np.asarray(allocator["timestamp"], dtype=float) * 1.0e-6
+        allocator_mask = (allocator_t >= route[2]) & (allocator_t <= route[3])
+        torque_achieved = np.asarray(allocator["torque_setpoint_achieved"], dtype=bool)[allocator_mask]
+        thrust_achieved = np.asarray(allocator["thrust_setpoint_achieved"], dtype=bool)[allocator_mask]
+        unallocated_torque = np.column_stack([
+            np.asarray(allocator[f"unallocated_torque[{i}]"], dtype=float)[allocator_mask] for i in range(3)
+        ])
+        attitude_metrics.update({
+            "allocator_torque_not_achieved_ratio": float(np.mean(~torque_achieved)) if torque_achieved.size else math.nan,
+            "allocator_thrust_not_achieved_ratio": float(np.mean(~thrust_achieved)) if thrust_achieved.size else math.nan,
+            "unallocated_torque_peak": peak(np.linalg.norm(unallocated_torque, axis=1)),
+        })
+    if motors is not None:
+        motor_t = np.asarray(motors["timestamp"], dtype=float) * 1.0e-6
+        motor_mask = (motor_t >= route[2]) & (motor_t <= route[3])
+        motor_values = np.column_stack([
+            np.asarray(motors[f"control[{i}]"], dtype=float)[motor_mask] for i in range(4)
+        ])
+        finite_motor = motor_values[np.isfinite(motor_values)]
+        attitude_metrics.update({
+            "motor_output_min": float(np.min(finite_motor)) if finite_motor.size else math.nan,
+            "motor_output_max": float(np.max(finite_motor)) if finite_motor.size else math.nan,
+            "motor_high_saturation_sample_ratio": float(np.mean(np.any(motor_values >= 0.99, axis=1)))
+                if motor_values.size else math.nan,
+        })
+
     ekf_minus_z2 = np.hypot(np.asarray(vfb["data[10]"], dtype=float)[route_mask],
                             np.asarray(vfb["data[11]"], dtype=float)[route_mask])
     feedback_minus_z2 = np.hypot(
@@ -376,13 +527,32 @@ def analyze_run(mode: str, run_dir: Path):
     feedback_minus_ekf = np.hypot(
         np.asarray(vfb["data[6]"], dtype=float)[route_mask] - np.asarray(vfb["data[2]"], dtype=float)[route_mask],
         np.asarray(vfb["data[7]"], dtype=float)[route_mask] - np.asarray(vfb["data[3]"], dtype=float)[route_mask])
+    observer_acceleration = np.hypot(
+        np.asarray(vfb["data[18]"], dtype=float)[route_mask],
+        np.asarray(vfb["data[19]"], dtype=float)[route_mask])
+    z3_acceleration = np.hypot(
+        np.asarray(vfb["data[24]"], dtype=float)[route_mask],
+        np.asarray(vfb["data[25]"], dtype=float)[route_mask])
+    if mode == "STD_L06_FULL_W10_OBS_DECOUPLE":
+        feedback_ekf_rms = rms(feedback_minus_ekf)
+        observer_acceleration_peak = peak(observer_acceleration)
+        z3_acceleration_peak = peak(z3_acceleration)
+        z3_acceleration_std = float(np.nanstd(z3_acceleration)) if z3_acceleration.size else math.nan
+        check("w10_feedback_equals_ekf", math.isfinite(feedback_ekf_rms) and feedback_ekf_rms <= 1.0e-5,
+              feedback_ekf_rms)
+        check("w10_observer_error_direct_control_zero",
+              math.isfinite(observer_acceleration_peak) and observer_acceleration_peak <= 1.0e-5,
+              observer_acceleration_peak)
+        check("w10_z3_still_updates", math.isfinite(z3_acceleration_peak) and math.isfinite(z3_acceleration_std)
+              and z3_acceleration_peak > 1.0e-5 and z3_acceleration_std > 1.0e-6,
+              {"peak": z3_acceleration_peak, "std": z3_acceleration_std})
     base.update({
         "strict_base_valid": bool(validity.get("valid", False)),
         "analysis_base_valid": analysis_base_valid,
         "z_observation_only": bool(z_observations),
         "z_observation_reasons": ";".join(z_observations),
         "non_z_rejection_reasons": ";".join(non_z_rejections),
-        "expected_vfb_weight": expected_weight,
+        "expected_vfb_weight": expected_vfb_weight,
         "requested_weight_median": requested_median,
         "requested_weight_mean": float(np.nanmean(requested)) if requested.size else math.nan,
         "requested_weight_min": float(np.nanmin(requested)) if requested.size else math.nan,
@@ -398,6 +568,9 @@ def analyze_run(mode: str, run_dir: Path):
         "ekf_minus_z2_peak_m_s": peak(ekf_minus_z2),
         "feedback_minus_z2_rms_m_s": rms(feedback_minus_z2),
         "feedback_minus_ekf_rms_m_s": rms(feedback_minus_ekf),
+        "observer_error_acceleration_peak_m_s2": peak(observer_acceleration),
+        "z3_acceleration_peak_m_s2": peak(z3_acceleration),
+        "z3_acceleration_std_m_s2": float(np.nanstd(z3_acceleration)) if z3_acceleration.size else math.nan,
         "nominal_identity_max_abs_m_s2": float(np.nanmax(identity_nominal)) if identity_nominal.size else math.nan,
         "velocity_identity_max_abs_m_s2": float(np.nanmax(identity_velocity)) if identity_velocity.size else math.nan,
         "xy_error_rms_m": rms(xy_error[route_mask_local]),
@@ -414,7 +587,25 @@ def analyze_run(mode: str, run_dir: Path):
         "sensor_combined_gap_peak_ms": (1000.0 * float(np.nanmax(sensor_gaps)) if sensor_gaps.size else math.nan),
         "cpu_load_mean_pct": (100.0 * float(np.nanmean(cpu_load)) if cpu_load.size else math.nan),
         "cpu_load_peak_pct": (100.0 * float(np.nanmax(cpu_load)) if cpu_load.size else math.nan),
+        **attitude_metrics,
     })
+    attitude_limits = {
+        "tilt_peak_deg": 20.0,
+        "horizontal_body_rate_peak_rad_s": 2.0,
+        "attitude_tracking_error_peak_deg": 10.0,
+        "failure_detector_nonzero_ratio": 0.0,
+        "vehicle_status_failsafe_ratio": 0.0,
+        "attitude_quat_reset_count": 0.0,
+        "allocator_torque_not_achieved_ratio": 0.01,
+        "motor_high_saturation_sample_ratio": 0.05,
+    }
+    attitude_rejections = [name for name, limit in attitude_limits.items()
+                           if not math.isfinite(finite(base.get(name))) or finite(base.get(name)) > limit]
+    base["attitude_control_valid"] = not attitude_rejections
+    base["attitude_control_rejection_reasons"] = ";".join(attitude_rejections)
+    check("attitude_control_stable", not attitude_rejections,
+          {name: {"observed": finite(base.get(name)), "limit": limit}
+           for name, limit in attitude_limits.items()})
 
     for window_name, direction, start, end in windows:
         mask = combined_window_mask(t, window_name, start, end, events)
@@ -483,59 +674,63 @@ def reduction_percent(test: float, baseline: float) -> float:
 def compare(rows: Sequence[Dict[str, object]]) -> List[Dict[str, object]]:
     by_mode = {str(row["mode"]): row for row in rows}
     comparisons = []
-    for rope, baseline_mode, test_mode in ((0.6, "VFB_L06_W00", "VFB_L06_W05"),
-                                           (0.8, "VFB_L08_W00", "VFB_L08_W05")):
-        if baseline_mode not in by_mode or test_mode not in by_mode:
-            continue
-        baseline, test = by_mode[baseline_mode], by_mode[test_mode]
-        result: Dict[str, object] = {
-            "rope_length_m": rope,
-            "baseline_mode": baseline_mode,
-            "test_mode": test_mode,
-            "both_valid": bool(baseline.get("valid") and test.get("valid")),
-        }
-        for component in ("observer_error", "velocity_total", "nominal"):
-            key = f"movement_p_{component}_net_integral"
-            result[f"{component}_net_baseline"] = finite(baseline.get(key))
-            result[f"{component}_net_w05"] = finite(test.get(key))
-            result[f"{component}_net_reduction_pct"] = reduction_percent(finite(test.get(key)), finite(baseline.get(key)))
-        for metric in ("swing_angle_rms_deg", "swing_angle_peak_deg", "swing_energy_integral_j_s_kg",
-                       "final_5s_swing_angle_rms_deg"):
-            result[f"{metric}_change_pct"] = -reduction_percent(finite(test.get(metric)), finite(baseline.get(metric)))
-        result["xy_rms_change_pct"] = -reduction_percent(finite(test.get("xy_error_rms_m")), finite(baseline.get("xy_error_rms_m")))
-        result["final10_xy_rms_change_pct"] = -reduction_percent(finite(test.get("final_10s_xy_error_rms_m")),
-                                                                  finite(baseline.get("final_10s_xy_error_rms_m")))
-        result["jerk_p95_change_pct"] = -reduction_percent(finite(test.get("final_jerk_p95_m_s3")),
-                                                            finite(baseline.get("final_jerk_p95_m_s3")))
-        result["final_acc_rms_change_pct"] = -reduction_percent(finite(test.get("final_acc_rms_m_s2")),
-                                                                 finite(baseline.get("final_acc_rms_m_s2")))
-        result["w05_saturation_ratio"] = finite(test.get("total_envelope_trigger_ratio"))
-        result["w05_fallback_ratio"] = finite(test.get("fallback_ratio"))
-        result["w05_as_net"] = finite(test.get("movement_p_as_net_integral"))
-        result["w05_pas_net"] = finite(test.get("movement_p_pas_net_integral"))
-        mechanism = all(finite(result.get(f"{component}_net_reduction_pct")) >= 40.0
-                        for component in ("observer_error", "velocity_total", "nominal"))
-        swing_ok = all(finite(result.get(f"{metric}_change_pct")) <= 0.0
-                       for metric in ("swing_angle_rms_deg", "swing_angle_peak_deg",
-                                      "swing_energy_integral_j_s_kg", "final_5s_swing_angle_rms_deg"))
-        costs_ok = finite(result["xy_rms_change_pct"]) <= 10.0 \
-            and finite(result["final10_xy_rms_change_pct"]) <= 20.0 \
-            and finite(result["final_acc_rms_change_pct"]) <= 20.0 \
-            and finite(result["jerk_p95_change_pct"]) <= 30.0 \
-            and finite(result["w05_saturation_ratio"]) < 0.05 \
-            and finite(result["w05_fallback_ratio"]) < 0.01
-        result["mechanism_threshold_pass"] = mechanism
-        result["swing_no_worse_pass"] = swing_ok
-        result["cost_threshold_pass"] = costs_ok
-        if mechanism and swing_ok and costs_ok:
-            result["decision"] = "A_success"
-        elif mechanism and not swing_ok:
-            result["decision"] = "B_power_better_swing_not_better"
-        elif swing_ok and not costs_ok:
-            result["decision"] = "C_swing_better_but_command_cost"
-        else:
-            result["decision"] = "E_overall_not_proven"
-        comparisons.append(result)
+    for rope, baseline_mode, candidate_modes in (
+        (0.6, "VFB_L06_W00", ("VFB_L06_W05",)),
+        (0.8, "VFB_L08_W00", ("VFB_L08_W25", "VFB_L08_W05")),
+    ):
+        for test_mode in candidate_modes:
+            if baseline_mode not in by_mode or test_mode not in by_mode:
+                continue
+            baseline, test = by_mode[baseline_mode], by_mode[test_mode]
+            result: Dict[str, object] = {
+                "rope_length_m": rope,
+                "baseline_mode": baseline_mode,
+                "test_mode": test_mode,
+                "test_weight": expected_weight(test_mode),
+                "both_valid": bool(baseline.get("valid") and test.get("valid")),
+            }
+            for component in ("observer_error", "velocity_total", "nominal"):
+                key = f"movement_p_{component}_net_integral"
+                result[f"{component}_net_baseline"] = finite(baseline.get(key))
+                result[f"{component}_net_test"] = finite(test.get(key))
+                result[f"{component}_net_reduction_pct"] = reduction_percent(finite(test.get(key)), finite(baseline.get(key)))
+            for metric in ("swing_angle_rms_deg", "swing_angle_peak_deg", "swing_energy_integral_j_s_kg",
+                           "final_5s_swing_angle_rms_deg"):
+                result[f"{metric}_change_pct"] = -reduction_percent(finite(test.get(metric)), finite(baseline.get(metric)))
+            result["xy_rms_change_pct"] = -reduction_percent(finite(test.get("xy_error_rms_m")), finite(baseline.get("xy_error_rms_m")))
+            result["final10_xy_rms_change_pct"] = -reduction_percent(finite(test.get("final_10s_xy_error_rms_m")),
+                                                                      finite(baseline.get("final_10s_xy_error_rms_m")))
+            result["jerk_p95_change_pct"] = -reduction_percent(finite(test.get("final_jerk_p95_m_s3")),
+                                                                finite(baseline.get("final_jerk_p95_m_s3")))
+            result["final_acc_rms_change_pct"] = -reduction_percent(finite(test.get("final_acc_rms_m_s2")),
+                                                                     finite(baseline.get("final_acc_rms_m_s2")))
+            result["test_saturation_ratio"] = finite(test.get("total_envelope_trigger_ratio"))
+            result["test_fallback_ratio"] = finite(test.get("fallback_ratio"))
+            result["test_as_net"] = finite(test.get("movement_p_as_net_integral"))
+            result["test_pas_net"] = finite(test.get("movement_p_pas_net_integral"))
+            mechanism = all(finite(result.get(f"{component}_net_reduction_pct")) >= 40.0
+                            for component in ("observer_error", "velocity_total", "nominal"))
+            swing_ok = all(finite(result.get(f"{metric}_change_pct")) <= 0.0
+                           for metric in ("swing_angle_rms_deg", "swing_angle_peak_deg",
+                                          "swing_energy_integral_j_s_kg", "final_5s_swing_angle_rms_deg"))
+            costs_ok = finite(result["xy_rms_change_pct"]) <= 10.0 \
+                and finite(result["final10_xy_rms_change_pct"]) <= 20.0 \
+                and finite(result["final_acc_rms_change_pct"]) <= 20.0 \
+                and finite(result["jerk_p95_change_pct"]) <= 30.0 \
+                and finite(result["test_saturation_ratio"]) < 0.05 \
+                and finite(result["test_fallback_ratio"]) < 0.01
+            result["mechanism_threshold_pass"] = mechanism
+            result["swing_no_worse_pass"] = swing_ok
+            result["cost_threshold_pass"] = costs_ok
+            if mechanism and swing_ok and costs_ok:
+                result["decision"] = "A_success"
+            elif mechanism and not swing_ok:
+                result["decision"] = "B_power_better_swing_not_better"
+            elif swing_ok and not costs_ok:
+                result["decision"] = "C_swing_better_but_command_cost"
+            else:
+                result["decision"] = "E_overall_not_proven"
+            comparisons.append(result)
     return comparisons
 
 
@@ -553,7 +748,7 @@ def markdown(rows, comparisons) -> str:
         "> 本轮是方案完整性自动验证，不是论文最终重复统计数据。",
         "> 按当前阶段约定，Z 真值/EKF 超限保留原始数值和严格判定，但只作观测警告，不阻止 VFB 水平控制机理比较。",
         "",
-        "## 四次运行",
+        f"## {len(rows)} 次运行",
         "",
         "| 模式 | 分析有效 | 严格Z有效 | 真值Z/EKF-Z峰值(m) | 请求/实际权重 | 回退率 | XY RMS(m) | 摆角 RMS/峰值(°) | 末5s RMS(°) | 饱和率 |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
@@ -567,16 +762,32 @@ def markdown(rows, comparisons) -> str:
             f"{fmt(row.get('swing_angle_rms_deg'))}/{fmt(row.get('swing_angle_peak_deg'))} | "
             f"{fmt(row.get('final_5s_swing_angle_rms_deg'))} | {fmt(100*finite(row.get('total_envelope_trigger_ratio')),2)}% |"
         )
-    lines += ["", "## 同绳长 W05 相对 W00", "",
-              "| 绳长 | observer/velocity/nominal 净功降低 | 摆角RMS变化 | 能量积分变化 | XY变化 | a_final RMS变化 | jerk变化 | 判定 |",
-              "|---:|---:|---:|---:|---:|---:|---:|---|"]
+    lines += ["", "## 同绳长候选权重相对 W00", "",
+              "| 绳长 | 权重 | observer/velocity/nominal 净功降低 | 摆角RMS变化 | 能量积分变化 | XY变化 | a_final RMS变化 | jerk变化 | 判定 |",
+              "|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
     for item in comparisons:
         lines.append(
-            f"| {item['rope_length_m']:.1f} m | {fmt(item.get('observer_error_net_reduction_pct'),1)}%/"
+            f"| {item['rope_length_m']:.1f} m | {fmt(item.get('test_weight'),2)} | {fmt(item.get('observer_error_net_reduction_pct'),1)}%/"
             f"{fmt(item.get('velocity_total_net_reduction_pct'),1)}%/{fmt(item.get('nominal_net_reduction_pct'),1)}% | "
             f"{fmt(item.get('swing_angle_rms_deg_change_pct'),1)}% | {fmt(item.get('swing_energy_integral_j_s_kg_change_pct'),1)}% | "
             f"{fmt(item.get('xy_rms_change_pct'),1)}% | {fmt(item.get('final_acc_rms_change_pct'),1)}% | "
             f"{fmt(item.get('jerk_p95_change_pct'),1)}% | {item['decision']} |"
+        )
+    lines += ["", "## 无人机本体姿态与执行器检查", "",
+              "| 模式 | 姿态有效 | 滚转 RMS/峰值(°) | 俯仰 RMS/峰值(°) | 倾角 RMS/P95/峰值(°) | 姿态跟踪误差 RMS/P95/峰值(°) | 水平角速度 RMS/P95/峰值(rad/s) | 电机范围/高饱和率 |",
+              "|---|---:|---:|---:|---:|---:|---:|---:|"]
+    for row in rows:
+        lines.append(
+            f"| {row['mode']} | {'是' if row.get('attitude_control_valid') else '否'} | "
+            f"{fmt(row.get('roll_rms_deg'))}/{fmt(row.get('roll_peak_abs_deg'))} | "
+            f"{fmt(row.get('pitch_rms_deg'))}/{fmt(row.get('pitch_peak_abs_deg'))} | "
+            f"{fmt(row.get('tilt_rms_deg'))}/{fmt(row.get('tilt_p95_deg'))}/{fmt(row.get('tilt_peak_deg'))} | "
+            f"{fmt(row.get('attitude_tracking_error_rms_deg'))}/{fmt(row.get('attitude_tracking_error_p95_deg'))}/"
+            f"{fmt(row.get('attitude_tracking_error_peak_deg'))} | "
+            f"{fmt(row.get('horizontal_body_rate_rms_rad_s'))}/{fmt(row.get('horizontal_body_rate_p95_rad_s'))}/"
+            f"{fmt(row.get('horizontal_body_rate_peak_rad_s'))} | "
+            f"{fmt(row.get('motor_output_min'))}～{fmt(row.get('motor_output_max'))}/"
+            f"{fmt(100.0 * finite(row.get('motor_high_saturation_sample_ratio')),3)}% |"
         )
     lines += ["", "## 自动有效性", ""]
     for row in rows:
@@ -594,12 +805,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, default=None)
+    parser.add_argument("--mode", action="append", choices=SUPPORTED_MODES,
+                        help="analyze one mode; repeat for a selected comparison matrix")
     args = parser.parse_args()
     output = args.output_dir or args.root / "report"
     output.mkdir(parents=True, exist_ok=True)
-    found = latest_runs(args.root)
+    selected_modes = tuple(args.mode) if args.mode else MODES
+    found = latest_runs(args.root, selected_modes)
     rows, window_rows, validity_payload = [], [], {}
-    for mode in MODES:
+    for mode in selected_modes:
         if mode not in found:
             rows.append({"mode": mode, "valid": False, "vfb_rejection_reasons": "run_missing"})
             continue
@@ -621,7 +835,7 @@ def main() -> int:
     (output / "validation_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (output / "validation_summary.md").write_text(markdown(rows, comparisons), encoding="utf-8")
     print(output / "validation_summary.md")
-    return 0 if len(rows) == 4 and all(bool(row.get("valid")) for row in rows) else 1
+    return 0 if len(rows) == len(selected_modes) and all(bool(row.get("valid")) for row in rows) else 1
 
 
 if __name__ == "__main__":

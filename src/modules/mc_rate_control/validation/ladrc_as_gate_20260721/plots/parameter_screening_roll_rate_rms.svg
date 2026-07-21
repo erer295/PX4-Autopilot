@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560">
+<rect width="100%" height="100%" fill="white"/><g font-family="sans-serif" fill="#24292f">
+<text x="500.0" y="32" text-anchor="middle" font-size="21">LADRC D0 screening: roll rate-error RMS</text>
+<line x1="90" y1="70" x2="90" y2="460" stroke="#24292f"/>
+<line x1="90" y1="460" x2="925" y2="460" stroke="#24292f"/>
+<text transform="translate(24 265.0) rotate(-90)" text-anchor="middle">rad/s</text>
+<rect x="121.3" y="389.9" width="76.5" height="70.1" fill="#d73a49"/><text x="159.6" y="487" text-anchor="middle">T0</text><text x="159.6" y="382.9" text-anchor="middle" font-size="12">0.398</text><rect x="260.5" y="260.6" width="76.5" height="199.4" fill="#d73a49"/><text x="298.8" y="487" text-anchor="middle">T1</text><text x="298.8" y="253.6" text-anchor="middle" font-size="12">1.13</text><rect x="399.6" y="206.3" width="76.5" height="253.7" fill="#d73a49"/><text x="437.9" y="487" text-anchor="middle">T2</text><text x="437.9" y="199.3" text-anchor="middle" font-size="12">1.44</text><rect x="538.8" y="207.8" width="76.5" height="252.2" fill="#d73a49"/><text x="577.1" y="487" text-anchor="middle">T3</text><text x="577.1" y="200.8" text-anchor="middle" font-size="12">1.43</text><rect x="678.0" y="163.8" width="76.5" height="296.2" fill="#d73a49"/><text x="716.2" y="487" text-anchor="middle">T4</text><text x="716.2" y="156.8" text-anchor="middle" font-size="12">1.68</text><rect x="817.1" y="120.9" width="76.5" height="339.1" fill="#d73a49"/><text x="855.4" y="487" text-anchor="middle">T5</text><text x="855.4" y="113.9" text-anchor="middle" font-size="12">1.92</text>
+<text x="500.0" y="535" text-anchor="middle" font-size="13">All bars are gate-invalid screening diagnostics, not formal paired results.</text>
+</g></svg>

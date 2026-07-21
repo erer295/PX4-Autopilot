@@ -1,0 +1,229 @@
+[0/1] cd /home/lst/PX4-Autopilot/build/px4_sitl_default/src/modules/simulation/gz_bridge && /usr/bin/cmake -E env PX4_SIM_MODEL=gz_zd680_hang GZ_IP=127.0.0.1 /home/lst/PX4-Autopilot/build/px4_sitl_default/bin/px4
+
+______  __   __    ___ 
+| ___ \ \ \ / /   /   |
+| |_/ /  \ V /   / /| |
+|  __/   /   \  / /_| |
+| |     / /^\ \ \___  |
+\_|     \/   \/     |_/
+
+px4 starting.
+
+[0mINFO  [37m[px4] [0mstartup script: /bin/sh etc/init.d-posix/rcS 0[0m
+INFO  [init] found model autostart file as SYS_AUTOSTART=22002
+[0mINFO  [37m[param] [0mselected parameter default file parameters.bson[0m
+[0mINFO  [37m[param] [0mimporting from 'parameters.bson'[0m
+[0mINFO  [37m[parameters] [0mBSON document size 1300 bytes, decoded 1300 bytes (INT32:28, FLOAT:32)[0m
+[0mINFO  [37m[param] [0mselected parameter backup file parameters_backup.bson[0m
+[0mINFO  [37m[dataman] [0mdata manager file './dataman' size is 1208528 bytes[0m
+INFO  [init] Gazebo simulator
+INFO  [init] Starting gazebo with world: /home/lst/PX4-Autopilot/Tools/simulation/gz/worlds/default.sdf
+INFO  [init] Gazebo world is ready
+INFO  [init] Spawning model
+[0mINFO  [37m[gz_bridge] [0mworld: default, model: zd680_hang_0[0m
+[0mINFO  [37m[gz_bridge] [0msubscribed suspended-load joint_state: /world/default/model/zd680_hang_0/joint_state[0m
+[0mINFO  [37m[lockstep_scheduler] [0msetting initial absolute time to 3140000 us[0m
+[31mERROR [37m[load_mon] [31mwrong type passed to param_get() for param SYS_RGB_MAXBRT[0m
+[0mINFO  [37m[commander] [0mLED: open /dev/led0 failed (22)[0m
+[33mWARN  [37m[health_and_arming_checks] [33mPreflight Fail: ekf2 missing data[0m
+[33mWARN  [37m[health_and_arming_checks] [33mPreflight Fail: No connection to the ground control station	[0m
+[0mINFO  [37m[tone_alarm] [0mhome set[0m
+[0mINFO  [37m[mc_rate_control] [0mMC rate inner loop: PID (MC_RBF_EN=0, MC_RBF_INJECT_EN=0, MC_RBF_LEARN_EN=0)[0m
+[0mINFO  [37m[mc_pos_control] [0mMC position outer loop: PID (MC_PLADRC_EN=0, MC_PLADRC_TD_EN=0)[0m
+[0mINFO  [37m[uxrce_dds_client] [0minit UDP agent IP:127.0.0.1, port:8888[0m
+[0mINFO  [37m[mavlink] [0mmode: Normal, data rate: 4000000 B/s on udp port 18570 remote port 14550[0m
+[0mINFO  [37m[mavlink] [0mmode: Onboard, data rate: 4000000 B/s on udp port 14580 remote port 14540[0m
+[0mINFO  [37m[mavlink] [0mmode: Onboard, data rate: 4000 B/s on udp port 14280 remote port 14030[0m
+[0mINFO  [37m[mavlink] [0mmode: Gimbal, data rate: 400000 B/s on udp port 13030 remote port 13280[0m
+[0mINFO  [37m[logger] [0mlogger started (mode=all)[0m
+[0mINFO  [37m[logger] [0mStart file log (type: full)[0m
+[0mINFO  [37m[logger] [0m[logger] ./log/2026-07-21/07_23_23.ulg	[0m
+[0mINFO  [37m[logger] [0mOpened full log file: ./log/2026-07-21/07_23_23.ulg[0m
+[0mINFO  [37m[mavlink] [0mMAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)[0m
+[0mINFO  [37m[mavlink] [0mMAVLink only on localhost (set param MAV_{i}_BROADCAST = 1 to enable network)[0m
+[0mINFO  [37m[mavlink] [0mpartner IP: 127.0.0.1[0m
+[0mINFO  [37m[px4] [0mStartup script returned successfully[0m
+pxh> [0mINFO  [37m[commander] [0m[32mReady for takeoff![0m[0m
+[2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_E[2Kpxh> param set MC_LADRC_EN[2Kpxh> param set MC_LADRC_EN [2Kpxh> param set MC_LADRC_EN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_B[2Kpxh> param set MC_LADRC_B0[2Kpxh> param set MC_LADRC_B0_[2Kpxh> param set MC_LADRC_B0_R[2Kpxh> param set MC_LADRC_B0_R [2Kpxh> param set MC_LADRC_B0_R 5[2Kpxh> param set MC_LADRC_B0_R 50
+[0m  MC_LADRC_B0_R: [0m[0mcurr: 120.0000[0m[0m -> new: 50.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_B[2Kpxh> param set MC_LADRC_B0[2Kpxh> param set MC_LADRC_B0_[2Kpxh> param set MC_LADRC_B0_P[2Kpxh> param set MC_LADRC_B0_P [2Kpxh> param set MC_LADRC_B0_P 5[2Kpxh> param set MC_LADRC_B0_P 50
+[0m  MC_LADRC_B0_P: [0m[0mcurr: 120.0000[0m[0m -> new: 50.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_B[2Kpxh> param set MC_LADRC_B0[2Kpxh> param set MC_LADRC_B0_[2Kpxh> param set MC_LADRC_B0_Y[2Kpxh> param set MC_LADRC_B0_Y [2Kpxh> param set MC_LADRC_B0_Y 2[2Kpxh> param set MC_LADRC_B0_Y 20
+[0m  MC_LADRC_B0_Y: [0m[0mcurr: 18.0000[0m[0m -> new: 20.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_W[2Kpxh> param set MC_LADRC_WC[2Kpxh> param set MC_LADRC_WC_[2Kpxh> param set MC_LADRC_WC_R[2Kpxh> param set MC_LADRC_WC_R [2Kpxh> param set MC_LADRC_WC_R 8
+[0m  MC_LADRC_WC_R: [0m[0mcurr: 5.5000[0m[0m -> new: 8.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_W[2Kpxh> param set MC_LADRC_WC[2Kpxh> param set MC_LADRC_WC_[2Kpxh> param set MC_LADRC_WC_P[2Kpxh> param set MC_LADRC_WC_P [2Kpxh> param set MC_LADRC_WC_P 8
+[0m  MC_LADRC_WC_P: [0m[0mcurr: 5.5000[0m[0m -> new: 8.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_W[2Kpxh> param set MC_LADRC_WC[2Kpxh> param set MC_LADRC_WC_[2Kpxh> param set MC_LADRC_WC_Y[2Kpxh> param set MC_LADRC_WC_Y [2Kpxh> param set MC_LADRC_WC_Y 4
+[0m  MC_LADRC_WC_Y: [0m[0mcurr: 2.5000[0m[0m -> new: 4.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_W[2Kpxh> param set MC_LADRC_WO[2Kpxh> param set MC_LADRC_WO_[2Kpxh> param set MC_LADRC_WO_R[2Kpxh> param set MC_LADRC_WO_R [2Kpxh> param set MC_LADRC_WO_R 3[2Kpxh> param set MC_LADRC_WO_R 30
+[0m  MC_LADRC_WO_R: [0m[0mcurr: 16.0000[0m[0m -> new: 30.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_W[2Kpxh> param set MC_LADRC_WO[2Kpxh> param set MC_LADRC_WO_[2Kpxh> param set MC_LADRC_WO_P[2Kpxh> param set MC_LADRC_WO_P [2Kpxh> param set MC_LADRC_WO_P 3[2Kpxh> param set MC_LADRC_WO_P 30
+[0m  MC_LADRC_WO_P: [0m[0mcurr: 16.0000[0m[0m -> new: 30.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_W[2Kpxh> param set MC_LADRC_WO[2Kpxh> param set MC_LADRC_WO_[2Kpxh> param set MC_LADRC_WO_Y[2Kpxh> param set MC_LADRC_WO_Y [2Kpxh> param set MC_LADRC_WO_Y 1[2Kpxh> param set MC_LADRC_WO_Y 15
+[0m  MC_LADRC_WO_Y: [0m[0mcurr: 7.5000[0m[0m -> new: 15.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_L[2Kpxh> param set MC_LADRC_LI[2Kpxh> param set MC_LADRC_LIM[2Kpxh> param set MC_LADRC_LIM_[2Kpxh> param set MC_LADRC_LIM_R[2Kpxh> param set MC_LADRC_LIM_R [2Kpxh> param set MC_LADRC_LIM_R 0[2Kpxh> param set MC_LADRC_LIM_R 0.[2Kpxh> param set MC_LADRC_LIM_R 0.3[2Kpxh> param set MC_LADRC_LIM_R 0.35
+[0m  MC_LADRC_LIM_R: [0m[0mcurr: 0.3000[0m[0m -> new: 0.3500
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_L[2Kpxh> param set MC_LADRC_LI[2Kpxh> param set MC_LADRC_LIM[2Kpxh> param set MC_LADRC_LIM_[2Kpxh> param set MC_LADRC_LIM_P[2Kpxh> param set MC_LADRC_LIM_P [2Kpxh> param set MC_LADRC_LIM_P 0[2Kpxh> param set MC_LADRC_LIM_P 0.[2Kpxh> param set MC_LADRC_LIM_P 0.3[2Kpxh> param set MC_LADRC_LIM_P 0.35
+[0m  MC_LADRC_LIM_P: [0m[0mcurr: 0.3000[0m[0m -> new: 0.3500
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_L[2Kpxh> param set MC_LADRC_LI[2Kpxh> param set MC_LADRC_LIM[2Kpxh> param set MC_LADRC_LIM_[2Kpxh> param set MC_LADRC_LIM_Y[2Kpxh> param set MC_LADRC_LIM_Y [2Kpxh> param set MC_LADRC_LIM_Y 0[2Kpxh> param set MC_LADRC_LIM_Y 0.[2Kpxh> param set MC_LADRC_LIM_Y 0.2
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_D[2Kpxh> param set MC_LADRC_D_[2Kpxh> param set MC_LADRC_D_R[2Kpxh> param set MC_LADRC_D_R [2Kpxh> param set MC_LADRC_D_R 0
+[0m+ MC_LADRC_D_R: [0m[0mcurr: 0.0030[0m[0m -> new: 0.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_D[2Kpxh> param set MC_LADRC_D_[2Kpxh> param set MC_LADRC_D_P[2Kpxh> param set MC_LADRC_D_P [2Kpxh> param set MC_LADRC_D_P 0
+[0m+ MC_LADRC_D_P: [0m[0mcurr: 0.0030[0m[0m -> new: 0.0000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_D[2Kpxh> param set MC_LADRC_D_[2Kpxh> param set MC_LADRC_D_Y[2Kpxh> param set MC_LADRC_D_Y [2Kpxh> param set MC_LADRC_D_Y 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_L[2Kpxh> param set MC_LA[2Kpxh> param set MC_LAD[2Kpxh> param set MC_LADR[2Kpxh> param set MC_LADRC[2Kpxh> param set MC_LADRC_[2Kpxh> param set MC_LADRC_T[2Kpxh> param set MC_LADRC_TD[2Kpxh> param set MC_LADRC_TD_[2Kpxh> param set MC_LADRC_TD_M[2Kpxh> param set MC_LADRC_TD_MO[2Kpxh> param set MC_LADRC_TD_MOD[2Kpxh> param set MC_LADRC_TD_MODE[2Kpxh> param set MC_LADRC_TD_MODE [2Kpxh> param set MC_LADRC_TD_MODE 0
+[0m+ MC_LADRC_TD_MODE: [0m[0mcurr: 2[0m[0m -> new: 0
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_R[2Kpxh> param set MC_RB[2Kpxh> param set MC_RBF[2Kpxh> param set MC_RBF_[2Kpxh> param set MC_RBF_E[2Kpxh> param set MC_RBF_EN[2Kpxh> param set MC_RBF_EN [2Kpxh> param set MC_RBF_EN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_R[2Kpxh> param set MC_RB[2Kpxh> param set MC_RBF[2Kpxh> param set MC_RBF_[2Kpxh> param set MC_RBF_I[2Kpxh> param set MC_RBF_IN[2Kpxh> param set MC_RBF_INJ[2Kpxh> param set MC_RBF_INJE[2Kpxh> param set MC_RBF_INJEC[2Kpxh> param set MC_RBF_INJECT[2Kpxh> param set MC_RBF_INJECT_[2Kpxh> param set MC_RBF_INJECT_E[2Kpxh> param set MC_RBF_INJECT_EN[2Kpxh> param set MC_RBF_INJECT_EN [2Kpxh> param set MC_RBF_INJECT_EN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_R[2Kpxh> param set MC_RB[2Kpxh> param set MC_RBF[2Kpxh> param set MC_RBF_[2Kpxh> param set MC_RBF_L[2Kpxh> param set MC_RBF_LE[2Kpxh> param set MC_RBF_LEA[2Kpxh> param set MC_RBF_LEAR[2Kpxh> param set MC_RBF_LEARN[2Kpxh> param set MC_RBF_LEARN_[2Kpxh> param set MC_RBF_LEARN_E[2Kpxh> param set MC_RBF_LEARN_EN[2Kpxh> param set MC_RBF_LEARN_EN [2Kpxh> param set MC_RBF_LEARN_EN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_P[2Kpxh> param set MC_PL[2Kpxh> param set MC_PLA[2Kpxh> param set MC_PLAD[2Kpxh> param set MC_PLADR[2Kpxh> param set MC_PLADRC[2Kpxh> param set MC_PLADRC_[2Kpxh> param set MC_PLADRC_E[2Kpxh> param set MC_PLADRC_EN[2Kpxh> param set MC_PLADRC_EN [2Kpxh> param set MC_PLADRC_EN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_P[2Kpxh> param set MC_PL[2Kpxh> param set MC_PLA[2Kpxh> param set MC_PLAD[2Kpxh> param set MC_PLADR[2Kpxh> param set MC_PLADRC[2Kpxh> param set MC_PLADRC_[2Kpxh> param set MC_PLADRC_T[2Kpxh> param set MC_PLADRC_TD[2Kpxh> param set MC_PLADRC_TD_[2Kpxh> param set MC_PLADRC_TD_E[2Kpxh> param set MC_PLADRC_TD_EN[2Kpxh> param set MC_PLADRC_TD_EN [2Kpxh> param set MC_PLADRC_TD_EN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_A[2Kpxh> param set MC_HANG_AS[2Kpxh> param set MC_HANG_AS_[2Kpxh> param set MC_HANG_AS_E[2Kpxh> param set MC_HANG_AS_EN[2Kpxh> param set MC_HANG_AS_EN [2Kpxh> param set MC_HANG_AS_EN 0
+[0m+ MC_HANG_AS_EN: [0m[0mcurr: 1[0m[0m -> new: 0
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_M[2Kpxh> param set MC_HANG_MO[2Kpxh> param set MC_HANG_MOD[2Kpxh> param set MC_HANG_MODE[2Kpxh> param set MC_HANG_MODE [2Kpxh> param set MC_HANG_MODE 2
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_F[2Kpxh> param set MC_HANG_FR[2Kpxh> param set MC_HANG_FRQ[2Kpxh> param set MC_HANG_FRQ_[2Kpxh> param set MC_HANG_FRQ_E[2Kpxh> param set MC_HANG_FRQ_EN[2Kpxh> param set MC_HANG_FRQ_EN [2Kpxh> param set MC_HANG_FRQ_EN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_S[2Kpxh> param set MC_HANG_SI[2Kpxh> param set MC_HANG_SIG[2Kpxh> param set MC_HANG_SIGN[2Kpxh> param set MC_HANG_SIGN_[2Kpxh> param set MC_HANG_SIGN_X[2Kpxh> param set MC_HANG_SIGN_X [2Kpxh> param set MC_HANG_SIGN_X -[2Kpxh> param set MC_HANG_SIGN_X -1
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_S[2Kpxh> param set MC_HANG_SI[2Kpxh> param set MC_HANG_SIG[2Kpxh> param set MC_HANG_SIGN[2Kpxh> param set MC_HANG_SIGN_[2Kpxh> param set MC_HANG_SIGN_Y[2Kpxh> param set MC_HANG_SIGN_Y [2Kpxh> param set MC_HANG_SIGN_Y -[2Kpxh> param set MC_HANG_SIGN_Y -1
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_P[2Kpxh> param set MC_HANG_PA[2Kpxh> param set MC_HANG_PAS[2Kpxh> param set MC_HANG_PAS_[2Kpxh> param set MC_HANG_PAS_M[2Kpxh> param set MC_HANG_PAS_MD[2Kpxh> param set MC_HANG_PAS_MD [2Kpxh> param set MC_HANG_PAS_MD 0
+[0m+ MC_HANG_PAS_MD: [0m[0mcurr: 2[0m[0m -> new: 0
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_P[2Kpxh> param set MC_HANG_PA[2Kpxh> param set MC_HANG_PAS[2Kpxh> param set MC_HANG_PAS_[2Kpxh> param set MC_HANG_PAS_P[2Kpxh> param set MC_HANG_PAS_PO[2Kpxh> param set MC_HANG_PAS_POS[2Kpxh> param set MC_HANG_PAS_POS [2Kpxh> param set MC_HANG_PAS_POS 0
+[0m+ MC_HANG_PAS_POS: [0m[0mcurr: 1[0m[0m -> new: 0
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_L[2Kpxh> param set MC_HANG_LE[2Kpxh> param set MC_HANG_LEN[2Kpxh> param set MC_HANG_LEN [2Kpxh> param set MC_HANG_LEN 0[2Kpxh> param set MC_HANG_LEN 0.[2Kpxh> param set MC_HANG_LEN 0.6
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_W[2Kpxh> param set MC_HANG_WC[2Kpxh> param set MC_HANG_WC_[2Kpxh> param set MC_HANG_WC_R[2Kpxh> param set MC_HANG_WC_R [2Kpxh> param set MC_HANG_WC_R 0[2Kpxh> param set MC_HANG_WC_R 0.[2Kpxh> param set MC_HANG_WC_R 0.2[2Kpxh> param set MC_HANG_WC_R 0.25
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_W[2Kpxh> param set MC_HANG_WO[2Kpxh> param set MC_HANG_WO_[2Kpxh> param set MC_HANG_WO_R[2Kpxh> param set MC_HANG_WO_R [2Kpxh> param set MC_HANG_WO_R 0[2Kpxh> param set MC_HANG_WO_R 0.[2Kpxh> param set MC_HANG_WO_R 0.5
+[0m  MC_HANG_WO_R: [0m[0mcurr: 0.6000[0m[0m -> new: 0.5000
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_W[2Kpxh> param set MC_HANG_WO[2Kpxh> param set MC_HANG_WO_[2Kpxh> param set MC_HANG_WO_M[2Kpxh> param set MC_HANG_WO_MI[2Kpxh> param set MC_HANG_WO_MIN[2Kpxh> param set MC_HANG_WO_MIN [2Kpxh> param set MC_HANG_WO_MIN 2
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_K[2Kpxh> param set MC_HANG_K_[2Kpxh> param set MC_HANG_K_A[2Kpxh> param set MC_HANG_K_AN[2Kpxh> param set MC_HANG_K_ANG[2Kpxh> param set MC_HANG_K_ANG [2Kpxh> param set MC_HANG_K_ANG 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_K[2Kpxh> param set MC_HANG_K_[2Kpxh> param set MC_HANG_K_R[2Kpxh> param set MC_HANG_K_RA[2Kpxh> param set MC_HANG_K_RAT[2Kpxh> param set MC_HANG_K_RATE[2Kpxh> param set MC_HANG_K_RATE [2Kpxh> param set MC_HANG_K_RATE 0[2Kpxh> param set MC_HANG_K_RATE 0.[2Kpxh> param set MC_HANG_K_RATE 0.6
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_Z[2Kpxh> param set MC_HANG_ZE[2Kpxh> param set MC_HANG_ZET[2Kpxh> param set MC_HANG_ZETA[2Kpxh> param set MC_HANG_ZETA [2Kpxh> param set MC_HANG_ZETA 0[2Kpxh> param set MC_HANG_ZETA 0.[2Kpxh> param set MC_HANG_ZETA 0.1
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_E[2Kpxh> param set MC_HANG_E_[2Kpxh> param set MC_HANG_E_M[2Kpxh> param set MC_HANG_E_MI[2Kpxh> param set MC_HANG_E_MIN[2Kpxh> param set MC_HANG_E_MIN [2Kpxh> param set MC_HANG_E_MIN 0
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_E[2Kpxh> param set MC_HANG_E_[2Kpxh> param set MC_HANG_E_F[2Kpxh> param set MC_HANG_E_FU[2Kpxh> param set MC_HANG_E_FUL[2Kpxh> param set MC_HANG_E_FULL[2Kpxh> param set MC_HANG_E_FULL [2Kpxh> param set MC_HANG_E_FULL 0[2Kpxh> param set MC_HANG_E_FULL 0.[2Kpxh> param set MC_HANG_E_FULL 0.0[2Kpxh> param set MC_HANG_E_FULL 0.01
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_A[2Kpxh> param set MC_HANG_AC[2Kpxh> param set MC_HANG_ACC[2Kpxh> param set MC_HANG_ACC_[2Kpxh> param set MC_HANG_ACC_L[2Kpxh> param set MC_HANG_ACC_LI[2Kpxh> param set MC_HANG_ACC_LIM[2Kpxh> param set MC_HANG_ACC_LIM [2Kpxh> param set MC_HANG_ACC_LIM 0[2Kpxh> param set MC_HANG_ACC_LIM 0.[2Kpxh> param set MC_HANG_ACC_LIM 0.2
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_A[2Kpxh> param set MC_HANG_AC[2Kpxh> param set MC_HANG_ACC[2Kpxh> param set MC_HANG_ACC_[2Kpxh> param set MC_HANG_ACC_S[2Kpxh> param set MC_HANG_ACC_SL[2Kpxh> param set MC_HANG_ACC_SLW[2Kpxh> param set MC_HANG_ACC_SLW [2Kpxh> param set MC_HANG_ACC_SLW 2
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_L[2Kpxh> param set MC_HANG_LP[2Kpxh> param set MC_HANG_LPF[2Kpxh> param set MC_HANG_LPF_[2Kpxh> param set MC_HANG_LPF_H[2Kpxh> param set MC_HANG_LPF_HZ[2Kpxh> param set MC_HANG_LPF_HZ [2Kpxh> param set MC_HANG_LPF_HZ 4
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MC[2Kpxh> param set MC_[2Kpxh> param set MC_H[2Kpxh> param set MC_HA[2Kpxh> param set MC_HAN[2Kpxh> param set MC_HANG[2Kpxh> param set MC_HANG_[2Kpxh> param set MC_HANG_T[2Kpxh> param set MC_HANG_TO[2Kpxh> param set MC_HANG_TOT[2Kpxh> param set MC_HANG_TOT_[2Kpxh> param set MC_HANG_TOT_A[2Kpxh> param set MC_HANG_TOT_A [2Kpxh> param set MC_HANG_TOT_A 0[2Kpxh> param set MC_HANG_TOT_A 0.[2Kpxh> param set MC_HANG_TOT_A 0.8
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set S[2Kpxh> param set SI[2Kpxh> param set SIM[2Kpxh> param set SIM_[2Kpxh> param set SIM_B[2Kpxh> param set SIM_BA[2Kpxh> param set SIM_BAT[2Kpxh> param set SIM_BAT_[2Kpxh> param set SIM_BAT_D[2Kpxh> param set SIM_BAT_DR[2Kpxh> param set SIM_BAT_DRA[2Kpxh> param set SIM_BAT_DRAI[2Kpxh> param set SIM_BAT_DRAIN[2Kpxh> param set SIM_BAT_DRAIN [2Kpxh> param set SIM_BAT_DRAIN 3[2Kpxh> param set SIM_BAT_DRAIN 36[2Kpxh> param set SIM_BAT_DRAIN 360[2Kpxh> param set SIM_BAT_DRAIN 3600
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set S[2Kpxh> param set SI[2Kpxh> param set SIM[2Kpxh> param set SIM_[2Kpxh> param set SIM_B[2Kpxh> param set SIM_BA[2Kpxh> param set SIM_BAT[2Kpxh> param set SIM_BAT_[2Kpxh> param set SIM_BAT_M[2Kpxh> param set SIM_BAT_MI[2Kpxh> param set SIM_BAT_MIN[2Kpxh> param set SIM_BAT_MIN_[2Kpxh> param set SIM_BAT_MIN_P[2Kpxh> param set SIM_BAT_MIN_PC[2Kpxh> param set SIM_BAT_MIN_PCT[2Kpxh> param set SIM_BAT_MIN_PCT [2Kpxh> param set SIM_BAT_MIN_PCT 1[2Kpxh> param set SIM_BAT_MIN_PCT 10[2Kpxh> param set SIM_BAT_MIN_PCT 100
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param se[2Kpxh> param set[2Kpxh> param set [2Kpxh> param set M[2Kpxh> param set MI[2Kpxh> param set MIS[2Kpxh> param set MIS_[2Kpxh> param set MIS_T[2Kpxh> param set MIS_TA[2Kpxh> param set MIS_TAK[2Kpxh> param set MIS_TAKE[2Kpxh> param set MIS_TAKEO[2Kpxh> param set MIS_TAKEOF[2Kpxh> param set MIS_TAKEOFF[2Kpxh> param set MIS_TAKEOFF_[2Kpxh> param set MIS_TAKEOFF_A[2Kpxh> param set MIS_TAKEOFF_AL[2Kpxh> param set MIS_TAKEOFF_ALT[2Kpxh> param set MIS_TAKEOFF_ALT [2Kpxh> param set MIS_TAKEOFF_ALT 1[2Kpxh> param set MIS_TAKEOFF_ALT 10
+pxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param sh[2Kpxh> param sho[2Kpxh> param show[2Kpxh> param show [2Kpxh> param show M[2Kpxh> param show MC[2Kpxh> param show MC_[2Kpxh> param show MC_L[2Kpxh> param show MC_LA[2Kpxh> param show MC_LAD[2Kpxh> param show MC_LADR[2Kpxh> param show MC_LADRC[2Kpxh> param show MC_LADRC*
+[0mSymbols: x = used, + = saved, * = unsaved
+[0m[0mx * MC_LADRC_B0_P [571,1039] : [0m[0m50.0000
+[0m[0mx * MC_LADRC_B0_R [572,1040] : [0m[0m50.0000
+[0m[0mx * MC_LADRC_B0_Y [573,1041] : [0m[0m20.0000
+[0m[0mx * MC_LADRC_D_P [574,1042] : [0m[0m0.0000
+[0m[0mx * MC_LADRC_D_R [575,1043] : [0m[0m0.0000
+[0m[0mx   MC_LADRC_D_Y [576,1044] : [0m[0m0.0000
+[0m[0mx   MC_LADRC_EN [577,1045] : [0m[0m0
+[0m[0mx * MC_LADRC_LIM_P [578,1046] : [0m[0m0.3500
+[0m[0mx * MC_LADRC_LIM_R [579,1047] : [0m[0m0.3500
+[0m[0mx   MC_LADRC_LIM_Y [580,1048] : [0m[0m0.2000
+[0m[0mx   MC_LADRC_TD_ATT [581,1049] : [0m[0m0.1500
+[0m[0mx   MC_LADRC_TD_A_Y [582,1050] : [0m[0m8.0000
+[0m[0mx   MC_LADRC_TD_DLY [583,1051] : [0m[0m4.0000
+[0m[0mx   MC_LADRC_TD_ERR [584,1052] : [0m[0m0.5000
+[0m[0mx   MC_LADRC_TD_FA_P [585,1053] : [0m[0m80.0000
+[0m[0mx   MC_LADRC_TD_FA_R [586,1054] : [0m[0m80.0000
+[0m[0mx   MC_LADRC_TD_FF [587,1055] : [0m[0m0.0000
+[0m[0mx   MC_LADRC_TD_FW_P [588,1056] : [0m[0m15.0000
+[0m[0mx   MC_LADRC_TD_FW_R [589,1057] : [0m[0m15.0000
+[0m[0mx * MC_LADRC_TD_MODE [590,1058] : [0m[0m0
+[0m[0mx   MC_LADRC_TD_RAMP [591,1059] : [0m[0m4.0000
+[0m[0mx   MC_LADRC_TD_RATE [592,1060] : [0m[0m0.5000
+[0m[0mx   MC_LADRC_TD_SA_P [593,1061] : [0m[0m30.0000
+[0m[0mx   MC_LADRC_TD_SA_R [594,1062] : [0m[0m30.0000
+[0m[0mx   MC_LADRC_TD_SW_P [595,1063] : [0m[0m8.0000
+[0m[0mx   MC_LADRC_TD_SW_R [596,1064] : [0m[0m8.0000
+[0m[0mx   MC_LADRC_TD_W_Y [597,1065] : [0m[0m5.0000
+[0m[0mx   MC_LADRC_TD_ZETA [598,1066] : [0m[0m1.0000
+[0m[0mx * MC_LADRC_WC_P [599,1067] : [0m[0m8.0000
+[0m[0mx * MC_LADRC_WC_R [600,1068] : [0m[0m8.0000
+[0m[0mx * MC_LADRC_WC_Y [601,1069] : [0m[0m4.0000
+[0m[0mx * MC_LADRC_WO_P [602,1070] : [0m[0m30.0000
+[0m[0mx * MC_LADRC_WO_R [603,1071] : [0m[0m30.0000
+[0m[0mx * MC_LADRC_WO_Y [604,1072] : [0m[0m15.0000
+[0m[0m
+ 1141/2057 parameters used.
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param sh[2Kpxh> param sho[2Kpxh> param show[2Kpxh> param show [2Kpxh> param show M[2Kpxh> param show MC[2Kpxh> param show MC_[2Kpxh> param show MC_H[2Kpxh> param show MC_HA[2Kpxh> param show MC_HAN[2Kpxh> param show MC_HANG[2Kpxh> param show MC_HANG*
+[0mSymbols: x = used, + = saved, * = unsaved
+[0m[0mx   MC_HANG_ACC_LIM [532,1000] : [0m[0m0.2000
+[0m[0mx   MC_HANG_ACC_SLW [533,1001] : [0m[0m2.0000
+[0m[0mx   MC_HANG_ACT_ANG [534,1002] : [0m[0m0.0000
+[0m[0mx   MC_HANG_ACT_DLY [535,1003] : [0m[0m2.0000
+[0m[0mx   MC_HANG_ACT_R [536,1004] : [0m[0m0.0000
+[0m[0mx   MC_HANG_ACT_T [537,1005] : [0m[0m0.0000
+[0m[0mx * MC_HANG_AS_EN [538,1006] : [0m[0m0
+[0m[0mx   MC_HANG_E_FULL [539,1007] : [0m[0m0.0100
+[0m[0mx   MC_HANG_E_MIN [540,1008] : [0m[0m0.0000
+[0m[0mx   MC_HANG_FRQ_EN [541,1009] : [0m[0m0
+[0m[0mx   MC_HANG_K_ANG [542,1010] : [0m[0m0.0000
+[0m[0mx   MC_HANG_K_RATE [543,1011] : [0m[0m0.6000
+[0m[0mx   MC_HANG_LEN [544,1012] : [0m[0m0.6000
+[0m[0mx   MC_HANG_LPF_HZ [545,1013] : [0m[0m4.0000
+[0m[0mx   MC_HANG_MAX_ANG [546,1014] : [0m[0m0.8000
+[0m[0mx + MC_HANG_MODE [547,1015] : [0m[0m2
+[0m[0mx   MC_HANG_OFFB [548,1016] : [0m[0m1
+[0m[0mx   MC_HANG_PAS_DLY [549,1017] : [0m[0m0.1000
+[0m[0mx   MC_HANG_PAS_E [550,1018] : [0m[0m0.0050
+[0m[0mx + MC_HANG_PAS_K [551,1019] : [0m[0m1.0000
+[0m[0mx   MC_HANG_PAS_LIM [552,1020] : [0m[0m0.0800
+[0m[0mx   MC_HANG_PAS_LPF [553,1021] : [0m[0m1.0000
+[0m[0mx * MC_HANG_PAS_MD [554,1022] : [0m[0m0
+[0m[0mx   MC_HANG_PAS_P [555,1023] : [0m[0m0.0005
+[0m[0mx * MC_HANG_PAS_POS [556,1024] : [0m[0m0
+[0m[0mx   MC_HANG_PAS_PR [557,1025] : [0m[0m0.2500
+[0m[0mx   MC_HANG_PAS_R [558,1026] : [0m[0m0.0500
+[0m[0mx + MC_HANG_PAS_SLW [559,1027] : [0m[0m1.5000
+[0m[0mx   MC_HANG_RAMP_T [560,1028] : [0m[0m2.0000
+[0m[0mx   MC_HANG_REARM [561,1029] : [0m[0m1.0000
+[0m[0mx   MC_HANG_SAFE_A [562,1030] : [0m[0m0.3500
+[0m[0mx   MC_HANG_SIGN_X [563,1031] : [0m[0m-1
+[0m[0mx   MC_HANG_SIGN_Y [564,1032] : [0m[0m-1
+[0m[0mx   MC_HANG_TIMEOUT [565,1033] : [0m[0m0.2000
+[0m[0mx   MC_HANG_TOT_A [566,1034] : [0m[0m0.8000
+[0m[0mx   MC_HANG_WC_R [567,1035] : [0m[0m0.2500
+[0m[0mx   MC_HANG_WO_MIN [568,1036] : [0m[0m2.0000
+[0m[0mx * MC_HANG_WO_R [569,1037] : [0m[0m0.5000
+[0m[0mx   MC_HANG_ZETA [570,1038] : [0m[0m0.1000
+[0m[0m
+ 1141/2057 parameters used.
+[0mpxh> [2Kpxh> p[2Kpxh> pa[2Kpxh> par[2Kpxh> para[2Kpxh> param[2Kpxh> param [2Kpxh> param s[2Kpxh> param sh[2Kpxh> param sho[2Kpxh> param show[2Kpxh> param show [2Kpxh> param show M[2Kpxh> param show MC[2Kpxh> param show MC_[2Kpxh> param show MC_P[2Kpxh> param show MC_PL[2Kpxh> param show MC_PLA[2Kpxh> param show MC_PLAD[2Kpxh> param show MC_PLADR[2Kpxh> param show MC_PLADRC[2Kpxh> param show MC_PLADRC*
+[0mSymbols: x = used, + = saved, * = unsaved
+[0m[0mx   MC_PLADRC_B0_XY [615,1083] : [0m[0m1.0000
+[0m[0mx   MC_PLADRC_B0_Z [616,1084] : [0m[0m1.0000
+[0m[0mx   MC_PLADRC_D_XY [617,1085] : [0m[0m0.0000
+[0m[0mx   MC_PLADRC_D_Z [618,1086] : [0m[0m0.0000
+[0m[0mx   MC_PLADRC_EN [619,1087] : [0m[0m0
+[0m[0mx   MC_PLADRC_LIM_DN [620,1088] : [0m[0m2.0000
+[0m[0mx   MC_PLADRC_LIM_UP [621,1089] : [0m[0m3.0000
+[0m[0mx   MC_PLADRC_LIM_XY [622,1090] : [0m[0m0.8000
+[0m[0mx   MC_PLADRC_TD_AXY [623,1091] : [0m[0m2.0000
+[0m[0mx   MC_PLADRC_TD_AZ [624,1092] : [0m[0m2.0000
+[0m[0mx   MC_PLADRC_TD_DMP [625,1093] : [0m[0m1.0000
+[0m[0mx + MC_PLADRC_TD_EN [626,1094] : [0m[0m0
+[0m[0mx   MC_PLADRC_TD_WXY [627,1095] : [0m[0m2.0000
+[0m[0mx   MC_PLADRC_TD_WZ [628,1096] : [0m[0m3.0000
+[0m[0mx   MC_PLADRC_VFB_W [629,1097] : [0m[0m0.0000
+[0m[0mx   MC_PLADRC_WC_XY [630,1098] : [0m[0m1.8000
+[0m[0mx   MC_PLADRC_WC_Z [631,1099] : [0m[0m4.0000
+[0m[0mx   MC_PLADRC_WO_XY [632,1100] : [0m[0m6.0000
+[0m[0mx   MC_PLADRC_WO_Z [633,1101] : [0m[0m10.0000
+[0m[0m
+ 1141/2057 parameters used.
+[0mpxh> [2Kpxh> c[2Kpxh> co[2Kpxh> com[2Kpxh> comm[2Kpxh> comma[2Kpxh> comman[2Kpxh> command[2Kpxh> commande[2Kpxh> commander[2Kpxh> commander [2Kpxh> commander t[2Kpxh> commander ta[2Kpxh> commander tak[2Kpxh> commander take[2Kpxh> commander takeo[2Kpxh> commander takeof[2Kpxh> commander takeoff
+pxh> [0mINFO  [37m[commander] [0mArmed by internal command	[0m
+[0mINFO  [37m[tone_alarm] [0marming warning[0m
+[0mINFO  [37m[navigator] [0mUsing default takeoff altitude: 10.0 m	[0m
+[0mINFO  [37m[commander] [0mTakeoff detected	[0m
+[0mINFO  [37m[mavlink] [0mpartner IP: 127.0.0.1[0m
+[2Kpxh> c[2Kpxh> co[2Kpxh> com[2Kpxh> comm[2Kpxh> comma[2Kpxh> comman[2Kpxh> command[2Kpxh> commande[2Kpxh> commander[2Kpxh> commander [2Kpxh> commander l[2Kpxh> commander la[2Kpxh> commander lan[2Kpxh> commander land
+pxh> [0mINFO  [37m[commander] [0mLanding at current position	[0m
+[0mINFO  [37m[commander] [0mLanding detected	[0m
+[0mINFO  [37m[commander] [0mDisarmed by landing	[0m
+[0mINFO  [37m[tone_alarm] [0mnotify neutral[0m
+[0mINFO  [37m[logger] [0mclosed logfile, bytes written: 46962010[0m
+[2Kpxh> s[2Kpxh> sh[2Kpxh> shu[2Kpxh> shut[2Kpxh> shutd[2Kpxh> shutdo[2Kpxh> shutdow[2Kpxh> shutdown
+Exiting NOW.
+ninja: build stopped: interrupted by user.
+make: *** [Makefile:232: px4_sitl] 已终止

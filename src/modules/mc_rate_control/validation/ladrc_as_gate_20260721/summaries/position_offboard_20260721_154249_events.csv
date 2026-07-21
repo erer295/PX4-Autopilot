@@ -1,0 +1,5 @@
+name,event_type,start_boot_s,end_boot_s,success,params_json
+offboard_entry,flight_phase,36.62,37.164,1,"{""armed_cache_after_command"": true, ""ax_m_s2"": NaN, ""ay_m_s2"": NaN, ""az_m_s2"": NaN, ""use_yaw_rate"": false, ""vx_m_s"": NaN, ""vy_m_s"": NaN, ""vz_m_s"": NaN, ""x_m"": -0.003593042492866516, ""y_m"": -0.14461275935173035, ""yaw_rad"": 1.6518182754516602, ""yaw_rate_rad_s"": 0.0, ""z_m"": -10.058858871459961}"
+settle,flight_phase,37.22,45.268,1,{}
+hold_current_position_check,flight_phase,45.32,75.388,0,"{""ax_m_s2"": NaN, ""ay_m_s2"": NaN, ""az_m_s2"": NaN, ""use_yaw_rate"": false, ""vx_m_s"": NaN, ""vy_m_s"": NaN, ""vz_m_s"": NaN, ""x_m"": -0.003593042492866516, ""y_m"": -0.14461275935173035, ""yaw_rad"": 1.6518182754516602, ""yaw_rate_rad_s"": 0.0, ""z_m"": -10.058858871459961}"
+abort_loiter,safety_action,75.444,75.988,1,"{""reason"": ""position_not_stable""}"

@@ -1,0 +1,67 @@
+Output directory: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349
+attaching to an already running PX4/Gazebo instance
+connecting MAVLink: udpin:0.0.0.0:14540
+hang joint recorder started: /world/default/model/zd680_hang_0/joint_state
+leaving existing PX4 rate-controller parameters unchanged
+leaving existing PX4 position-controller parameters unchanged
+holding current hover point: x=0.00 m y=0.00 m z=-9.99 m yaw=95.2 deg
+streaming position setpoint NED: x=0.00 m y=0.00 m z=-9.99 m yaw=95.2 deg
+OFFBOARD mode command sent: ok
+vehicle is already armed; no arm command was sent
+settling for 8.0s
+waiting position: x=0.01 y=0.03 z=-10.00 target=(0.00,0.00,-9.99) mode=UNKNOWN
+waiting position: x=0.00 y=0.00 z=-10.02 target=(0.00,0.00,-9.99) mode=UNKNOWN
+position stable: x=-0.03 y=0.03 z=-10.02 mode=UNKNOWN
+position stable check: ok
+waiting hang initial condition: angle_rms=0.258/0.300deg rate_rms=0.0188/0.0150rad/s angle_now=0.417/1.000deg rate_now=0.0175/0.0600rad/s xy_error=0.035m vxy=0.018m/s
+waiting hang initial condition: angle_rms=0.311/0.300deg rate_rms=0.0213/0.0150rad/s angle_now=0.251/1.000deg rate_now=0.0228/0.0600rad/s xy_error=0.019m vxy=0.026m/s
+waiting hang initial condition: angle_rms=0.314/0.300deg rate_rms=0.0237/0.0150rad/s angle_now=0.191/1.000deg rate_now=0.0365/0.0600rad/s xy_error=0.016m vxy=0.012m/s
+waiting hang initial condition: angle_rms=0.352/0.300deg rate_rms=0.0258/0.0150rad/s angle_now=0.547/1.000deg rate_now=0.0074/0.0600rad/s xy_error=0.012m vxy=0.009m/s
+waiting hang initial condition: angle_rms=0.351/0.300deg rate_rms=0.0258/0.0150rad/s angle_now=0.279/1.000deg rate_now=0.0247/0.0600rad/s xy_error=0.015m vxy=0.009m/s
+waiting hang initial condition: angle_rms=0.345/0.300deg rate_rms=0.0254/0.0150rad/s angle_now=0.234/1.000deg rate_now=0.0238/0.0600rad/s xy_error=0.036m vxy=0.015m/s
+waiting hang initial condition: angle_rms=0.315/0.300deg rate_rms=0.0233/0.0150rad/s angle_now=0.519/1.000deg rate_now=0.0046/0.0600rad/s xy_error=0.035m vxy=0.028m/s
+waiting hang initial condition: angle_rms=0.304/0.300deg rate_rms=0.0230/0.0150rad/s angle_now=0.091/1.000deg rate_now=0.0307/0.0600rad/s xy_error=0.028m vxy=0.027m/s
+waiting hang initial condition: angle_rms=0.309/0.300deg rate_rms=0.0226/0.0150rad/s angle_now=0.281/1.000deg rate_now=0.0157/0.0600rad/s xy_error=0.038m vxy=0.023m/s
+waiting hang initial condition: angle_rms=0.291/0.300deg rate_rms=0.0227/0.0150rad/s angle_now=0.333/1.000deg rate_now=0.0277/0.0600rad/s xy_error=0.016m vxy=0.031m/s
+waiting hang initial condition: angle_rms=0.334/0.300deg rate_rms=0.0253/0.0150rad/s angle_now=0.358/1.000deg rate_now=0.0400/0.0600rad/s xy_error=0.015m vxy=0.007m/s
+waiting hang initial condition: angle_rms=0.388/0.300deg rate_rms=0.0291/0.0150rad/s angle_now=0.537/1.000deg rate_now=0.0169/0.0600rad/s xy_error=0.016m vxy=0.016m/s
+waiting hang initial condition: angle_rms=0.406/0.300deg rate_rms=0.0296/0.0150rad/s angle_now=0.301/1.000deg rate_now=0.0215/0.0600rad/s xy_error=0.009m vxy=0.012m/s
+waiting hang initial condition: angle_rms=0.368/0.300deg rate_rms=0.0262/0.0150rad/s angle_now=0.335/1.000deg rate_now=0.0208/0.0600rad/s xy_error=0.022m vxy=0.007m/s
+waiting hang initial condition: angle_rms=0.319/0.300deg rate_rms=0.0223/0.0150rad/s angle_now=0.295/1.000deg rate_now=0.0204/0.0600rad/s xy_error=0.009m vxy=0.019m/s
+waiting hang initial condition: angle_rms=0.294/0.300deg rate_rms=0.0211/0.0150rad/s angle_now=0.354/1.000deg rate_now=0.0199/0.0600rad/s xy_error=0.027m vxy=0.002m/s
+waiting hang initial condition: angle_rms=0.281/0.300deg rate_rms=0.0207/0.0150rad/s angle_now=0.277/1.000deg rate_now=0.0125/0.0600rad/s xy_error=0.039m vxy=0.029m/s
+waiting hang initial condition: angle_rms=0.259/0.300deg rate_rms=0.0190/0.0150rad/s angle_now=0.266/1.000deg rate_now=0.0119/0.0600rad/s xy_error=0.025m vxy=0.032m/s
+waiting hang initial condition: angle_rms=0.216/0.300deg rate_rms=0.0161/0.0150rad/s angle_now=0.082/1.000deg rate_now=0.0132/0.0600rad/s xy_error=0.018m vxy=0.020m/s
+waiting hang initial condition: angle_rms=0.185/0.300deg rate_rms=0.0145/0.0150rad/s angle_now=0.356/1.000deg rate_now=0.0042/0.0600rad/s xy_error=0.030m vxy=0.011m/s
+waiting hang initial condition: angle_rms=0.191/0.300deg rate_rms=0.0162/0.0150rad/s angle_now=0.020/1.000deg rate_now=0.0296/0.0600rad/s xy_error=0.029m vxy=0.033m/s
+waiting hang initial condition: angle_rms=0.226/0.300deg rate_rms=0.0186/0.0150rad/s angle_now=0.367/1.000deg rate_now=0.0126/0.0600rad/s xy_error=0.007m vxy=0.021m/s
+waiting hang initial condition: angle_rms=0.253/0.300deg rate_rms=0.0205/0.0150rad/s angle_now=0.012/1.000deg rate_now=0.0205/0.0600rad/s xy_error=0.039m vxy=0.012m/s
+waiting hang initial condition: angle_rms=0.239/0.300deg rate_rms=0.0180/0.0150rad/s angle_now=0.142/1.000deg rate_now=0.0189/0.0600rad/s xy_error=0.018m vxy=0.027m/s
+waiting hang initial condition: angle_rms=0.220/0.300deg rate_rms=0.0165/0.0150rad/s angle_now=0.331/1.000deg rate_now=0.0124/0.0600rad/s xy_error=0.014m vxy=0.012m/s
+waiting hang initial condition: angle_rms=0.226/0.300deg rate_rms=0.0148/0.0150rad/s angle_now=0.255/1.000deg rate_now=0.0183/0.0600rad/s xy_error=0.017m vxy=0.012m/s
+waiting hang initial condition: angle_rms=0.233/0.300deg rate_rms=0.0158/0.0150rad/s angle_now=0.108/1.000deg rate_now=0.0235/0.0600rad/s xy_error=0.012m vxy=0.015m/s
+waiting hang initial condition: angle_rms=0.212/0.300deg rate_rms=0.0147/0.0150rad/s angle_now=0.077/1.000deg rate_now=0.0072/0.0600rad/s xy_error=0.020m vxy=0.009m/s
+waiting hang initial condition: angle_rms=0.158/0.300deg rate_rms=0.0119/0.0150rad/s angle_now=0.121/1.000deg rate_now=0.0088/0.0600rad/s xy_error=0.014m vxy=0.013m/s
+waiting hang initial condition: angle_rms=0.125/0.300deg rate_rms=0.0092/0.0150rad/s angle_now=0.045/1.000deg rate_now=0.0156/0.0600rad/s xy_error=0.025m vxy=0.012m/s
+hang initial condition ready: angle_rms=0.128deg rate_rms=0.0092rad/s angle_now=0.064deg rate_now=0.0127rad/s
+running action profile
+  action 1: hold:8
+action_01_hold: 8.0s
+LOITER mode command sent: ok
+wrote hang joint samples: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/hang_joint_samples.csv (2633 rows)
+copied ULog: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/position_offboard.ulg
+wrote live samples: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/live_samples.csv
+
+Position OFFBOARD run complete.
+events:  /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/events.csv
+summary: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/summary.csv
+coord:   /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/hangcoord_summary.csv
+posprot: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/hangpos4_summary.csv
+active:  /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/active_summary.json
+validity:/home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/validity.json (not_applicable)
+summary records: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/summaries
+summary index:   /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/summaries/run_index.csv
+live:    /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/live_samples.csv
+hang:    /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/hang_joint_samples.csv
+ulog:    /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/position_offboard.ulg
+console: /home/lst/PX4-Autopilot/src/modules/mc_rate_control/validation/ladrc_as_gate_20260721/runs/smoke_D0_C0_T0_r01_20260721_152312/2026-07-21/position_offboard_20260721_152349/px4_console.log

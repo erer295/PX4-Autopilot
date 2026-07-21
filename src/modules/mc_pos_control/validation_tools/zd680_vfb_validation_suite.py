@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch the four fresh-instance ZD680 VFB task-book SITL runs in order."""
+"""Launch fresh-instance ZD680 VFB task-book SITL runs in order."""
 
 from __future__ import annotations
 
@@ -12,7 +12,10 @@ SOURCE = REPO_ROOT / "Tools" / "simulation" / "gz" / "tools" / "zd680_validation
 RECORDER = Path(__file__).with_name("zd680_vfb_recorder.py")
 API = runpy.run_path(str(SOURCE), run_name="zd680_vfb_suite_api")
 
-MODES = ("VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W05")
+MODES = (
+    "VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W25", "VFB_L08_W05",
+    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
+)
 CURRENT_MODE = ""
 
 
@@ -22,14 +25,8 @@ def profile(mode: str, best_ramp_s: float = 1.0):
 
 
 def frozen_params(mode: str):
-    selected = profile(mode)
     recorder_api = runpy.run_path(str(RECORDER), run_name="zd680_vfb_params_api")
-    int_params, float_params = recorder_api["controller_parameters"]("FULL", float(selected["rope_length_m"]))
-    float_params["MC_PLADRC_VFB_W"] = float(selected["velocity_feedback_weight"])
-    estimator_int, estimator_float = recorder_api["estimator_parameters"]()
-    int_params.update(estimator_int)
-    float_params.update(estimator_float)
-    return int_params, float_params
+    return recorder_api["parameters_for_mode"](mode)
 
 
 original_send = API["PtyProcess"].send

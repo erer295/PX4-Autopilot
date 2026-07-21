@@ -1,0 +1,788 @@
+{
+  "comparisons": [
+    {
+      "baseline_mode": "VFB_L08_W00",
+      "both_valid": true,
+      "cost_threshold_pass": true,
+      "decision": "B_power_better_swing_not_better",
+      "final10_xy_rms_change_pct": -15.935616358827929,
+      "final_5s_swing_angle_rms_deg_change_pct": -5.199911779357324,
+      "final_acc_rms_change_pct": 6.906786671379836,
+      "jerk_p95_change_pct": 5.491801748029651,
+      "mechanism_threshold_pass": true,
+      "nominal_net_baseline": 0.09258558172963606,
+      "nominal_net_reduction_pct": 45.51654527947626,
+      "nominal_net_test": 0.05044382349939976,
+      "observer_error_net_baseline": 0.14405353772093887,
+      "observer_error_net_reduction_pct": 41.117672220270144,
+      "observer_error_net_test": 0.08482207625914001,
+      "rope_length_m": 0.8,
+      "swing_angle_peak_deg_change_pct": 3.684878754634755,
+      "swing_angle_rms_deg_change_pct": -2.836435559710903,
+      "swing_energy_integral_j_s_kg_change_pct": -5.654097180884258,
+      "swing_no_worse_pass": false,
+      "test_as_net": -0.3016305703029204,
+      "test_fallback_ratio": 0.0,
+      "test_mode": "VFB_L08_W25",
+      "test_pas_net": -0.061170567662103846,
+      "test_saturation_ratio": 0.0001463057790782736,
+      "test_weight": 0.25,
+      "velocity_total_net_baseline": 0.0890009367452007,
+      "velocity_total_net_reduction_pct": 41.75407699862841,
+      "velocity_total_net_test": 0.05183941708710903,
+      "xy_rms_change_pct": -2.2095031777879366
+    },
+    {
+      "baseline_mode": "VFB_L08_W00",
+      "both_valid": true,
+      "cost_threshold_pass": true,
+      "decision": "A_success",
+      "final10_xy_rms_change_pct": -9.560832407008501,
+      "final_5s_swing_angle_rms_deg_change_pct": -70.82229123546252,
+      "final_acc_rms_change_pct": 2.4871634174878756,
+      "jerk_p95_change_pct": -3.0304430659875887,
+      "mechanism_threshold_pass": true,
+      "nominal_net_baseline": 0.09258558172963606,
+      "nominal_net_reduction_pct": 94.54572419902357,
+      "nominal_net_test": 0.005049872979472803,
+      "observer_error_net_baseline": 0.14405353772093887,
+      "observer_error_net_reduction_pct": 61.22004838551555,
+      "observer_error_net_test": 0.0558638922271332,
+      "rope_length_m": 0.8,
+      "swing_angle_peak_deg_change_pct": -0.7659348914633651,
+      "swing_angle_rms_deg_change_pct": -9.655472525721258,
+      "swing_energy_integral_j_s_kg_change_pct": -17.60787018432383,
+      "swing_no_worse_pass": true,
+      "test_as_net": -0.31820073537094784,
+      "test_fallback_ratio": 0.0,
+      "test_mode": "VFB_L08_W05",
+      "test_pas_net": -0.06049471962646561,
+      "test_saturation_ratio": 0.0007123521869212138,
+      "test_weight": 0.5,
+      "velocity_total_net_baseline": 0.0890009367452007,
+      "velocity_total_net_reduction_pct": 89.55818882312454,
+      "velocity_total_net_test": 0.00929330976058423,
+      "xy_rms_change_pct": -5.204905902841224
+    }
+  ],
+  "generated_local": "2026-07-20T16:58:59",
+  "runs": [
+    {
+      "a_base_p95_m_s2": 0.11547922373757549,
+      "a_base_peak_m_s2": 0.2087553772773764,
+      "a_base_rms_m_s2": 0.05392369950547517,
+      "active_intervention_ratio": 0.11444817028721388,
+      "allocator_thrust_not_achieved_ratio": 0.0,
+      "allocator_torque_not_achieved_ratio": 0.0,
+      "along_path_speed_rmse_m_s": 0.05630258045416096,
+      "analysis_base_valid": true,
+      "as_negative_power_integral_j_kg": -0.475713887247319,
+      "as_p95_m_s2": 0.17407859750397778,
+      "as_peak_m_s2": 0.20000001339099865,
+      "as_positive_power_integral_j_kg": 0.0,
+      "as_rms_m_s2": 0.0746700637009657,
+      "attitude_control_rejection_reasons": "",
+      "attitude_control_valid": true,
+      "attitude_quat_reset_count": 0,
+      "attitude_sample_count": 13553,
+      "attitude_tracking_error_p95_deg": 1.2705542026779322,
+      "attitude_tracking_error_peak_deg": 2.4760661966876705,
+      "attitude_tracking_error_rms_deg": 0.49978077447129027,
+      "base_valid": true,
+      "battery_remaining_mean": 0.9999465942382812,
+      "battery_remaining_min": 0.9999465942382812,
+      "battery_voltage_min_v": 24.30000114440918,
+      "battery_warning_peak": 0.0,
+      "candidate_positive_power_integral_j_kg": 0.2843751259293993,
+      "completed": true,
+      "controller": "FULL",
+      "cpu_load_mean_pct": 58.677310150648864,
+      "cpu_load_peak_pct": 93.9393937587738,
+      "cross_path_velocity_rms_m_s": 0.021968440120045656,
+      "effective_weight_max": 0.0,
+      "effective_weight_mean": 0.0,
+      "effective_weight_median": 0.0,
+      "effective_weight_min": 0.0,
+      "ekf_filter_fault_nonzero_ratio": 0.0,
+      "ekf_minus_z2_p95_m_s": 0.061125857626268064,
+      "ekf_minus_z2_peak_m_s": 0.10746312410345603,
+      "ekf_minus_z2_rms_m_s": 0.032465398642083164,
+      "ekf_time_slip_delta_s": 0.42399996519088745,
+      "ekf_time_slip_span_s": 0.42399996519088745,
+      "ekf_timeout_nonzero_ratio": 0.0,
+      "ekf_truth_z_peak_m": 0.6335577011108402,
+      "ekf_vertical_accuracy_peak_m": 0.17244650423526764,
+      "endpoint_xy_error_m": 0.028262064194518807,
+      "expected_vfb_weight": 0.0,
+      "failsafe_ratio": 0.0,
+      "failure_detector_nonzero_ratio": 0.0,
+      "fallback_ratio": 0.0,
+      "feedback_minus_ekf_rms_m_s": 0.03246539864135023,
+      "feedback_minus_z2_rms_m_s": 0.0,
+      "final10_p_as_net_integral": -0.026182999615837994,
+      "final10_p_final_net_integral": -0.024716095542102745,
+      "final10_p_nominal_net_integral": 0.002322919162570602,
+      "final10_p_observer_error_net_integral": 0.020885303629297393,
+      "final10_p_pas_net_integral": -0.0029201161420496606,
+      "final10_p_position_net_integral": 0.0006425419815884829,
+      "final10_p_tracking_net_integral": -0.01920492630761122,
+      "final10_p_velocity_total_net_integral": 0.0016803771403123583,
+      "final10_p_z3_net_integral": 0.0020641010403639436,
+      "final_10s_xy_error_rms_m": 0.02953271890979582,
+      "final_5s_swing_angle_rms_deg": 2.1484742046907828,
+      "final_acc_p95_m_s2": 0.503349756504986,
+      "final_acc_peak_m_s2": 0.7766937666105419,
+      "final_acc_rms_m_s2": 0.1793502780772242,
+      "final_band_055_075_energy": 0.00690197141662441,
+      "final_jerk_p95_m_s3": 2.189640985494647,
+      "final_jerk_peak_m_s3": 39.13184934335465,
+      "final_jerk_rms_m_s3": 1.9535079632106869,
+      "final_positive_power_integral_j_kg": 0.22249408320270622,
+      "horizontal_body_rate_p95_rad_s": 0.11917500737523835,
+      "horizontal_body_rate_peak_rad_s": 0.2606463487878942,
+      "horizontal_body_rate_rms_rad_s": 0.049609341097881586,
+      "hover_xy_error_rms_m": 0.028658108967161724,
+      "initial_horizontal_speed_m_s": 0.006264158686270241,
+      "initial_swing_angle_rms_deg": 0.3966746349299177,
+      "initial_swing_rate_rms_rad_s": 0.025074903470187353,
+      "initial_xy_error_m": 0.013875086358168556,
+      "mode": "VFB_L08_W00",
+      "motor_high_saturation_sample_ratio": 0.0,
+      "motor_output_max": 0.6102238893508911,
+      "motor_output_min": 0.5622934103012085,
+      "movement_p_as_net_integral": -0.3655702973787368,
+      "movement_p_final_net_integral": -0.23041578203647872,
+      "movement_p_nominal_net_integral": 0.09258558172963606,
+      "movement_p_observer_error_net_integral": 0.14405353772093887,
+      "movement_p_pas_net_integral": -0.05891571154037211,
+      "movement_p_position_net_integral": 0.0035846448587307745,
+      "movement_p_tracking_net_integral": -0.05505260155385049,
+      "movement_p_velocity_total_net_integral": 0.0890009367452007,
+      "movement_p_z3_net_integral": 0.011587976124873391,
+      "moving_xy_error_rms_m": 0.06726419624767957,
+      "nominal_band_055_075_energy": 0.0007475924094277907,
+      "nominal_identity_max_abs_m_s2": 1.4930236657970956e-08,
+      "non_z_rejection_reasons": "",
+      "pas_p95_m_s2": 0.06881950757554994,
+      "pas_peak_m_s2": 0.0800000101261042,
+      "pas_position_limiter_ratio": 0.017057880157457354,
+      "pas_rms_m_s2": 0.01994498028542584,
+      "payload_mass_kg": 0.5,
+      "pitch_peak_abs_deg": 3.3679910511122895,
+      "pitch_rms_deg": 0.6712829365288587,
+      "ramp_time_s": 1.0,
+      "rejection_reasons": "truth_z_peak_le_0_5m;ekf_truth_z_peak_le_0_3m",
+      "requested_weight_max": 0.0,
+      "requested_weight_mean": 0.0,
+      "requested_weight_median": 0.0,
+      "requested_weight_min": 0.0,
+      "roll_peak_abs_deg": 3.571111982213181,
+      "roll_rms_deg": 0.681162486517665,
+      "rope_length_m": 0.8,
+      "route_p_as_net_integral": -0.4756931061388498,
+      "route_p_final_net_integral": -0.3498236665584923,
+      "route_p_nominal_net_integral": 0.07994422120327996,
+      "route_p_observer_error_net_integral": 0.21200811939777725,
+      "route_p_pas_net_integral": -0.0627120339947431,
+      "route_p_position_net_integral": -0.0029519818530028027,
+      "route_p_tracking_net_integral": -0.12911191698500826,
+      "route_p_velocity_total_net_integral": 0.08289620305810105,
+      "route_p_z3_net_integral": 0.01874058294632691,
+      "run_dir": "/tmp/zd680_vfb_l08_strict_taskbook_20260720/runs/VFB_L08_W00/2026-07-20/position_offboard_20260720_145618",
+      "sensor_combined_gap_peak_ms": 48.00000000000182,
+      "strict_base_valid": false,
+      "swing_angle_peak_deg": 5.609880730381084,
+      "swing_angle_rms_deg": 2.0081320951469226,
+      "swing_energy_integral_j_s_kg": 0.7068312003157724,
+      "swing_energy_mean_j_kg": 0.012483701105245071,
+      "swing_energy_peak_j_kg": 0.06907327034447767,
+      "swing_rate_peak_rad_s": 0.4492773805102588,
+      "swing_rate_rms_rad_s": 0.15478403041940952,
+      "tilt_p95_deg": 2.6568282399274357,
+      "tilt_peak_deg": 3.589447269833146,
+      "tilt_rms_deg": 0.9563428098374981,
+      "total_acc_saturated_ratio": 0.0,
+      "total_envelope_trigger_ratio": 0.0,
+      "truth_z_peak_m": 0.9398298263549805,
+      "unallocated_torque_peak": 5.822018148992174e-08,
+      "valid": true,
+      "vehicle_status_failsafe_ratio": 0.0,
+      "velocity_band_055_075_energy": 0.0006876973575170929,
+      "velocity_identity_max_abs_m_s2": 1.8510036170482635e-08,
+      "velocity_valid_ratio": 1.0,
+      "vfb_rejection_reasons": "",
+      "vfb_valid": true,
+      "vfb_warnings": "z_observation_only:truth_z_peak_le_0_5m,ekf_truth_z_peak_le_0_3m",
+      "xy_error_peak_m": 0.11773271592931556,
+      "xy_error_rms_m": 0.04975024930575135,
+      "yaw_rate_peak_abs_rad_s": 0.028907112777233124,
+      "yaw_rate_rms_rad_s": 0.005070704916829987,
+      "z_observation_only": true,
+      "z_observation_reasons": "truth_z_peak_le_0_5m;ekf_truth_z_peak_le_0_3m"
+    },
+    {
+      "a_base_p95_m_s2": 0.1326983967063343,
+      "a_base_peak_m_s2": 0.19322604518364658,
+      "a_base_rms_m_s2": 0.06114475982943806,
+      "active_intervention_ratio": 0.1119239209948793,
+      "allocator_thrust_not_achieved_ratio": 0.0,
+      "allocator_torque_not_achieved_ratio": 0.0,
+      "along_path_speed_rmse_m_s": 0.07212962569378853,
+      "analysis_base_valid": true,
+      "as_negative_power_integral_j_kg": -0.40858384371071166,
+      "as_p95_m_s2": 0.17703975455549714,
+      "as_peak_m_s2": 0.20000001597512138,
+      "as_positive_power_integral_j_kg": 0.0,
+      "as_rms_m_s2": 0.06899017728882534,
+      "attitude_control_rejection_reasons": "",
+      "attitude_control_valid": true,
+      "attitude_quat_reset_count": 0,
+      "attitude_sample_count": 13510,
+      "attitude_tracking_error_p95_deg": 1.4082926538581142,
+      "attitude_tracking_error_peak_deg": 2.7974144155791763,
+      "attitude_tracking_error_rms_deg": 0.5766773433513834,
+      "base_valid": true,
+      "battery_remaining_mean": 0.9999465942382812,
+      "battery_remaining_min": 0.9999465942382812,
+      "battery_voltage_min_v": 24.30000114440918,
+      "battery_warning_peak": 0.0,
+      "candidate_positive_power_integral_j_kg": 0.3142753520645295,
+      "completed": true,
+      "controller": "FULL",
+      "cpu_load_mean_pct": 57.84795281610319,
+      "cpu_load_peak_pct": 89.70588445663452,
+      "cross_path_velocity_rms_m_s": 0.020567123829241408,
+      "effective_weight_max": 0.25,
+      "effective_weight_mean": 0.25,
+      "effective_weight_median": 0.25,
+      "effective_weight_min": 0.25,
+      "ekf_filter_fault_nonzero_ratio": 0.0,
+      "ekf_minus_z2_p95_m_s": 0.09188524331930283,
+      "ekf_minus_z2_peak_m_s": 0.15984161342314146,
+      "ekf_minus_z2_rms_m_s": 0.04398157401204445,
+      "ekf_time_slip_delta_s": 0.5239999815821648,
+      "ekf_time_slip_span_s": 0.5239999815821648,
+      "ekf_timeout_nonzero_ratio": 0.0,
+      "ekf_truth_z_peak_m": 0.44166641235351634,
+      "ekf_vertical_accuracy_peak_m": 0.17260873317718506,
+      "endpoint_xy_error_m": 0.005624181576118619,
+      "expected_vfb_weight": 0.25,
+      "failsafe_ratio": 0.0,
+      "failure_detector_nonzero_ratio": 0.0,
+      "fallback_ratio": 0.0,
+      "feedback_minus_ekf_rms_m_s": 0.032986180647692,
+      "feedback_minus_z2_rms_m_s": 0.010995393380024929,
+      "final10_p_as_net_integral": -0.014263338731582543,
+      "final10_p_final_net_integral": -0.020057289224430147,
+      "final10_p_nominal_net_integral": -0.0045515308836131555,
+      "final10_p_observer_error_net_integral": 0.007690706304767892,
+      "final10_p_pas_net_integral": -6.744058307959136e-05,
+      "final10_p_position_net_integral": -0.0014671867285675178,
+      "final10_p_tracking_net_integral": -0.010775050543916209,
+      "final10_p_velocity_total_net_integral": -0.0030843442101236135,
+      "final10_p_z3_net_integral": -0.0011749788766180656,
+      "final_10s_xy_error_rms_m": 0.02482649812399973,
+      "final_5s_swing_angle_rms_deg": 2.036755441444613,
+      "final_acc_p95_m_s2": 0.5162030800758751,
+      "final_acc_peak_m_s2": 0.800000065618276,
+      "final_acc_rms_m_s2": 0.1917376191785446,
+      "final_band_055_075_energy": 0.005571171405171022,
+      "final_jerk_p95_m_s3": 2.3098917274116157,
+      "final_jerk_peak_m_s3": 18.09438670190117,
+      "final_jerk_rms_m_s3": 1.4187508667026896,
+      "final_positive_power_integral_j_kg": 0.2502717879636076,
+      "horizontal_body_rate_p95_rad_s": 0.12508098719451988,
+      "horizontal_body_rate_peak_rad_s": 0.28723787864097566,
+      "horizontal_body_rate_rms_rad_s": 0.05430330800798288,
+      "hover_xy_error_rms_m": 0.03672682020377305,
+      "initial_horizontal_speed_m_s": 0.005916553880638047,
+      "initial_swing_angle_rms_deg": 0.4333518052312462,
+      "initial_swing_rate_rms_rad_s": 0.03203122050441228,
+      "initial_xy_error_m": 0.013261581227225346,
+      "mode": "VFB_L08_W25",
+      "motor_high_saturation_sample_ratio": 0.0,
+      "motor_output_max": 0.6135937571525574,
+      "motor_output_min": 0.5671219825744629,
+      "movement_p_as_net_integral": -0.3016305703029204,
+      "movement_p_final_net_integral": -0.16415755160573436,
+      "movement_p_nominal_net_integral": 0.05044382349939976,
+      "movement_p_observer_error_net_integral": 0.08482207625914001,
+      "movement_p_pas_net_integral": -0.061170567662103846,
+      "movement_p_position_net_integral": -0.0013955934658919978,
+      "movement_p_tracking_net_integral": -0.03298266083389868,
+      "movement_p_velocity_total_net_integral": 0.05183941708710903,
+      "movement_p_z3_net_integral": 0.009591205030286574,
+      "moving_xy_error_rms_m": 0.06268961469640592,
+      "nominal_band_055_075_energy": 0.0005860665620196928,
+      "nominal_identity_max_abs_m_s2": 1.491036698407996e-08,
+      "non_z_rejection_reasons": "",
+      "pas_p95_m_s2": 0.07999999276440029,
+      "pas_peak_m_s2": 0.08000000808504971,
+      "pas_position_limiter_ratio": 0.020482809070958303,
+      "pas_rms_m_s2": 0.021474648021799797,
+      "payload_mass_kg": 0.5,
+      "pitch_peak_abs_deg": 3.7654131134546596,
+      "pitch_rms_deg": 0.7592478939079066,
+      "ramp_time_s": 1.0,
+      "rejection_reasons": "truth_z_peak_le_0_5m;ekf_truth_z_peak_le_0_3m",
+      "requested_weight_max": 0.25,
+      "requested_weight_mean": 0.25,
+      "requested_weight_median": 0.25,
+      "requested_weight_min": 0.25,
+      "roll_peak_abs_deg": 3.4870291652883414,
+      "roll_rms_deg": 0.7214783627611195,
+      "rope_length_m": 0.8,
+      "route_p_as_net_integral": -0.40854392242879417,
+      "route_p_final_net_integral": -0.3096635881899298,
+      "route_p_nominal_net_integral": 0.016589489911690625,
+      "route_p_observer_error_net_integral": 0.12373714621898853,
+      "route_p_pas_net_integral": -0.06427223718370051,
+      "route_p_position_net_integral": -0.013431867629381589,
+      "route_p_tracking_net_integral": -0.09371578988945127,
+      "route_p_velocity_total_net_integral": 0.03002135816132904,
+      "route_p_z3_net_integral": 0.007954523557367574,
+      "run_dir": "/tmp/zd680_vfb_l08_strict_taskbook_20260720/runs/VFB_L08_W25/2026-07-20/position_offboard_20260720_145915",
+      "sensor_combined_gap_peak_ms": 55.999999999997385,
+      "strict_base_valid": false,
+      "swing_angle_peak_deg": 5.816598033575246,
+      "swing_angle_rms_deg": 1.9511727223142077,
+      "swing_energy_integral_j_s_kg": 0.666866277345108,
+      "swing_energy_mean_j_kg": 0.011629237670609296,
+      "swing_energy_peak_j_kg": 0.07331501122011794,
+      "swing_rate_peak_rad_s": 0.4587706130176485,
+      "swing_rate_rms_rad_s": 0.1487612852057232,
+      "tilt_p95_deg": 2.8060761462759074,
+      "tilt_peak_deg": 3.8083206263233746,
+      "tilt_rms_deg": 1.0473642964443397,
+      "total_acc_saturated_ratio": 0.0001463057790782736,
+      "total_envelope_trigger_ratio": 0.0001463057790782736,
+      "truth_z_peak_m": 0.6889114379882812,
+      "unallocated_torque_peak": 5.6185593607494435e-08,
+      "valid": true,
+      "vehicle_status_failsafe_ratio": 0.0,
+      "velocity_band_055_075_energy": 0.0005557216579065436,
+      "velocity_identity_max_abs_m_s2": 5.986600622530355e-08,
+      "velocity_valid_ratio": 1.0,
+      "vfb_rejection_reasons": "",
+      "vfb_valid": true,
+      "vfb_warnings": "z_observation_only:truth_z_peak_le_0_5m,ekf_truth_z_peak_le_0_3m",
+      "xy_error_peak_m": 0.11472508857552077,
+      "xy_error_rms_m": 0.048651015966383354,
+      "yaw_rate_peak_abs_rad_s": 0.07373418658971786,
+      "yaw_rate_rms_rad_s": 0.011614194421755162,
+      "z_observation_only": true,
+      "z_observation_reasons": "truth_z_peak_le_0_5m;ekf_truth_z_peak_le_0_3m"
+    },
+    {
+      "a_base_p95_m_s2": 0.1114576101295411,
+      "a_base_peak_m_s2": 0.18958133095129956,
+      "a_base_rms_m_s2": 0.05154342850570677,
+      "active_intervention_ratio": 0.07778885881179655,
+      "allocator_thrust_not_achieved_ratio": 0.0,
+      "allocator_torque_not_achieved_ratio": 0.0,
+      "along_path_speed_rmse_m_s": 0.05663500225459124,
+      "analysis_base_valid": true,
+      "as_negative_power_integral_j_kg": -0.4244763242608623,
+      "as_p95_m_s2": 0.1872129442574547,
+      "as_peak_m_s2": 0.20000001282907345,
+      "as_positive_power_integral_j_kg": 0.0,
+      "as_rms_m_s2": 0.07030753322707256,
+      "attitude_control_rejection_reasons": "",
+      "attitude_control_valid": true,
+      "attitude_quat_reset_count": 0,
+      "attitude_sample_count": 14013,
+      "attitude_tracking_error_p95_deg": 1.443332939194601,
+      "attitude_tracking_error_peak_deg": 3.028486206943629,
+      "attitude_tracking_error_rms_deg": 0.5710788501492066,
+      "base_valid": true,
+      "battery_remaining_mean": 0.9999465942382812,
+      "battery_remaining_min": 0.9999465942382812,
+      "battery_voltage_min_v": 24.30000114440918,
+      "battery_warning_peak": 0.0,
+      "candidate_positive_power_integral_j_kg": 0.27819326403196465,
+      "completed": true,
+      "controller": "FULL",
+      "cpu_load_mean_pct": 34.26653231139732,
+      "cpu_load_peak_pct": 51.99999809265137,
+      "cross_path_velocity_rms_m_s": 0.018277890680861157,
+      "effective_weight_max": 0.5,
+      "effective_weight_mean": 0.5,
+      "effective_weight_median": 0.5,
+      "effective_weight_min": 0.5,
+      "ekf_filter_fault_nonzero_ratio": 0.0,
+      "ekf_minus_z2_p95_m_s": 0.06371877761287782,
+      "ekf_minus_z2_peak_m_s": 0.10938648357234512,
+      "ekf_minus_z2_rms_m_s": 0.03257607495669786,
+      "ekf_time_slip_delta_s": 0.03999999165534973,
+      "ekf_time_slip_span_s": 0.03999999165534973,
+      "ekf_timeout_nonzero_ratio": 0.0,
+      "ekf_truth_z_peak_m": 0.07293319702148438,
+      "ekf_vertical_accuracy_peak_m": 0.17263519763946533,
+      "endpoint_xy_error_m": 0.0034104406042387804,
+      "expected_vfb_weight": 0.5,
+      "failsafe_ratio": 0.0,
+      "failure_detector_nonzero_ratio": 0.0,
+      "fallback_ratio": 0.0,
+      "feedback_minus_ekf_rms_m_s": 0.016288037449375566,
+      "feedback_minus_z2_rms_m_s": 0.016288037504542115,
+      "final10_p_as_net_integral": -0.013269938230236254,
+      "final10_p_final_net_integral": -0.018237548740503838,
+      "final10_p_nominal_net_integral": -0.004476571871057329,
+      "final10_p_observer_error_net_integral": 0.005415846771522416,
+      "final10_p_pas_net_integral": -6.691739865346164e-05,
+      "final10_p_position_net_integral": -0.0007820615439045513,
+      "final10_p_tracking_net_integral": -0.009110357122018058,
+      "final10_p_velocity_total_net_integral": -0.0036945103930579462,
+      "final10_p_z3_net_integral": -0.00042412131055993515,
+      "final_10s_xy_error_rms_m": 0.026709145149597335,
+      "final_5s_swing_angle_rms_deg": 0.6268755463258896,
+      "final_acc_p95_m_s2": 0.5008385631860655,
+      "final_acc_peak_m_s2": 0.8000000697665691,
+      "final_acc_rms_m_s2": 0.1838110125827237,
+      "final_band_055_075_energy": 0.0035109738809718447,
+      "final_jerk_p95_m_s3": 2.123285162079702,
+      "final_jerk_peak_m_s3": 41.66976984021021,
+      "final_jerk_rms_m_s3": 1.6122172916024007,
+      "final_positive_power_integral_j_kg": 0.21735593633466838,
+      "horizontal_body_rate_p95_rad_s": 0.12347413095447884,
+      "horizontal_body_rate_peak_rad_s": 0.2880908163819281,
+      "horizontal_body_rate_rms_rad_s": 0.054534391138753836,
+      "hover_xy_error_rms_m": 0.03195146963129408,
+      "initial_horizontal_speed_m_s": 0.023254596525701648,
+      "initial_swing_angle_rms_deg": 0.37329606481643046,
+      "initial_swing_rate_rms_rad_s": 0.025705926823138388,
+      "initial_xy_error_m": 0.0060954941098178865,
+      "mode": "VFB_L08_W05",
+      "motor_high_saturation_sample_ratio": 0.0,
+      "motor_output_max": 0.6084109544754028,
+      "motor_output_min": 0.5794690251350403,
+      "movement_p_as_net_integral": -0.31820073537094784,
+      "movement_p_final_net_integral": -0.21819572689707228,
+      "movement_p_nominal_net_integral": 0.005049872979472803,
+      "movement_p_observer_error_net_integral": 0.0558638922271332,
+      "movement_p_pas_net_integral": -0.06049471962646561,
+      "movement_p_position_net_integral": -0.0042434367272315065,
+      "movement_p_tracking_net_integral": -0.04657058338303249,
+      "movement_p_velocity_total_net_integral": 0.00929330976058423,
+      "movement_p_z3_net_integral": 0.0008591268628816013,
+      "moving_xy_error_rms_m": 0.06206214261064794,
+      "nominal_band_055_075_energy": 0.00021784838874433423,
+      "nominal_identity_max_abs_m_s2": 1.4901161193847656e-08,
+      "non_z_rejection_reasons": "",
+      "pas_p95_m_s2": 0.07440573631885497,
+      "pas_peak_m_s2": 0.0800000083261933,
+      "pas_position_limiter_ratio": 0.0009972930616896994,
+      "pas_rms_m_s2": 0.019786718916570623,
+      "payload_mass_kg": 0.5,
+      "pitch_peak_abs_deg": 3.7135226676504263,
+      "pitch_rms_deg": 0.7191499647275336,
+      "ramp_time_s": 1.0,
+      "rejection_reasons": "",
+      "requested_weight_max": 0.5,
+      "requested_weight_mean": 0.5,
+      "requested_weight_median": 0.5,
+      "requested_weight_min": 0.5,
+      "roll_peak_abs_deg": 3.7720023849711426,
+      "roll_rms_deg": 0.6833252500873008,
+      "rope_length_m": 0.8,
+      "route_p_as_net_integral": -0.4244763242608623,
+      "route_p_final_net_integral": -0.3588591965157043,
+      "route_p_nominal_net_integral": -0.03602479193796108,
+      "route_p_observer_error_net_integral": 0.08892395212796222,
+      "route_p_pas_net_integral": -0.06119364917685375,
+      "route_p_position_net_integral": -0.011274225509696117,
+      "route_p_tracking_net_integral": -0.1136745195819974,
+      "route_p_velocity_total_net_integral": -0.024750566872546134,
+      "route_p_z3_net_integral": 0.008244840310882916,
+      "run_dir": "/tmp/zd680_vfb_l08_strict_taskbook_20260720/runs/VFB_L08_W05/2026-07-20/position_offboard_20260720_150206",
+      "sensor_combined_gap_peak_ms": 20.000000000003126,
+      "strict_base_valid": true,
+      "swing_angle_peak_deg": 5.566912696497615,
+      "swing_angle_rms_deg": 1.8142374524198208,
+      "swing_energy_integral_j_s_kg": 0.5823732801418733,
+      "swing_energy_mean_j_kg": 0.01034741579459896,
+      "swing_energy_peak_j_kg": 0.08401561227042559,
+      "swing_rate_peak_rad_s": 0.48888835647313283,
+      "swing_rate_rms_rad_s": 0.1415946983425585,
+      "tilt_p95_deg": 2.7049817292740768,
+      "tilt_peak_deg": 3.784341992396101,
+      "tilt_rms_deg": 0.9920166579436397,
+      "total_acc_saturated_ratio": 0.0007123521869212138,
+      "total_envelope_trigger_ratio": 0.0007123521869212138,
+      "truth_z_peak_m": 0.09615039825439453,
+      "unallocated_torque_peak": 6.568236771381297e-08,
+      "valid": true,
+      "vehicle_status_failsafe_ratio": 0.0,
+      "velocity_band_055_075_energy": 0.00022586197939803918,
+      "velocity_identity_max_abs_m_s2": 3.7438704152110554e-08,
+      "velocity_valid_ratio": 1.0,
+      "vfb_rejection_reasons": "",
+      "vfb_valid": true,
+      "vfb_warnings": "",
+      "xy_error_peak_m": 0.0959872146096511,
+      "xy_error_rms_m": 0.047160795642958074,
+      "yaw_rate_peak_abs_rad_s": 0.0659189373254776,
+      "yaw_rate_rms_rad_s": 0.009729387414644929,
+      "z_observation_only": false,
+      "z_observation_reasons": ""
+    }
+  ],
+  "vfb_validity": {
+    "VFB_L08_W00": {
+      "checks": {
+        "attitude_control_stable": {
+          "detail": {
+            "allocator_torque_not_achieved_ratio": {
+              "limit": 0.01,
+              "observed": 0.0
+            },
+            "attitude_quat_reset_count": {
+              "limit": 0.0,
+              "observed": 0.0
+            },
+            "attitude_tracking_error_peak_deg": {
+              "limit": 10.0,
+              "observed": 2.4760661966876705
+            },
+            "failure_detector_nonzero_ratio": {
+              "limit": 0.0,
+              "observed": 0.0
+            },
+            "horizontal_body_rate_peak_rad_s": {
+              "limit": 2.0,
+              "observed": 0.2606463487878942
+            },
+            "motor_high_saturation_sample_ratio": {
+              "limit": 0.05,
+              "observed": 0.0
+            },
+            "tilt_peak_deg": {
+              "limit": 20.0,
+              "observed": 3.589447269833146
+            },
+            "vehicle_status_failsafe_ratio": {
+              "limit": 0.0,
+              "observed": 0.0
+            }
+          },
+          "passed": true
+        },
+        "base_validity_excluding_z": {
+          "detail": [],
+          "passed": true
+        },
+        "control_diagnostics_finite": {
+          "detail": {
+            "nonfinite": 0,
+            "samples": 6859
+          },
+          "passed": true
+        },
+        "effective_weight_matches_request": {
+          "detail": {
+            "expected": 0.0,
+            "observed": 0.0
+          },
+          "passed": true
+        },
+        "hangvfb_debug_present": {
+          "detail": "debug_array ID 686",
+          "passed": true
+        },
+        "nominal_identity": {
+          "detail": 1.4930236657970956e-08,
+          "passed": true
+        },
+        "requested_weight_matches_label": {
+          "detail": {
+            "expected": 0.0,
+            "observed": 0.0
+          },
+          "passed": true
+        },
+        "velocity_identity": {
+          "detail": 1.8510036170482635e-08,
+          "passed": true
+        },
+        "velocity_valid_not_persistent": {
+          "detail": 1.0,
+          "passed": true
+        }
+      },
+      "valid": true,
+      "warnings": [
+        "z_observation_only:truth_z_peak_le_0_5m,ekf_truth_z_peak_le_0_3m"
+      ]
+    },
+    "VFB_L08_W05": {
+      "checks": {
+        "attitude_control_stable": {
+          "detail": {
+            "allocator_torque_not_achieved_ratio": {
+              "limit": 0.01,
+              "observed": 0.0
+            },
+            "attitude_quat_reset_count": {
+              "limit": 0.0,
+              "observed": 0.0
+            },
+            "attitude_tracking_error_peak_deg": {
+              "limit": 10.0,
+              "observed": 3.028486206943629
+            },
+            "failure_detector_nonzero_ratio": {
+              "limit": 0.0,
+              "observed": 0.0
+            },
+            "horizontal_body_rate_peak_rad_s": {
+              "limit": 2.0,
+              "observed": 0.2880908163819281
+            },
+            "motor_high_saturation_sample_ratio": {
+              "limit": 0.05,
+              "observed": 0.0
+            },
+            "tilt_peak_deg": {
+              "limit": 20.0,
+              "observed": 3.784341992396101
+            },
+            "vehicle_status_failsafe_ratio": {
+              "limit": 0.0,
+              "observed": 0.0
+            }
+          },
+          "passed": true
+        },
+        "base_validity_excluding_z": {
+          "detail": [],
+          "passed": true
+        },
+        "control_diagnostics_finite": {
+          "detail": {
+            "nonfinite": 0,
+            "samples": 7019
+          },
+          "passed": true
+        },
+        "effective_weight_matches_request": {
+          "detail": {
+            "expected": 0.5,
+            "observed": 0.5
+          },
+          "passed": true
+        },
+        "hangvfb_debug_present": {
+          "detail": "debug_array ID 686",
+          "passed": true
+        },
+        "nominal_identity": {
+          "detail": 1.4901161193847656e-08,
+          "passed": true
+        },
+        "requested_weight_matches_label": {
+          "detail": {
+            "expected": 0.5,
+            "observed": 0.5
+          },
+          "passed": true
+        },
+        "velocity_identity": {
+          "detail": 3.7438704152110554e-08,
+          "passed": true
+        },
+        "velocity_valid_not_persistent": {
+          "detail": 1.0,
+          "passed": true
+        }
+      },
+      "valid": true,
+      "warnings": []
+    },
+    "VFB_L08_W25": {
+      "checks": {
+        "attitude_control_stable": {
+          "detail": {
+            "allocator_torque_not_achieved_ratio": {
+              "limit": 0.01,
+              "observed": 0.0
+            },
+            "attitude_quat_reset_count": {
+              "limit": 0.0,
+              "observed": 0.0
+            },
+            "attitude_tracking_error_peak_deg": {
+              "limit": 10.0,
+              "observed": 2.7974144155791763
+            },
+            "failure_detector_nonzero_ratio": {
+              "limit": 0.0,
+              "observed": 0.0
+            },
+            "horizontal_body_rate_peak_rad_s": {
+              "limit": 2.0,
+              "observed": 0.28723787864097566
+            },
+            "motor_high_saturation_sample_ratio": {
+              "limit": 0.05,
+              "observed": 0.0
+            },
+            "tilt_peak_deg": {
+              "limit": 20.0,
+              "observed": 3.8083206263233746
+            },
+            "vehicle_status_failsafe_ratio": {
+              "limit": 0.0,
+              "observed": 0.0
+            }
+          },
+          "passed": true
+        },
+        "base_validity_excluding_z": {
+          "detail": [],
+          "passed": true
+        },
+        "control_diagnostics_finite": {
+          "detail": {
+            "nonfinite": 0,
+            "samples": 6835
+          },
+          "passed": true
+        },
+        "effective_weight_matches_request": {
+          "detail": {
+            "expected": 0.25,
+            "observed": 0.25
+          },
+          "passed": true
+        },
+        "hangvfb_debug_present": {
+          "detail": "debug_array ID 686",
+          "passed": true
+        },
+        "nominal_identity": {
+          "detail": 1.491036698407996e-08,
+          "passed": true
+        },
+        "requested_weight_matches_label": {
+          "detail": {
+            "expected": 0.25,
+            "observed": 0.25
+          },
+          "passed": true
+        },
+        "velocity_identity": {
+          "detail": 5.986600622530355e-08,
+          "passed": true
+        },
+        "velocity_valid_not_persistent": {
+          "detail": 1.0,
+          "passed": true
+        }
+      },
+      "valid": true,
+      "warnings": [
+        "z_observation_only:truth_z_peak_le_0_5m,ekf_truth_z_peak_le_0_3m"
+      ]
+    }
+  }
+}

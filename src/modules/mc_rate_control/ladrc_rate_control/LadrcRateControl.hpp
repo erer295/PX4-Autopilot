@@ -176,6 +176,13 @@ public:
 	 */
 	void getRateControlStatus(rate_ctrl_status_s &rate_ctrl_status) const;
 
+	/** Diagnostic snapshots for validation logging. These accessors do not
+	 * modify controller state or the commanded torque. */
+	const matrix::Vector3f &getObserverRate() const { return _z1; }
+	const matrix::Vector3f &getTotalDisturbance() const { return _z2; }
+	const matrix::Vector3f &getUnconstrainedOutput() const { return _u_unconstrained; }
+	const matrix::Vector<bool, 3> &getOutputLimited() const { return _output_limited; }
+
 private:
 	void updateObserverGains();
 
@@ -212,6 +219,11 @@ private:
 
 	// Last torque output
 	matrix::Vector3f _u{};
+
+	// Validation diagnostics: control law output before the LADRC-local limit
+	// and whether that limit changed the command on each axis.
+	matrix::Vector3f _u_unconstrained{};
+	matrix::Vector<bool, 3> _output_limited{};
 
 	// Logged disturbance compensation term:
 	//   -z2 / b0
