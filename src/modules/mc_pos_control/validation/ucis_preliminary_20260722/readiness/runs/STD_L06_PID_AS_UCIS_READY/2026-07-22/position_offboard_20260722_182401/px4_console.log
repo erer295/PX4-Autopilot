@@ -1,0 +1,6 @@
+manual attach run: PX4/Gazebo was already running, so this script did not capture the PX4 console.
+mavlink: udpin:0.0.0.0:14540
+rate_controller: pid
+position_controller: pid
+position_ladrc_td: off
+rbf_learn: False

@@ -22,7 +22,14 @@ GENERIC = runpy.run_path(str(GENERIC_REPORT), run_name="zd680_vfb_generic_report
 MODES = ("VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W05")
 SUPPORTED_MODES = (
     "VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W25", "VFB_L08_W05",
-    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
+    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_PID_AS_FSO_SHADOW",
+    "STD_L06_PID_AS_FSOPC", "STD_L06_PID_AS_FSOPC_K20", "STD_L06_PID_AS_FSOPC_K40",
+    "STD_L06_PID_AS_FSOPC_K60",
+    "STD_L06_PID_AS_FSOJPC_K05", "STD_L06_PID_AS_FSOJPC_K10", "STD_L06_PID_AS_FSOJPC_K15",
+    "STD_L06_PID_AS_FSOJPC_K20",
+    "STD_L06_PID_AS_FSOUSC_K20",
+    "STD_L08_PID_AS", "STD_L08_PID_AS_FSOUSC_K20",
+    "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
 )
 MOVE_NAMES = ("north", "east", "south", "west")
 Z_OBSERVATION_ONLY_CHECKS = {
@@ -224,7 +231,7 @@ def write_csv(path: Path, rows: Sequence[Dict[str, object]]) -> None:
 
 
 def expected_weight(mode: str) -> float:
-    if mode in ("STD_L06_PID_AS", "STD_L06_PID_AS_PAS"):
+    if mode.startswith(("STD_L06_PID_AS", "STD_L08_PID_AS")):
         return 0.0
     if mode == "STD_L06_FULL_W05":
         return 0.5
@@ -348,6 +355,8 @@ def analyze_run(mode: str, run_dir: Path):
         "control_allocator_status", "actuator_motors",
     ])
     vfb = GENERIC["find_debug"](ulog, 686)
+    fso = GENERIC["find_debug"](ulog, 687)
+    pid_as_auxiliary_mode = mode.startswith(("STD_L06_PID_AS", "STD_L08_PID_AS"))
     expected_vfb_weight = expected_weight(mode)
     checks: Dict[str, Dict[str, object]] = {}
     warnings: List[str] = []
@@ -362,10 +371,17 @@ def analyze_run(mode: str, run_dir: Path):
     check("base_validity_excluding_z", analysis_base_valid, non_z_rejections)
     if z_observations:
         warnings.append("z_observation_only:" + ",".join(z_observations))
-    check("hangvfb_debug_present", vfb is not None, "debug_array ID 686")
+    check("hangvfb_debug_present", vfb is not None or pid_as_auxiliary_mode,
+          "debug_array ID 686" if vfb is not None else "not required for PID+AS auxiliary-mode analysis")
+    if "FSO" in mode:
+        check("hangfso_debug_present", fso is not None, "debug_array ID 687")
     window_rows: List[Dict[str, object]] = []
     if vfb is None:
-        return base, window_rows, {"valid": False, "checks": checks, "warnings": warnings}
+        return base, window_rows, {
+            "valid": all(bool(item["passed"]) for item in checks.values()),
+            "checks": checks,
+            "warnings": warnings,
+        }
 
     t = np.asarray(vfb["timestamp"], dtype=float) * 1.0e-6
     route = next(window for window in windows if window[0] == "route")

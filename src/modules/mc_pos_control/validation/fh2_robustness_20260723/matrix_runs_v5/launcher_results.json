@@ -1,0 +1,27 @@
+[
+  {
+    "mode": "STD_L08_PID_AS_UCIS_FH2",
+    "run_dir": "src/modules/mc_pos_control/validation/fh2_robustness_20260723/matrix_runs_v5/runs/STD_L08_PID_AS_UCIS_FH2/2026-07-24/position_offboard_20260724_140723",
+    "valid": true
+  },
+  {
+    "mode": "STD_L08_PID_AS_UCIS_FH2",
+    "run_dir": "src/modules/mc_pos_control/validation/fh2_robustness_20260723/matrix_runs_v5/runs/STD_L08_PID_AS_UCIS_FH2/2026-07-24/position_offboard_20260724_141001",
+    "valid": true
+  },
+  {
+    "mode": "STD_L08_PID_AS_UCIS_FH2",
+    "run_dir": "src/modules/mc_pos_control/validation/fh2_robustness_20260723/matrix_runs_v5/runs/STD_L08_PID_AS_UCIS_FH2/2026-07-24/position_offboard_20260724_141225",
+    "valid": true
+  },
+  {
+    "mode": "STD_L08_PID_AS_UCIS_FH2",
+    "run_dir": "src/modules/mc_pos_control/validation/fh2_robustness_20260723/matrix_runs_v5/runs/STD_L08_PID_AS_UCIS_FH2/2026-07-24/position_offboard_20260724_141457",
+    "valid": false
+  },
+  {
+    "mode": "STD_L08_PID_AS_UCIS_FH2",
+    "run_dir": "src/modules/mc_pos_control/validation/fh2_robustness_20260723/matrix_runs_v5/runs/STD_L08_PID_AS_UCIS_FH2/2026-07-24/position_offboard_20260724_141724",
+    "valid": true
+  }
+]

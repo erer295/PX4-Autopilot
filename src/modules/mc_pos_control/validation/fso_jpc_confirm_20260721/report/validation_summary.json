@@ -1,0 +1,162 @@
+{
+  "comparisons": [],
+  "generated_local": "2026-07-21T21:06:35",
+  "runs": [
+    {
+      "a_base_p95_m_s2": 0.0,
+      "a_base_peak_m_s2": 0.0,
+      "a_base_rms_m_s2": 0.0,
+      "active_intervention_ratio": 0.0,
+      "along_path_speed_rmse_m_s": 0.05511970359809947,
+      "as_negative_power_integral_j_kg": -0.2434458279997387,
+      "as_p95_m_s2": 0.1529784110285363,
+      "as_peak_m_s2": 0.20000001585241664,
+      "as_positive_power_integral_j_kg": 0.0,
+      "as_rms_m_s2": 0.05681449274674892,
+      "battery_remaining_mean": 0.9999465942382812,
+      "battery_remaining_min": 0.9999465942382812,
+      "battery_voltage_min_v": 24.30000114440918,
+      "battery_warning_peak": 0.0,
+      "candidate_positive_power_integral_j_kg": 0.0,
+      "completed": true,
+      "controller": "PID_AS",
+      "cross_path_velocity_rms_m_s": 0.017992708051481048,
+      "ekf_truth_z_peak_m": 0.05043830871582067,
+      "endpoint_xy_error_m": NaN,
+      "failsafe_ratio": 0.0,
+      "final_5s_swing_angle_rms_deg": 0.2000684056054587,
+      "final_acc_p95_m_s2": 0.4924514623389451,
+      "final_acc_peak_m_s2": 0.7670792192471532,
+      "final_acc_rms_m_s2": 0.18844311667433283,
+      "final_jerk_p95_m_s3": 2.179870266628577,
+      "final_jerk_peak_m_s3": 29.71968535073181,
+      "final_jerk_rms_m_s3": 2.2740389913164805,
+      "final_positive_power_integral_j_kg": 0.25150278300757845,
+      "hover_xy_error_rms_m": NaN,
+      "initial_horizontal_speed_m_s": 0.020534126539708583,
+      "initial_swing_angle_rms_deg": 0.14113681052712593,
+      "initial_swing_rate_rms_rad_s": 0.008165371248352414,
+      "initial_xy_error_m": 0.03502531728060368,
+      "mode": "STD_L06_PID_AS",
+      "moving_xy_error_rms_m": 0.0654133443533514,
+      "pas_p95_m_s2": 0.0,
+      "pas_peak_m_s2": 0.0,
+      "pas_position_limiter_ratio": 0.0,
+      "pas_rms_m_s2": 0.0,
+      "payload_mass_kg": 0.5,
+      "ramp_time_s": 1.0,
+      "rejection_reasons": "",
+      "rope_length_m": 0.6,
+      "run_dir": "mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS/2026-07-21/position_offboard_20260721_205520",
+      "swing_angle_peak_deg": 4.930892290442848,
+      "swing_angle_rms_deg": 1.6467904695388094,
+      "swing_energy_integral_j_s_kg": 0.328072791021929,
+      "swing_energy_mean_j_kg": 0.005845628720611345,
+      "swing_energy_peak_j_kg": 0.05141336258604724,
+      "swing_rate_peak_rad_s": 0.5277866385374245,
+      "swing_rate_rms_rad_s": 0.13775890351050907,
+      "total_acc_saturated_ratio": 0.0,
+      "total_envelope_trigger_ratio": 0.0,
+      "truth_z_peak_m": 0.06527042388916016,
+      "valid": true,
+      "xy_error_peak_m": 0.14112320190139732,
+      "xy_error_rms_m": 0.0654133443533514
+    },
+    {
+      "a_base_p95_m_s2": 0.0,
+      "a_base_peak_m_s2": 0.0,
+      "a_base_rms_m_s2": 0.0,
+      "active_intervention_ratio": 0.0,
+      "along_path_speed_rmse_m_s": 0.05550056488183555,
+      "as_negative_power_integral_j_kg": -0.24321899583177584,
+      "as_p95_m_s2": 0.15824116123851428,
+      "as_peak_m_s2": 0.20000001256220723,
+      "as_positive_power_integral_j_kg": 0.0,
+      "as_rms_m_s2": 0.057007120693253005,
+      "battery_remaining_mean": 0.9999465942382812,
+      "battery_remaining_min": 0.9999465942382812,
+      "battery_voltage_min_v": 24.30000114440918,
+      "battery_warning_peak": 0.0,
+      "candidate_positive_power_integral_j_kg": 0.0,
+      "completed": true,
+      "controller": "PID_AS",
+      "cross_path_velocity_rms_m_s": 0.019153364925509373,
+      "ekf_truth_z_peak_m": 0.8716421127319336,
+      "endpoint_xy_error_m": NaN,
+      "failsafe_ratio": 0.0,
+      "final_5s_swing_angle_rms_deg": 1.9579948288025864,
+      "final_acc_p95_m_s2": 0.47443771519314965,
+      "final_acc_peak_m_s2": 0.7717060985609151,
+      "final_acc_rms_m_s2": 0.1831274403760631,
+      "final_jerk_p95_m_s3": 2.479730840418795,
+      "final_jerk_peak_m_s3": 32.16994697741044,
+      "final_jerk_rms_m_s3": 2.261659914718905,
+      "final_positive_power_integral_j_kg": 0.23340921806198067,
+      "hover_xy_error_rms_m": NaN,
+      "initial_horizontal_speed_m_s": 0.01238339860819101,
+      "initial_swing_angle_rms_deg": 0.12644402269757787,
+      "initial_swing_rate_rms_rad_s": 0.011455023988465237,
+      "initial_xy_error_m": 0.00851575752968001,
+      "mode": "STD_L06_PID_AS_FSOJPC_K20",
+      "moving_xy_error_rms_m": 0.060520242203868854,
+      "pas_p95_m_s2": 0.0,
+      "pas_peak_m_s2": 0.0,
+      "pas_position_limiter_ratio": 0.0,
+      "pas_rms_m_s2": 0.0,
+      "payload_mass_kg": 0.5,
+      "ramp_time_s": 1.0,
+      "rejection_reasons": "truth_z_peak_le_0_5m;ekf_truth_z_peak_le_0_3m",
+      "rope_length_m": 0.6,
+      "run_dir": "mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS_FSOJPC_K20/2026-07-21/position_offboard_20260721_205744",
+      "swing_angle_peak_deg": 5.119238138497551,
+      "swing_angle_rms_deg": 1.6498973068369431,
+      "swing_energy_integral_j_s_kg": 0.3443562267558031,
+      "swing_energy_mean_j_kg": 0.0062276575030751555,
+      "swing_energy_peak_j_kg": 0.06518547256386514,
+      "swing_rate_peak_rad_s": 0.5967651118379641,
+      "swing_rate_rms_rad_s": 0.14508174834097595,
+      "total_acc_saturated_ratio": 0.0,
+      "total_envelope_trigger_ratio": 0.0,
+      "truth_z_peak_m": 1.3529701232910156,
+      "valid": false,
+      "xy_error_peak_m": 0.11996851263870724,
+      "xy_error_rms_m": 0.060520242203868854
+    }
+  ],
+  "vfb_validity": {
+    "STD_L06_PID_AS": {
+      "checks": {
+        "base_validity_excluding_z": {
+          "detail": [],
+          "passed": true
+        },
+        "hangvfb_debug_present": {
+          "detail": "not required for PID+AS auxiliary-mode analysis",
+          "passed": true
+        }
+      },
+      "valid": true,
+      "warnings": []
+    },
+    "STD_L06_PID_AS_FSOJPC_K20": {
+      "checks": {
+        "base_validity_excluding_z": {
+          "detail": [],
+          "passed": true
+        },
+        "hangfso_debug_present": {
+          "detail": "debug_array ID 687",
+          "passed": true
+        },
+        "hangvfb_debug_present": {
+          "detail": "not required for PID+AS auxiliary-mode analysis",
+          "passed": true
+        }
+      },
+      "valid": true,
+      "warnings": [
+        "z_observation_only:truth_z_peak_le_0_5m,ekf_truth_z_peak_le_0_3m"
+      ]
+    }
+  }
+}

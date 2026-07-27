@@ -427,7 +427,8 @@ PARAM_DEFINE_FLOAT(MC_HANG_TOT_A, 3.0f);
  * @max 2
  * @value 0 Disabled
  * @value 1 Shadow
- * @value 2 Active
+ * @value 2 Active direct compensation
+ * @value 3 HESO effective-frequency/confidence AS gain schedule
  * @group Multicopter Position Control
  */
 PARAM_DEFINE_INT32(MC_HANG_PAS_MD, 0);
@@ -574,3 +575,174 @@ PARAM_DEFINE_INT32(MC_HANG_PAS_POS, 0);
  * @group Multicopter Position Control
  */
 PARAM_DEFINE_FLOAT(MC_HANG_PAS_PR, 0.40f);
+
+/**
+ * Frequency-selective load-disturbance observer mode
+ *
+ * SHADOW runs and logs the harmonic observer and projected candidate, while
+ * ACTIVE applies it. HESO_GAIN schedules the existing anti-swing damping from
+ * the legacy HESO frequency bank. RLS_SHADOW estimates frequency with a
+ * window-integral RLS but keeps the anti-swing multiplier at one. ORACLE_GAIN
+ * uses the model frequency with unit confidence to isolate scheduler value.
+ * UNIFIED_SHAPING runs the conservative RLS confidence path for adaptive
+ * input-shaping diagnostics and enables the position/acceleration/jerk AS
+ * permission coordinator. It never applies direct HESO acceleration or an AS
+ * gain above one.
+ *
+ * @value 0 Off
+ * @value 1 Shadow
+ * @value 2 Active
+ * @value 3 HESO gain schedule
+ * @value 4 RLS frequency shadow
+ * @value 5 Oracle-frequency gain schedule
+ * @value 6 Unified input-shaping coordinator
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_INT32(MC_HANG_FSO_MD, 0);
+
+/**
+ * Frequency-selective observer bandwidth
+ *
+ * Error-dynamics bandwidth of the harmonic extended-state observer. The
+ * disturbance internal-model frequency is computed from sqrt(g/L)/(2*pi).
+ *
+ * @unit Hz
+ * @min 0.1
+ * @max 10
+ * @decimal 2
+ * @increment 0.01
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_BW, 0.30f);
+
+/**
+ * Frequency-selective compensation gain
+ *
+ * @min 0
+ * @max 1
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_K, 0.20f);
+
+/**
+ * Frequency-selective disturbance phase lead
+ *
+ * Predicts the harmonic disturbance by this time before compensation. This
+ * can account for attitude/thrust response delay without differentiating the
+ * measured velocity.
+ *
+ * @unit s
+ * @min 0
+ * @max 0.5
+ * @decimal 3
+ * @increment 0.01
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_LEAD, 0.05f);
+
+/**
+ * Frequency-selective compensation acceleration limit
+ *
+ * @unit m/s^2
+ * @min 0
+ * @max 2
+ * @decimal 2
+ * @increment 0.01
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_LIM, 0.08f);
+
+/**
+ * Frequency-selective compensation slew rate
+ *
+ * @unit m/s^3
+ * @min 0
+ * @max 10
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_SLW, 0.30f);
+
+/**
+ * Frequency-selective compensation activation energy
+ *
+ * @min 0
+ * @max 20
+ * @decimal 4
+ * @increment 0.001
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_E, 0.003f);
+
+/**
+ * Frequency-selective compensation minimum swing rate
+ *
+ * @unit rad/s
+ * @min 0
+ * @max 20
+ * @decimal 3
+ * @increment 0.01
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_R, 0.03f);
+
+/**
+ * Frequency-selective observer settling time
+ *
+ * No compensation is produced until the narrow-band estimate has converged
+ * for this duration after anti-swing engagement.
+ *
+ * @unit s
+ * @min 0
+ * @max 20
+ * @decimal 1
+ * @increment 0.5
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_T, 2.0f);
+
+/**
+ * HESO frequency-estimate minimum confidence
+ *
+ * In gain-schedule mode, the observer-bank confidence is smoothly gated from
+ * this value to this value plus 0.25. Below the threshold the anti-swing gain
+ * is exactly the frozen base value.
+ *
+ * @min 0
+ * @max 0.8
+ * @decimal 2
+ * @increment 0.05
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_CF, 0.20f);
+
+/**
+ * Frequency-selective position protection
+ *
+ * When enabled, continuously tighten the compensation position-recovery
+ * half-space as horizontal error approaches MC_HANG_FSO_PE. The constraint
+ * is blended with the power, amplitude and slew constraints in one update.
+ *
+ * @boolean
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_INT32(MC_HANG_FSO_POS, 1);
+
+/**
+ * Frequency-selective position-protection threshold
+ *
+ * Position protection reaches half weight at this horizontal error. It is
+ * smoothly blended from zero at half this value to full at 1.5 times this
+ * value, avoiding a hard constraint switch near the setpoint.
+ *
+ * @unit m
+ * @min 0
+ * @max 2
+ * @decimal 2
+ * @increment 0.01
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MC_HANG_FSO_PE, 0.05f);

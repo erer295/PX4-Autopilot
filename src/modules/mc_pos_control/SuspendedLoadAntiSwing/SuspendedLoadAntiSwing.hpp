@@ -74,6 +74,7 @@ public:
 		float energy_per_mass{0.f};
 		float energy_gate{0.f};
 		float damping_gain{0.f};
+		float gain_schedule_scale{1.f};
 		float rope_length{0.f};
 		Mode mode{Mode::Off};
 		bool measurement_valid{false};
@@ -86,6 +87,7 @@ public:
 	void setParameters(const Parameters &parameters);
 	void setJointState(const JointState &joint_state);
 	void setAppliedAccelerationNed(const matrix::Vector2f &applied_acceleration);
+	void setGainScheduleScale(float scale);
 
 	matrix::Vector2f update(float dt, uint64_t now, float yaw, bool flying);
 	void reset();
@@ -135,6 +137,7 @@ private:
 	uint64_t _safety_rearm_since{0};
 
 	float _last_ramp_scale{0.f};
+	float _gain_schedule_scale{1.f};
 	bool _filter_initialized{false};
 	bool _engaged{false};
 	bool _active{false};

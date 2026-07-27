@@ -1,0 +1,27 @@
+[
+  {
+    "mode": "STD_L06_PID_AS_UCIS_FIXED",
+    "run_dir": "src/modules/mc_pos_control/validation/ucis_preliminary_20260722/formal/runs/STD_L06_PID_AS_UCIS_FIXED/2026-07-22/position_offboard_20260722_182955",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_UCIS_FULL",
+    "run_dir": "src/modules/mc_pos_control/validation/ucis_preliminary_20260722/formal/runs/STD_L06_PID_AS_UCIS_FULL/2026-07-22/position_offboard_20260722_183226",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_UCIS_FULL",
+    "run_dir": "src/modules/mc_pos_control/validation/ucis_preliminary_20260722/formal/runs/STD_L06_PID_AS_UCIS_FULL/2026-07-22/position_offboard_20260722_183454",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_UCIS_FIXED",
+    "run_dir": "src/modules/mc_pos_control/validation/ucis_preliminary_20260722/formal/runs/STD_L06_PID_AS_UCIS_FIXED/2026-07-22/position_offboard_20260722_183732",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_UCIS_BASE",
+    "run_dir": "src/modules/mc_pos_control/validation/ucis_preliminary_20260722/formal/runs/STD_L06_PID_AS_UCIS_BASE/2026-07-22/position_offboard_20260722_184000",
+    "valid": false
+  }
+]

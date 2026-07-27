@@ -1,0 +1,12 @@
+[
+  {
+    "mode": "STD_L06_PID_AS_UCIS_FH2",
+    "run_dir": "src/modules/mc_pos_control/validation/fh2_robustness_20260723/gate_runs/runs/STD_L06_PID_AS_UCIS_FH2/2026-07-23/position_offboard_20260723_201307",
+    "valid": true
+  },
+  {
+    "mode": "STD_L08_PID_AS_UCIS_FH2",
+    "run_dir": "src/modules/mc_pos_control/validation/fh2_robustness_20260723/gate_runs/runs/STD_L08_PID_AS_UCIS_FH2/2026-07-23/position_offboard_20260723_201530",
+    "valid": true
+  }
+]

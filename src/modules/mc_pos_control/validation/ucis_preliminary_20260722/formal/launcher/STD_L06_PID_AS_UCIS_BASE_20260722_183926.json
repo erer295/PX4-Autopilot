@@ -1,0 +1,29 @@
+{
+  "error": "",
+  "mode": "STD_L06_PID_AS_UCIS_BASE",
+  "model_source_restored": true,
+  "profile": {
+    "actions": "hold:5;north:2:6;hold:5;east:2:6;hold:5;south:2:6;hold:5;west:2:6;hold:10",
+    "controller": "PID_AS",
+    "initial_angle_rms_max_deg": 0.25,
+    "initial_condition_profile": "strict_matched_taskbook_v1",
+    "initial_current_angle_max_deg": 0.4,
+    "initial_current_rate_max_rad_s": 0.035,
+    "initial_horizontal_speed_max_m_s": 0.1,
+    "initial_rate_rms_max_rad_s": 0.02,
+    "initial_stable_time_s": 3.0,
+    "initial_xy_error_max_m": 0.08,
+    "mode": "STD_L06_PID_AS_UCIS_BASE",
+    "motion_profile": "s_curve",
+    "payload_mass_kg": 0.5,
+    "ramp_time_s": 1.0,
+    "rope_length_m": 0.6,
+    "velocity_feedback_weight": 0.0,
+    "wrench_schedule": ""
+  },
+  "recorder_log": "src/modules/mc_pos_control/validation/ucis_preliminary_20260722/formal/launcher/STD_L06_PID_AS_UCIS_BASE_20260722_183926_recorder.log",
+  "recorder_returncode": 1,
+  "run_dir": "src/modules/mc_pos_control/validation/ucis_preliminary_20260722/formal/runs/STD_L06_PID_AS_UCIS_BASE/2026-07-22/position_offboard_20260722_184000",
+  "started_local": "2026-07-22T18:39:26",
+  "valid": false
+}

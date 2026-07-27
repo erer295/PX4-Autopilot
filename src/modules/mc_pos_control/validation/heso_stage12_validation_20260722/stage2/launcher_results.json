@@ -1,0 +1,32 @@
+[
+  {
+    "mode": "STD_L06_PID_AS_HGS2_BASE",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_stage12_validation_20260722/stage2/runs/STD_L06_PID_AS_HGS2_BASE/2026-07-22/position_offboard_20260722_115809",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_HGS2_ORACLE_K40",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_stage12_validation_20260722/stage2/runs/STD_L06_PID_AS_HGS2_ORACLE_K40/2026-07-22/position_offboard_20260722_120031",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_HGS2_RLS_SHADOW",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_stage12_validation_20260722/stage2/runs/STD_L06_PID_AS_HGS2_RLS_SHADOW/2026-07-22/position_offboard_20260722_120255",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_HGS2_RLS_SHADOW",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_stage12_validation_20260722/stage2/runs/STD_L06_PID_AS_HGS2_RLS_SHADOW/2026-07-22/position_offboard_20260722_120521",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_HGS2_ORACLE_K40",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_stage12_validation_20260722/stage2/runs/STD_L06_PID_AS_HGS2_ORACLE_K40/2026-07-22/position_offboard_20260722_120746",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_HGS2_BASE",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_stage12_validation_20260722/stage2/runs/STD_L06_PID_AS_HGS2_BASE/2026-07-22/position_offboard_20260722_121014",
+    "valid": true
+  }
+]

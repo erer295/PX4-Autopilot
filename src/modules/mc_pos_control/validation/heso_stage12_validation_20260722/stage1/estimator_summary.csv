@@ -1,0 +1,4 @@
+estimator,synthetic_median_abs_error_pct,synthetic_p95_abs_error_pct,flight_median_abs_error_vs_fft_pct,flight_max_abs_error_vs_fft_pct,low_excitation_confidence_max,synthetic_median_target_pass,synthetic_p95_target_pass,flight_fft_target_pass,low_excitation_target_pass
+legacy_heso_bank,0.5446143065670206,6.641997776143268,5.003978651664717,6.593283541468042,0.0,True,False,False,True
+predictive_bank,0.7776401719907233,6.0128984050305485,11.190354077516506,11.355173939359887,0.0,True,False,False,True
+filtered_rls,0.33030079417786795,1.416754668165682,5.816814966051981,7.090446547842344,0.0,True,True,False,True

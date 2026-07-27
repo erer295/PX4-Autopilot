@@ -1,0 +1,4 @@
+dataset,estimator,confidence_median,confidence_max,high_confidence_ratio,energy_max_j_kg
+synthetic_low_excitation,legacy_heso_bank,0.0,0.0,0.0,1.67107815183788e-05
+synthetic_low_excitation,predictive_bank,0.0,0.0,0.0,1.67107815183788e-05
+synthetic_low_excitation,filtered_rls,0.0,0.0,0.0,1.67107815183788e-05

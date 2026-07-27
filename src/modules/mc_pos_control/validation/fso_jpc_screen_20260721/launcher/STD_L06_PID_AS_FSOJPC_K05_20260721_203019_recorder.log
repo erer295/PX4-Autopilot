@@ -1,0 +1,126 @@
+Output directory: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101
+attaching to an already running PX4/Gazebo instance
+connecting MAVLink: udpin:0.0.0.0:14540
+hang joint recorder started: /world/default/model/zd680_hang_0/joint_state
+applying requested PX4 rate-controller parameters
+set MC_LADRC_EN=0: ok
+set MC_RBF_EN=0: ok
+set MC_RBF_LEARN_EN=0: ok
+requested rate controller: pid
+applying requested PX4 position-controller parameters
+set MC_PLADRC_EN=0: ok
+set MC_PLADRC_TD_EN=0: ok
+requested position controller: pid
+requested position LADRC TD: off
+applying task-book VFB parameter profile: STD_L06_PID_AS_FSOJPC_K05 (L=0.6, W=0.0)
+set MC_LADRC_EN=0: ok
+set MC_RBF_EN=0: ok
+set MC_RBF_LEARN_EN=0: ok
+set MC_PLADRC_TD_EN=0: ok
+set MC_HANG_SIGN_X=-1: ok
+set MC_HANG_SIGN_Y=-1: ok
+set MC_HANG_MODE=2: ok
+set MC_PLADRC_EN=0: ok
+set MC_HANG_FRQ_EN=0: ok
+set MC_HANG_AS_EN=1: ok
+set MC_HANG_PAS_MD=0: ok
+set MC_HANG_PAS_POS=0: ok
+set MC_HANG_FSO_MD=2: ok
+set MC_HANG_FSO_POS=1: ok
+set EKF2_EV_CTRL=0: ok
+set EKF2_GPS_CTRL=7: ok
+set EKF2_HGT_REF=1: ok
+set EKF2_BARO_CTRL=0: ok
+set EKF2_RNG_CTRL=0: ok
+set MC_PLADRC_B0_XY=1: ok
+set MC_PLADRC_WC_XY=1.8: ok
+set MC_PLADRC_WO_XY=6: ok
+set MC_PLADRC_LIM_XY=0.8: ok
+set MC_PLADRC_D_XY=0: ok
+set MC_HANG_LEN=0.6: ok
+set MC_HANG_WC_R=0.25: ok
+set MC_HANG_WO_R=0.6: ok
+set MC_HANG_WO_MIN=2: ok
+set MC_HANG_K_ANG=0: ok
+set MC_HANG_K_RATE=0.6: ok
+set MC_HANG_ZETA=0.1: ok
+set MC_HANG_E_MIN=0: ok
+set MC_HANG_E_FULL=0.01: ok
+set MC_HANG_ACC_LIM=0.2: ok
+set MC_HANG_ACC_SLW=2: ok
+set MC_HANG_LPF_HZ=4: ok
+set MC_HANG_TOT_A=0.8: ok
+set MC_HANG_PAS_E=0.005: ok
+set MC_HANG_PAS_R=0.05: ok
+set MC_HANG_PAS_K=1: ok
+set MC_HANG_PAS_LIM=0.08: ok
+set MC_HANG_PAS_SLW=1.5: ok
+set MC_HANG_PAS_LPF=1: ok
+set MC_HANG_PAS_P=0.0005: ok
+set MC_HANG_PAS_DLY=0.1: ok
+set MC_HANG_PAS_PR=0.25: ok
+set SIM_BAT_DRAIN=3600: ok
+set SIM_BAT_MIN_PCT=100: ok
+set MC_HANG_FSO_BW=0.3: ok
+set MC_HANG_FSO_K=0.05: ok
+set MC_HANG_FSO_LEAD=0.05: ok
+set MC_HANG_FSO_LIM=0.04: ok
+set MC_HANG_FSO_SLW=0.3: ok
+set MC_HANG_FSO_E=0.003: ok
+set MC_HANG_FSO_R=0.03: ok
+set MC_HANG_FSO_T=2: ok
+set MC_HANG_FSO_PE=0.05: ok
+set MC_PLADRC_VFB_W=0: ok
+set EKF2_BARO_NOISE=3.5: ok
+set EKF2_ACC_B_NOISE=0: ok
+holding current hover point: x=-0.03 m y=0.05 m z=-9.91 m yaw=102.2 deg
+streaming position setpoint NED: x=-0.03 m y=0.05 m z=-9.91 m yaw=102.2 deg
+OFFBOARD mode command sent: ok
+vehicle is already armed; no arm command was sent
+settling for 3.0s
+waiting position: x=-0.02 y=0.05 z=-9.93 target=(-0.03,0.05,-9.91) mode=UNKNOWN
+position stable: x=-0.00 y=0.06 z=-9.92 mode=UNKNOWN
+position stable check: ok
+waiting hang initial condition: angle_rms=0.162/0.750deg rate_rms=0.0135/0.0600rad/s angle_now=0.095/0.750deg rate_now=0.0245/0.0600rad/s xy_error=0.032m vxy=0.022m/s
+waiting hang initial condition: angle_rms=0.247/0.750deg rate_rms=0.0106/0.0600rad/s angle_now=0.159/0.750deg rate_now=0.0151/0.0600rad/s xy_error=0.018m vxy=0.027m/s
+waiting hang initial condition: angle_rms=0.184/0.750deg rate_rms=0.0150/0.0600rad/s angle_now=0.279/0.750deg rate_now=0.0073/0.0600rad/s xy_error=0.046m vxy=0.005m/s
+waiting hang initial condition: angle_rms=0.207/0.750deg rate_rms=0.0118/0.0600rad/s angle_now=0.221/0.750deg rate_now=0.0078/0.0600rad/s xy_error=0.044m vxy=0.039m/s
+waiting hang initial condition: angle_rms=0.138/0.750deg rate_rms=0.0111/0.0600rad/s angle_now=0.130/0.750deg rate_now=0.0147/0.0600rad/s xy_error=0.011m vxy=0.031m/s
+hang initial condition ready: angle_rms=0.216deg rate_rms=0.0143rad/s angle_now=0.338deg rate_now=0.0177rad/s
+running action profile
+  action 1: hold:5
+action_01_hold: 5.0s
+  action 2: north:2:6
+action_02_north: 6.0s
+  action 3: hold:5
+action_03_hold: 5.0s
+  action 4: east:2:6
+action_04_east: 6.0s
+  action 5: hold:5
+action_05_hold: 5.0s
+  action 6: south:2:6
+action_06_south: 6.0s
+  action 7: hold:5
+action_07_hold: 5.0s
+  action 8: west:2:6
+action_08_west: 6.0s
+  action 9: hold:10
+action_09_hold: 10.0s
+LOITER mode command sent: ok
+wrote hang joint samples: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/hang_joint_samples.csv (3165 rows)
+copied ULog: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/position_offboard.ulg
+wrote live samples: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/live_samples.csv
+
+Position OFFBOARD run complete.
+events:  /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/events.csv
+summary: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/summary.csv
+coord:   /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/hangcoord_summary.csv
+posprot: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/hangpos4_summary.csv
+active:  /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/active_summary.json
+validity:/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/validity.json (valid)
+summary records: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/summaries
+summary index:   /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/summaries/run_index.csv
+live:    /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/live_samples.csv
+hang:    /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/hang_joint_samples.csv
+ulog:    /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/position_offboard.ulg
+console: /home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_screen_20260721/runs/STD_L06_PID_AS_FSOJPC_K05/2026-07-21/position_offboard_20260721_203101/px4_console.log

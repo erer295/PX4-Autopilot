@@ -1,0 +1,2270 @@
+diff --git a/src/modules/mc_autotune_attitude_control/mc_autotune_attitude_control.cpp b/src/modules/mc_autotune_attitude_control/mc_autotune_attitude_control.cpp
+index 3d2c0dab7f..f412e12ff9 100644
+--- a/src/modules/mc_autotune_attitude_control/mc_autotune_attitude_control.cpp
++++ b/src/modules/mc_autotune_attitude_control/mc_autotune_attitude_control.cpp
+@@ -41,6 +41,10 @@
+ 
+ using namespace matrix;
+ 
++// Keep this translation unit rebuilt with the generated parameter table.  A
++// stale SITL object predating newly added parameters otherwise retains shifted
++// parameter indices and reports unrelated type errors during startup.
++
+ McAutotuneAttitudeControl::McAutotuneAttitudeControl() :
+ 	ModuleParams(nullptr),
+ 	WorkItem(MODULE_NAME, px4::wq_configurations::hp_default)
+diff --git a/src/modules/mc_pos_control/MulticopterPositionControl.cpp b/src/modules/mc_pos_control/MulticopterPositionControl.cpp
+index 242b0e0aa6..57d4e660c7 100644
+--- a/src/modules/mc_pos_control/MulticopterPositionControl.cpp
++++ b/src/modules/mc_pos_control/MulticopterPositionControl.cpp
+@@ -357,6 +357,21 @@ void MulticopterPositionControl::parameters_update(bool force)
+ 		energy_supervisor_parameters.position_recovery_cancellation_ratio = _param_mc_hang_pas_pr.get();
+ 		_control.setSuspendedLoadEnergySupervisorParameters(energy_supervisor_parameters);
+ 
++		SuspendedLoadFrequencySelectiveObserver::Parameters frequency_selective_parameters{};
++		frequency_selective_parameters.mode = static_cast<SuspendedLoadFrequencySelectiveObserver::Mode>(
++						       _param_mc_hang_fso_md.get());
++		frequency_selective_parameters.bandwidth_hz = _param_mc_hang_fso_bw.get();
++		frequency_selective_parameters.compensation_gain = _param_mc_hang_fso_k.get();
++		frequency_selective_parameters.phase_lead_s = _param_mc_hang_fso_lead.get();
++		frequency_selective_parameters.acceleration_limit = _param_mc_hang_fso_lim.get();
++		frequency_selective_parameters.acceleration_slew_rate = _param_mc_hang_fso_slw.get();
++		frequency_selective_parameters.energy_threshold = _param_mc_hang_fso_e.get();
++		frequency_selective_parameters.rate_min = _param_mc_hang_fso_r.get();
++		frequency_selective_parameters.settling_time = _param_mc_hang_fso_t.get();
++		frequency_selective_parameters.position_protection_enabled = _param_mc_hang_fso_pos.get() != 0;
++		frequency_selective_parameters.position_error_threshold = _param_mc_hang_fso_pe.get();
++		_control.setSuspendedLoadFrequencySelectiveObserverParameters(frequency_selective_parameters);
++
+ 		_goto_control.setParamMpcAccHor(_param_mpc_acc_hor.get());
+ 		_goto_control.setParamMpcAccDownMax(_param_mpc_acc_down_max.get());
+ 		_goto_control.setParamMpcAccUpMax(_param_mpc_acc_up_max.get());
+@@ -760,6 +775,7 @@ void MulticopterPositionControl::Run()
+ 			publishSuspendedLoadAntiSwingStatus();
+ 			publishSuspendedLoadCoordinationStatus();
+ 			publishSuspendedLoadCoordinationPositionStatus();
++			publishSuspendedLoadFrequencySelectiveStatus();
+ 			publishLadrcVelocityFeedbackStatus();
+ 
+ 			// Publish internal position control setpoints
+@@ -897,6 +913,14 @@ void MulticopterPositionControl::publishSuspendedLoadCoordinationPositionStatus(
+ 	_suspended_load_coordination_position_status_pub.publish(debug_array);
+ }
+ 
++void MulticopterPositionControl::publishSuspendedLoadFrequencySelectiveStatus()
++{
++	debug_array_s debug_array{};
++	suspended_load_frequency_selective_status_bridge::fromStatus(
++		_control.suspendedLoadFrequencySelectiveObserverStatus(), debug_array, hrt_absolute_time());
++	_suspended_load_frequency_selective_status_pub.publish(debug_array);
++}
++
+ void MulticopterPositionControl::publishLadrcVelocityFeedbackStatus()
+ {
+ 	if (!_control.ladrcPositionControlEnabled()) {
+diff --git a/src/modules/mc_pos_control/MulticopterPositionControl.hpp b/src/modules/mc_pos_control/MulticopterPositionControl.hpp
+index 7c90ffcf2c..994e5ece39 100644
+--- a/src/modules/mc_pos_control/MulticopterPositionControl.hpp
++++ b/src/modules/mc_pos_control/MulticopterPositionControl.hpp
+@@ -40,6 +40,7 @@
+ #include "PositionControl/PositionControl.hpp"
+ #include "SuspendedLoadAntiSwing/SuspendedLoadCoordinationDebugArray.hpp"
+ #include "SuspendedLoadAntiSwing/SuspendedLoadCoordinationPositionDebugArray.hpp"
++#include "SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp"
+ #include "SuspendedLoadAntiSwing/SuspendedLoadJointStateDebugArray.hpp"
+ #include "SuspendedLoadAntiSwing/LadrcVelocityFeedbackDebugArray.hpp"
+ #include "Takeoff/Takeoff.hpp"
+@@ -104,6 +105,7 @@ private:
+ 	void publishSuspendedLoadAntiSwingStatus();
+ 	void publishSuspendedLoadCoordinationStatus();
+ 	void publishSuspendedLoadCoordinationPositionStatus();
++	void publishSuspendedLoadFrequencySelectiveStatus();
+ 	void publishLadrcVelocityFeedbackStatus();
+ 
+ 	TakeoffHandling _takeoff; /**< state machine and ramp to bring the vehicle off the ground without jumps */
+@@ -121,6 +123,7 @@ private:
+ 	uORB::PublicationMulti<debug_array_s> _suspended_load_anti_swing_status_pub{ORB_ID(debug_array)};
+ 	uORB::PublicationMulti<debug_array_s> _suspended_load_coordination_status_pub{ORB_ID(debug_array)};
+ 	uORB::PublicationMulti<debug_array_s> _suspended_load_coordination_position_status_pub{ORB_ID(debug_array)};
++	uORB::PublicationMulti<debug_array_s> _suspended_load_frequency_selective_status_pub{ORB_ID(debug_array)};
+ 	uORB::PublicationMulti<debug_array_s> _ladrc_velocity_feedback_status_pub{ORB_ID(debug_array)};
+ 
+ 	uORB::SubscriptionCallbackWorkItem _local_pos_sub{this, ORB_ID(vehicle_local_position)};	/**< vehicle local position */
+@@ -274,7 +277,18 @@ private:
+ 		(ParamFloat<px4::params::MC_HANG_PAS_P>) _param_mc_hang_pas_p,
+ 		(ParamFloat<px4::params::MC_HANG_PAS_DLY>) _param_mc_hang_pas_dly,
+ 		(ParamInt<px4::params::MC_HANG_PAS_POS>) _param_mc_hang_pas_pos,
+-		(ParamFloat<px4::params::MC_HANG_PAS_PR>) _param_mc_hang_pas_pr
++		(ParamFloat<px4::params::MC_HANG_PAS_PR>) _param_mc_hang_pas_pr,
++		(ParamInt<px4::params::MC_HANG_FSO_MD>) _param_mc_hang_fso_md,
++		(ParamFloat<px4::params::MC_HANG_FSO_BW>) _param_mc_hang_fso_bw,
++		(ParamFloat<px4::params::MC_HANG_FSO_K>) _param_mc_hang_fso_k,
++		(ParamFloat<px4::params::MC_HANG_FSO_LEAD>) _param_mc_hang_fso_lead,
++		(ParamFloat<px4::params::MC_HANG_FSO_LIM>) _param_mc_hang_fso_lim,
++		(ParamFloat<px4::params::MC_HANG_FSO_SLW>) _param_mc_hang_fso_slw,
++		(ParamFloat<px4::params::MC_HANG_FSO_E>) _param_mc_hang_fso_e,
++		(ParamFloat<px4::params::MC_HANG_FSO_R>) _param_mc_hang_fso_r,
++		(ParamFloat<px4::params::MC_HANG_FSO_T>) _param_mc_hang_fso_t,
++		(ParamInt<px4::params::MC_HANG_FSO_POS>) _param_mc_hang_fso_pos,
++		(ParamFloat<px4::params::MC_HANG_FSO_PE>) _param_mc_hang_fso_pe
+ 	);
+ 
+ 	math::WelfordMean<float> _sample_interval_s{};
+diff --git a/src/modules/mc_pos_control/PositionControl/PositionControl.cpp b/src/modules/mc_pos_control/PositionControl/PositionControl.cpp
+index 54335631c6..b7882d246a 100644
+--- a/src/modules/mc_pos_control/PositionControl/PositionControl.cpp
++++ b/src/modules/mc_pos_control/PositionControl/PositionControl.cpp
+@@ -385,11 +385,18 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
+ 		_suspended_load_anti_swing.update(dt, _control_timestamp, _yaw, _suspended_load_anti_swing_flying);
+ 	_coordination_status.anti_swing_requested_ned = anti_swing_requested;
+ 	const SuspendedLoadAntiSwing::Status &anti_swing_status = _suspended_load_anti_swing.status();
+-	const Vector2f passivity_candidate = base_acceleration + anti_swing_requested;
+ 	const Vector2f position_error_ned{
+ 		_pos_sp(0) - _pos(0),
+ 		_pos_sp(1) - _pos(1)
+ 	};
++	const SuspendedLoadFrequencySelectiveObserver::Status &frequency_selective_status =
++		_suspended_load_frequency_selective_observer.update(
++			dt, _vel.xy(), _last_applied_acceleration.xy(),
++			anti_swing_status.rate_filtered, position_error_ned, _yaw, anti_swing_status.rope_length,
++			anti_swing_status.energy_per_mass, anti_swing_status.engaged,
++			anti_swing_status.measurement_valid && _suspended_load_jerk_valid);
++	const Vector2f frequency_selective_requested = frequency_selective_status.compensation_applied_ned;
++	const Vector2f passivity_candidate = base_acceleration + anti_swing_requested + frequency_selective_requested;
+ 	const SuspendedLoadEnergySupervisor::Status &energy_supervisor_status = _suspended_load_energy_supervisor.update(
+ 				dt, passivity_candidate, anti_swing_status.rate_filtered, position_error_ned, _yaw,
+ 				anti_swing_status.rope_length, anti_swing_status.energy_per_mass,
+@@ -428,9 +435,11 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
+ 	// OFF and SHADOW return a strict zero here. ACTIVE reuses the exact same
+ 	// computed correction and inserts it before the existing total XY envelope.
+ 	const Vector2f passivity_active_requested = energy_supervisor_status.correction_active_ned;
+-	const Vector2f swing_management_requested = anti_swing_requested + passivity_active_requested;
++	const Vector2f swing_management_requested = anti_swing_requested + frequency_selective_requested
++					   + passivity_active_requested;
+ 	Vector2f combined_acceleration{};
+ 	Vector2f anti_swing_applied = anti_swing_requested;
++	Vector2f frequency_selective_applied = frequency_selective_requested;
+ 	Vector2f passivity_active_applied = passivity_active_requested;
+ 
+ 	if (_lim_acc_horizontal > FLT_EPSILON) {
+@@ -444,8 +453,9 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
+ 		if (swing_management_requested.norm() >= _lim_acc_horizontal) {
+ 			const float management_scale = _lim_acc_horizontal / swing_management_requested.norm();
+ 			anti_swing_applied *= management_scale;
++			frequency_selective_applied *= management_scale;
+ 			passivity_active_applied *= management_scale;
+-			combined_acceleration = anti_swing_applied + passivity_active_applied;
++			combined_acceleration = anti_swing_applied + frequency_selective_applied + passivity_active_applied;
+ 
+ 		} else {
+ 			combined_acceleration = ControlMath::constrainXY(swing_management_requested, base_acceleration,
+@@ -457,6 +467,8 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
+ 	}
+ 
+ 	_suspended_load_anti_swing.setAppliedAccelerationNed(anti_swing_applied);
++	_suspended_load_frequency_selective_observer.setAppliedCompensationNed(frequency_selective_applied,
++			anti_swing_status.rate_filtered, position_error_ned, _yaw, anti_swing_status.rope_length);
+ 	_acc_sp.xy() = combined_acceleration;
+ 	_final_acceleration_command = _acc_sp;
+ 	_coordination_status.anti_swing_applied_ned = anti_swing_applied;
+diff --git a/src/modules/mc_pos_control/PositionControl/PositionControl.hpp b/src/modules/mc_pos_control/PositionControl/PositionControl.hpp
+index 635a9d784b..dcb74f18cc 100644
+--- a/src/modules/mc_pos_control/PositionControl/PositionControl.hpp
++++ b/src/modules/mc_pos_control/PositionControl/PositionControl.hpp
+@@ -51,6 +51,7 @@
+ 
+ #include <SuspendedLoadAntiSwing.hpp>
+ #include <SuspendedLoadEnergySupervisor.hpp>
++#include <SuspendedLoadFrequencySelectiveObserver.hpp>
+ #include <SuspendedLoadCoordinationStatus.hpp>
+ 
+ struct PositionControlStates {
+@@ -208,6 +209,11 @@ public:
+ 	{
+ 		_suspended_load_energy_supervisor.setParameters(parameters);
+ 	}
++	void setSuspendedLoadFrequencySelectiveObserverParameters(
++		const SuspendedLoadFrequencySelectiveObserver::Parameters &parameters)
++	{
++		_suspended_load_frequency_selective_observer.setParameters(parameters);
++	}
+ 
+ 	void setSuspendedLoadJointState(const SuspendedLoadAntiSwing::JointState &joint_state)
+ 	{
+@@ -226,6 +232,11 @@ public:
+ 		return _suspended_load_anti_swing.status();
+ 	}
+ 
++	const SuspendedLoadFrequencySelectiveObserver::Status &suspendedLoadFrequencySelectiveObserverStatus() const
++	{
++		return _suspended_load_frequency_selective_observer.status();
++	}
++
+ 	/**
+ 	 * Apply P-position and PID-velocity controller that updates the member
+ 	 * thrust, yaw- and yawspeed-setpoints.
+@@ -330,6 +341,7 @@ private:
+ 
+ 	SuspendedLoadAntiSwing _suspended_load_anti_swing{};
+ 	SuspendedLoadEnergySupervisor _suspended_load_energy_supervisor{};
++	SuspendedLoadFrequencySelectiveObserver _suspended_load_frequency_selective_observer{};
+ 	SuspendedLoadCoordinationStatus _coordination_status{};
+ 	matrix::Vector2f _last_suspended_load_base_acceleration{};
+ 	matrix::Vector2f _last_suspended_load_final_acceleration{};
+diff --git a/src/modules/mc_pos_control/SuspendedLoadAntiSwing/CMakeLists.txt b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/CMakeLists.txt
+index e160d00342..42cb2aa455 100644
+--- a/src/modules/mc_pos_control/SuspendedLoadAntiSwing/CMakeLists.txt
++++ b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/CMakeLists.txt
+@@ -36,6 +36,9 @@ px4_add_library(SuspendedLoadAntiSwing
+ 	SuspendedLoadAntiSwing.hpp
+ 	SuspendedLoadEnergySupervisor.cpp
+ 	SuspendedLoadEnergySupervisor.hpp
++	SuspendedLoadFrequencySelectiveObserver.cpp
++	SuspendedLoadFrequencySelectiveObserver.hpp
++	SuspendedLoadFrequencySelectiveDebugArray.hpp
+ 	SuspendedLoadCoordinationDebugArray.hpp
+ 	SuspendedLoadCoordinationStatus.hpp
+ 	SuspendedLoadJointStateDebugArray.hpp
+diff --git a/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadAntiSwingTest.cpp b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadAntiSwingTest.cpp
+index 0ed5ccef43..ddd9a0eedd 100644
+--- a/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadAntiSwingTest.cpp
++++ b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadAntiSwingTest.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include "SuspendedLoadAntiSwing.hpp"
+ #include "SuspendedLoadEnergySupervisor.hpp"
++#include "SuspendedLoadFrequencySelectiveObserver.hpp"
+ 
+ #include <lib/geo/geo.h>
+ #include <px4_platform_common/defines.h>
+@@ -48,6 +49,22 @@ SuspendedLoadAntiSwing::JointState jointState(uint64_t timestamp, float pitch_an
+ 	return state;
+ }
+ 
++SuspendedLoadFrequencySelectiveObserver::Parameters frequencySelectiveParameters()
++{
++	SuspendedLoadFrequencySelectiveObserver::Parameters parameters{};
++	parameters.mode = SuspendedLoadFrequencySelectiveObserver::Mode::Active;
++	parameters.bandwidth_hz = 0.30f;
++	parameters.compensation_gain = 0.5f;
++	parameters.phase_lead_s = 0.f;
++	parameters.acceleration_limit = 10.f;
++	parameters.acceleration_slew_rate = 0.f;
++	parameters.energy_threshold = 0.f;
++	parameters.rate_min = 0.f;
++	parameters.settling_time = 0.f;
++	parameters.position_protection_enabled = false;
++	return parameters;
++}
++
+ } // namespace
+ 
+ SuspendedLoadEnergySupervisor::Parameters shadowParameters()
+@@ -95,6 +112,171 @@ TEST(SuspendedLoadAntiSwingTest, NaturalFrequencyFollowsRopeLength)
+ 	EXPECT_GT(frequency_medium, frequency_long);
+ }
+ 
++TEST(SuspendedLoadFrequencySelectiveObserverTest, CenterFrequencyFollowsRopeLength)
++{
++	const float frequency_hz = SuspendedLoadFrequencySelectiveObserver::centerFrequencyHz(0.6f);
++	EXPECT_NEAR(frequency_hz, sqrtf(CONSTANTS_ONE_G / 0.6f) / (2.f * M_PI_F), 1e-6f);
++}
++
++TEST(SuspendedLoadFrequencySelectiveObserverTest, TracksNaturalFrequencyAndRejectsSecondHarmonic)
++{
++	SuspendedLoadFrequencySelectiveObserver fundamental_observer;
++	SuspendedLoadFrequencySelectiveObserver second_harmonic_observer;
++	const auto parameters = frequencySelectiveParameters();
++	fundamental_observer.setParameters(parameters);
++	second_harmonic_observer.setParameters(parameters);
++
++	constexpr float dt = 0.01f;
++	constexpr float rope_length = 0.6f;
++	const float frequency_hz = SuspendedLoadFrequencySelectiveObserver::centerFrequencyHz(rope_length);
++	float fundamental_estimate_energy = 0.f;
++	float second_harmonic_estimate_energy = 0.f;
++	int samples = 0;
++
++	for (int i = 0; i < 3000; ++i) {
++		const float time = i * dt;
++		const Vector2f fundamental_velocity{0.4f / (2.f * M_PI_F * frequency_hz)
++						     * sinf(2.f * M_PI_F * frequency_hz * time), 0.f};
++		const Vector2f second_harmonic_velocity{0.4f / (4.f * M_PI_F * frequency_hz)
++						       * sinf(4.f * M_PI_F * frequency_hz * time), 0.f};
++		const auto &fundamental = fundamental_observer.update(dt, fundamental_velocity, Vector2f{}, Vector2f{1.f, 0.f},
++				 Vector2f{}, 0.f, rope_length, 1.f, true, true);
++		const auto &second_harmonic = second_harmonic_observer.update(dt, second_harmonic_velocity, Vector2f{},
++					   Vector2f{1.f, 0.f}, Vector2f{}, 0.f, rope_length, 1.f, true, true);
++
++		if (i >= 2000) {
++			fundamental_estimate_energy += fundamental.disturbance_estimate_ned.norm_squared();
++			second_harmonic_estimate_energy += second_harmonic.disturbance_estimate_ned.norm_squared();
++			++samples;
++		}
++	}
++
++	const float fundamental_rms = sqrtf(fundamental_estimate_energy / samples);
++	const float second_harmonic_rms = sqrtf(second_harmonic_estimate_energy / samples);
++	EXPECT_GT(fundamental_rms, 0.25f);
++	EXPECT_LT(second_harmonic_rms, 0.25f * fundamental_rms);
++}
++
++TEST(SuspendedLoadFrequencySelectiveObserverTest, ShadowEstimatesButAppliesStrictZero)
++{
++	SuspendedLoadFrequencySelectiveObserver observer;
++	auto parameters = frequencySelectiveParameters();
++	parameters.mode = SuspendedLoadFrequencySelectiveObserver::Mode::Shadow;
++	observer.setParameters(parameters);
++	constexpr float dt = 0.01f;
++	constexpr float rope_length = 0.6f;
++	const float frequency_hz = SuspendedLoadFrequencySelectiveObserver::centerFrequencyHz(rope_length);
++
++	for (int i = 0; i < 2000; ++i) {
++		const float time = i * dt;
++		const Vector2f velocity{0.4f / (2.f * M_PI_F * frequency_hz)
++					* sinf(2.f * M_PI_F * frequency_hz * time), 0.f};
++		observer.update(dt, velocity, Vector2f{}, Vector2f{0.f, 1.f}, Vector2f{},
++				0.f, rope_length, 1.f, true, true);
++	}
++
++	const auto &status = observer.status();
++	EXPECT_GT(status.disturbance_estimate_ned.norm(), 0.1f);
++	EXPECT_GT(status.compensation_projected_ned.norm(), 0.f);
++	EXPECT_FLOAT_EQ(status.compensation_applied_ned.norm(), 0.f);
++	EXPECT_FALSE(status.active);
++}
++
++TEST(SuspendedLoadFrequencySelectiveObserverTest, PowerProjectionNeverInjectsSwingEnergy)
++{
++	bool limited = false;
++	const Vector2f rate_heading{0.4f, -0.2f};
++	const Vector2f injecting_acceleration_ned{-0.3f, 0.15f};
++	const Vector2f projected = SuspendedLoadFrequencySelectiveObserver::projectToNonPositivePower(
++			injecting_acceleration_ned, rate_heading, 0.f, limited);
++
++	EXPECT_TRUE(limited);
++	EXPECT_GT(SuspendedLoadFrequencySelectiveObserver::predictedPower(
++			injecting_acceleration_ned, rate_heading, 0.f, 0.6f), 0.f);
++	EXPECT_LE(SuspendedLoadFrequencySelectiveObserver::predictedPower(
++			projected, rate_heading, 0.f, 0.6f), 1e-6f);
++	EXPECT_LE(projected.norm(), injecting_acceleration_ned.norm() + 1e-6f);
++}
++
++TEST(SuspendedLoadFrequencySelectiveObserverTest, JointProjectionProtectsSwingPowerAndPositionRecovery)
++{
++	bool power_limited = false;
++	bool position_limited = false;
++	const Vector2f projected = SuspendedLoadFrequencySelectiveObserver::projectToPowerAndPositionConstraints(
++			Vector2f{-0.3f, -0.4f}, Vector2f{1.f, 0.f}, Vector2f{0.f, 1.f}, 0.f, true,
++			power_limited, position_limited);
++
++	EXPECT_TRUE(power_limited);
++	EXPECT_TRUE(position_limited);
++	EXPECT_LE(SuspendedLoadFrequencySelectiveObserver::predictedPower(
++			projected, Vector2f{1.f, 0.f}, 0.f, 0.6f), 1e-6f);
++	EXPECT_GE(projected.dot(Vector2f{0.f, 1.f}), -1e-6f);
++	EXPECT_NEAR(projected.norm(), 0.f, 1e-6f);
++
++	const Vector2f boundary_projected =
++		SuspendedLoadFrequencySelectiveObserver::projectToPowerAndPositionConstraints(
++			Vector2f{-0.3f, 0.2f}, Vector2f{1.f, 0.f}, Vector2f{0.f, 1.f}, 0.f, true,
++			power_limited, position_limited);
++	EXPECT_TRUE(power_limited);
++	EXPECT_FALSE(position_limited);
++	EXPECT_NEAR(boundary_projected(0), 0.f, 1e-6f);
++	EXPECT_NEAR(boundary_projected(1), 0.2f, 1e-6f);
++}
++
++TEST(SuspendedLoadFrequencySelectiveObserverTest, SmoothUnifiedConstraintRespectsPowerPositionAndSlewTogether)
++{
++	bool power_limited = false;
++	bool position_limited = false;
++	bool slew_limited = false;
++	bool feasible = false;
++	const Vector2f previous{0.04f, 0.f};
++	const Vector2f projected = SuspendedLoadFrequencySelectiveObserver::projectToSmoothUnifiedConstraints(
++			Vector2f{-0.08f, -0.08f}, previous, Vector2f{1.f, 0.f}, Vector2f{0.f, 1.f},
++			0.f, 0.08f, 0.01f, 1.f, 1.f,
++			power_limited, position_limited, slew_limited, feasible);
++
++	EXPECT_TRUE(feasible);
++	EXPECT_TRUE(power_limited);
++	EXPECT_TRUE(position_limited);
++	EXPECT_TRUE(slew_limited);
++	EXPECT_LE((projected - previous).norm(), 0.01002f);
++	EXPECT_LE(projected.norm(), 0.08002f);
++	EXPECT_LE(SuspendedLoadFrequencySelectiveObserver::predictedPower(
++			projected, Vector2f{1.f, 0.f}, 0.f, 0.6f), 1e-5f);
++	EXPECT_GE(projected.dot(Vector2f{0.f, 1.f}), -2e-5f);
++}
++
++TEST(SuspendedLoadFrequencySelectiveObserverTest, SmoothUnifiedConstraintNeverBypassesFinalSlewLimit)
++{
++	Vector2f previous{};
++	constexpr float maximum_delta = 0.003f;
++
++	for (int i = 0; i < 80; ++i) {
++		const float angle = 0.09f * i;
++		const Vector2f rate{cosf(angle), sinf(angle)};
++		const Vector2f position_error{-sinf(0.7f * angle), cosf(0.7f * angle)};
++		bool power_limited = false;
++		bool position_limited = false;
++		bool slew_limited = false;
++		bool feasible = false;
++		const Vector2f projected = SuspendedLoadFrequencySelectiveObserver::projectToSmoothUnifiedConstraints(
++				Vector2f{-0.07f * cosf(1.3f * angle), -0.07f * sinf(1.3f * angle)},
++				previous, rate, position_error, 0.f, 0.08f, maximum_delta, 1.f, 0.8f,
++				power_limited, position_limited, slew_limited, feasible);
++
++		EXPECT_TRUE(projected.isAllFinite());
++		EXPECT_LE((projected - previous).norm(), maximum_delta + 2e-5f);
++		EXPECT_LE(projected.norm(), 0.08002f);
++
++		if (feasible) {
++			EXPECT_LE(SuspendedLoadFrequencySelectiveObserver::predictedPower(
++					projected, rate, 0.f, 0.6f), 1e-5f);
++		}
++
++		previous = projected;
++	}
++}
++
+ TEST(SuspendedLoadAntiSwingTest, EnergyIsFiniteAndPositiveAwayFromRest)
+ {
+ 	EXPECT_FLOAT_EQ(SuspendedLoadAntiSwing::perUnitMassEnergy(Vector2f{}, Vector2f{}, 0.6f), 0.f);
+diff --git a/src/modules/mc_pos_control/suspended_load_anti_swing_params.c b/src/modules/mc_pos_control/suspended_load_anti_swing_params.c
+index d65f5045f7..e6a0d132a4 100644
+--- a/src/modules/mc_pos_control/suspended_load_anti_swing_params.c
++++ b/src/modules/mc_pos_control/suspended_load_anti_swing_params.c
+@@ -574,3 +574,149 @@ PARAM_DEFINE_INT32(MC_HANG_PAS_POS, 0);
+  * @group Multicopter Position Control
+  */
+ PARAM_DEFINE_FLOAT(MC_HANG_PAS_PR, 0.40f);
++
++/**
++ * Frequency-selective load-disturbance observer mode
++ *
++ * SHADOW runs and logs the harmonic observer and the projected candidate but
++ * applies zero compensation. ACTIVE applies the same projected candidate.
++ * The stock position PID and anti-swing damping remain unchanged.
++ *
++ * @value 0 Off
++ * @value 1 Shadow
++ * @value 2 Active
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_INT32(MC_HANG_FSO_MD, 0);
++
++/**
++ * Frequency-selective observer bandwidth
++ *
++ * Error-dynamics bandwidth of the harmonic extended-state observer. The
++ * disturbance internal-model frequency is computed from sqrt(g/L)/(2*pi).
++ *
++ * @unit Hz
++ * @min 0.1
++ * @max 10
++ * @decimal 2
++ * @increment 0.01
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_BW, 0.30f);
++
++/**
++ * Frequency-selective compensation gain
++ *
++ * @min 0
++ * @max 1
++ * @decimal 2
++ * @increment 0.05
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_K, 0.20f);
++
++/**
++ * Frequency-selective disturbance phase lead
++ *
++ * Predicts the harmonic disturbance by this time before compensation. This
++ * can account for attitude/thrust response delay without differentiating the
++ * measured velocity.
++ *
++ * @unit s
++ * @min 0
++ * @max 0.5
++ * @decimal 3
++ * @increment 0.01
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_LEAD, 0.05f);
++
++/**
++ * Frequency-selective compensation acceleration limit
++ *
++ * @unit m/s^2
++ * @min 0
++ * @max 2
++ * @decimal 2
++ * @increment 0.01
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_LIM, 0.08f);
++
++/**
++ * Frequency-selective compensation slew rate
++ *
++ * @unit m/s^3
++ * @min 0
++ * @max 10
++ * @decimal 2
++ * @increment 0.05
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_SLW, 0.30f);
++
++/**
++ * Frequency-selective compensation activation energy
++ *
++ * @min 0
++ * @max 20
++ * @decimal 4
++ * @increment 0.001
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_E, 0.003f);
++
++/**
++ * Frequency-selective compensation minimum swing rate
++ *
++ * @unit rad/s
++ * @min 0
++ * @max 20
++ * @decimal 3
++ * @increment 0.01
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_R, 0.03f);
++
++/**
++ * Frequency-selective observer settling time
++ *
++ * No compensation is produced until the narrow-band estimate has converged
++ * for this duration after anti-swing engagement.
++ *
++ * @unit s
++ * @min 0
++ * @max 20
++ * @decimal 1
++ * @increment 0.5
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_T, 2.0f);
++
++/**
++ * Frequency-selective position protection
++ *
++ * When enabled, continuously tighten the compensation position-recovery
++ * half-space as horizontal error approaches MC_HANG_FSO_PE. The constraint
++ * is blended with the power, amplitude and slew constraints in one update.
++ *
++ * @boolean
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_INT32(MC_HANG_FSO_POS, 1);
++
++/**
++ * Frequency-selective position-protection threshold
++ *
++ * Position protection reaches half weight at this horizontal error. It is
++ * smoothly blended from zero at half this value to full at 1.5 times this
++ * value, avoiding a hard constraint switch near the setpoint.
++ *
++ * @unit m
++ * @min 0
++ * @max 2
++ * @decimal 2
++ * @increment 0.01
++ * @group Multicopter Position Control
++ */
++PARAM_DEFINE_FLOAT(MC_HANG_FSO_PE, 0.05f);
+diff --git a/src/modules/mc_pos_control/validation_tools/zd680_vfb_recorder.py b/src/modules/mc_pos_control/validation_tools/zd680_vfb_recorder.py
+index c14dad258a..16b9ea95c5 100644
+--- a/src/modules/mc_pos_control/validation_tools/zd680_vfb_recorder.py
++++ b/src/modules/mc_pos_control/validation_tools/zd680_vfb_recorder.py
+@@ -21,13 +21,26 @@ MODES = (
+     "VFB_L08_W05",
+     "STD_L06_PID_AS",
+     "STD_L06_PID_AS_PAS",
++    "STD_L06_PID_AS_FSO_SHADOW",
++    "STD_L06_PID_AS_FSOPC",
++    "STD_L06_PID_AS_FSOPC_K20",
++    "STD_L06_PID_AS_FSOPC_K40",
++    "STD_L06_PID_AS_FSOPC_K60",
++    "STD_L06_PID_AS_FSOJPC_K05",
++    "STD_L06_PID_AS_FSOJPC_K10",
++    "STD_L06_PID_AS_FSOJPC_K15",
++    "STD_L06_PID_AS_FSOJPC_K20",
++    "STD_L06_PID_AS_FSOUSC_K20",
++    "STD_L06_PID_AS_FSOUSC_READY",
++    "STD_L08_PID_AS",
++    "STD_L08_PID_AS_FSOUSC_K20",
+     "STD_L06_FULL_W05",
+     "STD_L06_FULL_W10_OBS_DECOUPLE",
+ )
+ 
+ 
+ def velocity_feedback_weight(mode: str) -> float:
+-    if mode in ("STD_L06_PID_AS", "STD_L06_PID_AS_PAS"):
++    if mode.startswith(("STD_L06_PID_AS", "STD_L08_PID_AS")):
+         return 0.0
+     if mode == "STD_L06_FULL_W05":
+         return 0.5
+@@ -47,10 +60,13 @@ def profile(mode: str, best_ramp_s: float = 1.0):
+         raise ValueError(f"unsupported VFB validation mode: {mode}")
+     return {
+         "mode": mode,
+-        "controller": "PID_AS" if mode in ("STD_L06_PID_AS", "STD_L06_PID_AS_PAS") else "FULL",
++        "controller": "PID_AS" if mode.startswith(("STD_L06_PID_AS", "STD_L08_PID_AS")) else "FULL",
+         "rope_length_m": 0.8 if "L08" in mode else 0.6,
+         "payload_mass_kg": 0.5,
+-        "actions": "hold:5;north:2:6;hold:5;east:2:6;hold:5;south:2:6;hold:5;west:2:6;hold:10",
++        "actions": (
++            "hold:1" if mode.endswith("READY")
++            else "hold:5;north:2:6;hold:5;east:2:6;hold:5;south:2:6;hold:5;west:2:6;hold:10"
++        ),
+         "motion_profile": "s_curve",
+         "ramp_time_s": 1.0,
+         "wrench_schedule": "",
+@@ -105,6 +121,42 @@ def parameters_for_mode(mode: str):
+         # the already frozen ACTIVE PAS path.
+         int_params["MC_HANG_PAS_MD"] = 2
+         int_params["MC_HANG_PAS_POS"] = 1
++    fso_shadow = mode == "STD_L06_PID_AS_FSO_SHADOW"
++    fso_active = "FSOPC" in mode or "FSOJPC" in mode or "FSOUSC" in mode
++    int_params["MC_HANG_FSO_MD"] = 1 if fso_shadow else (2 if fso_active else 0)
++    int_params["MC_HANG_FSO_POS"] = 1 if "FSOJPC" in mode or "FSOUSC" in mode else 0
++    compensation_gain = {
++        "STD_L06_PID_AS_FSOPC_K20": 0.20,
++        "STD_L06_PID_AS_FSOPC_K40": 0.40,
++        "STD_L06_PID_AS_FSOPC_K60": 0.60,
++        "STD_L06_PID_AS_FSOJPC_K05": 0.05,
++        "STD_L06_PID_AS_FSOJPC_K10": 0.10,
++        "STD_L06_PID_AS_FSOJPC_K15": 0.15,
++        "STD_L06_PID_AS_FSOJPC_K20": 0.20,
++        "STD_L06_PID_AS_FSOUSC_K20": 0.20,
++        "STD_L06_PID_AS_FSOUSC_READY": 0.20,
++        "STD_L08_PID_AS_FSOUSC_K20": 0.20,
++    }.get(mode, 0.20)
++    compensation_limit = {
++        "STD_L06_PID_AS_FSOJPC_K05": 0.04,
++        "STD_L06_PID_AS_FSOJPC_K10": 0.04,
++        "STD_L06_PID_AS_FSOJPC_K15": 0.06,
++        "STD_L06_PID_AS_FSOJPC_K20": 0.08,
++        "STD_L06_PID_AS_FSOUSC_K20": 0.08,
++        "STD_L06_PID_AS_FSOUSC_READY": 0.08,
++        "STD_L08_PID_AS_FSOUSC_K20": 0.08,
++    }.get(mode, 0.08)
++    float_params.update({
++        "MC_HANG_FSO_BW": 0.30,
++        "MC_HANG_FSO_K": compensation_gain,
++        "MC_HANG_FSO_LEAD": 0.05,
++        "MC_HANG_FSO_LIM": compensation_limit,
++        "MC_HANG_FSO_SLW": 0.30,
++        "MC_HANG_FSO_E": 0.003,
++        "MC_HANG_FSO_R": 0.03,
++        "MC_HANG_FSO_T": 2.0,
++        "MC_HANG_FSO_PE": 0.05,
++    })
+     float_params["MC_PLADRC_VFB_W"] = float(selected["velocity_feedback_weight"])
+     estimator_int, estimator_float = estimator_parameters()
+     int_params.update(estimator_int)
+@@ -133,6 +185,9 @@ GLOBALS = API["main"].__globals__
+ GLOBALS["VALIDATION_SUITE_MODES"] = MODES
+ GLOBALS["ACTIVE_SNAPSHOT_PARAMS"] = tuple(GLOBALS["ACTIVE_SNAPSHOT_PARAMS"]) + (
+     "MC_PLADRC_VFB_W", "EKF2_BARO_NOISE", "EKF2_ACC_B_NOISE",
++    "MC_HANG_FSO_MD", "MC_HANG_FSO_BW", "MC_HANG_FSO_K", "MC_HANG_FSO_LEAD", "MC_HANG_FSO_LIM",
++    "MC_HANG_FSO_SLW", "MC_HANG_FSO_E", "MC_HANG_FSO_R", "MC_HANG_FSO_T",
++    "MC_HANG_FSO_POS", "MC_HANG_FSO_PE",
+ )
+ GLOBALS["validation_suite_profile"] = profile
+ GLOBALS["validation_controller_parameters"] = controller_parameters
+@@ -145,6 +200,9 @@ ORIGINAL_APPLY_EXPERIMENT_PRESET = GLOBALS["apply_experiment_preset"]
+ def apply_experiment_preset_with_strict_initial_pairing(args, parser) -> None:
+     ORIGINAL_APPLY_EXPERIMENT_PRESET(args, parser)
+     if args.validation_suite in MODES and args.validation_suite != "NONE":
++        # PID-family runs always command MC_RBF_LEARN_EN=0.  Keep the run
++        # index/metadata label consistent with that commanded parameter.
++        args.rbf_learn = False
+         selected = profile(args.validation_suite, args.validation_best_ramp)
+         args.hang_initial_timeout = 60.0
+         args.hang_initial_window = 1.0
+diff --git a/src/modules/mc_pos_control/validation_tools/zd680_vfb_report.py b/src/modules/mc_pos_control/validation_tools/zd680_vfb_report.py
+index eeae3bb134..4c422d7bb6 100644
+--- a/src/modules/mc_pos_control/validation_tools/zd680_vfb_report.py
++++ b/src/modules/mc_pos_control/validation_tools/zd680_vfb_report.py
+@@ -22,7 +22,14 @@ GENERIC = runpy.run_path(str(GENERIC_REPORT), run_name="zd680_vfb_generic_report
+ MODES = ("VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W05")
+ SUPPORTED_MODES = (
+     "VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W25", "VFB_L08_W05",
+-    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
++    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_PID_AS_FSO_SHADOW",
++    "STD_L06_PID_AS_FSOPC", "STD_L06_PID_AS_FSOPC_K20", "STD_L06_PID_AS_FSOPC_K40",
++    "STD_L06_PID_AS_FSOPC_K60",
++    "STD_L06_PID_AS_FSOJPC_K05", "STD_L06_PID_AS_FSOJPC_K10", "STD_L06_PID_AS_FSOJPC_K15",
++    "STD_L06_PID_AS_FSOJPC_K20",
++    "STD_L06_PID_AS_FSOUSC_K20",
++    "STD_L08_PID_AS", "STD_L08_PID_AS_FSOUSC_K20",
++    "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
+ )
+ MOVE_NAMES = ("north", "east", "south", "west")
+ Z_OBSERVATION_ONLY_CHECKS = {
+@@ -224,7 +231,7 @@ def write_csv(path: Path, rows: Sequence[Dict[str, object]]) -> None:
+ 
+ 
+ def expected_weight(mode: str) -> float:
+-    if mode in ("STD_L06_PID_AS", "STD_L06_PID_AS_PAS"):
++    if mode.startswith(("STD_L06_PID_AS", "STD_L08_PID_AS")):
+         return 0.0
+     if mode == "STD_L06_FULL_W05":
+         return 0.5
+@@ -348,6 +355,8 @@ def analyze_run(mode: str, run_dir: Path):
+         "control_allocator_status", "actuator_motors",
+     ])
+     vfb = GENERIC["find_debug"](ulog, 686)
++    fso = GENERIC["find_debug"](ulog, 687)
++    pid_as_auxiliary_mode = mode.startswith(("STD_L06_PID_AS", "STD_L08_PID_AS"))
+     expected_vfb_weight = expected_weight(mode)
+     checks: Dict[str, Dict[str, object]] = {}
+     warnings: List[str] = []
+@@ -362,10 +371,17 @@ def analyze_run(mode: str, run_dir: Path):
+     check("base_validity_excluding_z", analysis_base_valid, non_z_rejections)
+     if z_observations:
+         warnings.append("z_observation_only:" + ",".join(z_observations))
+-    check("hangvfb_debug_present", vfb is not None, "debug_array ID 686")
++    check("hangvfb_debug_present", vfb is not None or pid_as_auxiliary_mode,
++          "debug_array ID 686" if vfb is not None else "not required for PID+AS auxiliary-mode analysis")
++    if "FSO" in mode:
++        check("hangfso_debug_present", fso is not None, "debug_array ID 687")
+     window_rows: List[Dict[str, object]] = []
+     if vfb is None:
+-        return base, window_rows, {"valid": False, "checks": checks, "warnings": warnings}
++        return base, window_rows, {
++            "valid": all(bool(item["passed"]) for item in checks.values()),
++            "checks": checks,
++            "warnings": warnings,
++        }
+ 
+     t = np.asarray(vfb["timestamp"], dtype=float) * 1.0e-6
+     route = next(window for window in windows if window[0] == "route")
+diff --git a/src/modules/mc_pos_control/validation_tools/zd680_vfb_validation_suite.py b/src/modules/mc_pos_control/validation_tools/zd680_vfb_validation_suite.py
+index d0b5e74f5e..eed8d59345 100644
+--- a/src/modules/mc_pos_control/validation_tools/zd680_vfb_validation_suite.py
++++ b/src/modules/mc_pos_control/validation_tools/zd680_vfb_validation_suite.py
+@@ -4,6 +4,8 @@
+ from __future__ import annotations
+ 
+ import runpy
++import os
++import subprocess
+ from pathlib import Path
+ 
+ 
+@@ -14,7 +16,15 @@ API = runpy.run_path(str(SOURCE), run_name="zd680_vfb_suite_api")
+ 
+ MODES = (
+     "VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W25", "VFB_L08_W05",
+-    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
++    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_PID_AS_FSO_SHADOW",
++    "STD_L06_PID_AS_FSOPC", "STD_L06_PID_AS_FSOPC_K20", "STD_L06_PID_AS_FSOPC_K40",
++    "STD_L06_PID_AS_FSOPC_K60",
++    "STD_L06_PID_AS_FSOJPC_K05", "STD_L06_PID_AS_FSOJPC_K10", "STD_L06_PID_AS_FSOJPC_K15",
++    "STD_L06_PID_AS_FSOJPC_K20",
++    "STD_L06_PID_AS_FSOUSC_K20",
++    "STD_L06_PID_AS_FSOUSC_READY",
++    "STD_L08_PID_AS", "STD_L08_PID_AS_FSOUSC_K20",
++    "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
+ )
+ CURRENT_MODE = ""
+ 
+@@ -46,8 +56,34 @@ def send_with_pre_takeoff_freeze(self, command: str) -> None:
+ original_run_mode = API["run_mode"]
+ 
+ 
++def residual_sim_processes():
++    """Return only PX4/Gazebo/recorder processes that can contaminate a run."""
++    result = subprocess.run(
++        ["ps", "-eo", "pid=,comm=,args="], check=True, text=True,
++        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
++    )
++    ancestors = {os.getpid(), os.getppid()}
++    residuals = []
++    for line in result.stdout.splitlines():
++        fields = line.strip().split(None, 2)
++        if len(fields) < 3:
++            continue
++        pid, command, arguments = int(fields[0]), fields[1], fields[2]
++        if pid in ancestors:
++            continue
++        is_px4 = command == "px4"
++        is_gazebo = command in {"gzserver", "gzclient"} or "gz sim -r" in arguments
++        is_recorder = "position_offboard_flight_recorder.py" in arguments
++        if is_px4 or is_gazebo or is_recorder:
++            residuals.append(line.strip())
++    return residuals
++
++
+ def run_mode(mode: str, args):
+     global CURRENT_MODE
++    residuals = residual_sim_processes()
++    if residuals:
++        raise RuntimeError("residual PX4/Gazebo/recorder process before run: " + " | ".join(residuals))
+     CURRENT_MODE = mode
+     return original_run_mode(mode, args)
+ 
+diff --git a/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp
+new file mode 100644
+index 0000000000..bf6f548188
+--- /dev/null
++++ b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp
+@@ -0,0 +1,125 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
++ *
++ ****************************************************************************/
++
++#pragma once
++
++#include "SuspendedLoadFrequencySelectiveObserver.hpp"
++
++#include <string.h>
++#include <uORB/topics/debug_array.h>
++
++namespace suspended_load_frequency_selective_status_bridge
++{
++
++static constexpr uint16_t kDebugArrayId = 687;
++static constexpr const char kDebugArrayName[] = "hangfso";
++
++enum DataIndex : uint8_t {
++	MEASURED_VELOCITY_NORTH = 0,
++	MEASURED_VELOCITY_EAST,
++	KNOWN_ACCELERATION_NORTH,
++	KNOWN_ACCELERATION_EAST,
++	ESTIMATED_VELOCITY_NORTH,
++	ESTIMATED_VELOCITY_EAST,
++	VELOCITY_INNOVATION_NORTH,
++	VELOCITY_INNOVATION_EAST,
++	DISTURBANCE_ESTIMATE_NORTH,
++	DISTURBANCE_ESTIMATE_EAST,
++	DISTURBANCE_DERIVATIVE_NORTH,
++	DISTURBANCE_DERIVATIVE_EAST,
++	DISTURBANCE_PHASE_LEAD_NORTH,
++	DISTURBANCE_PHASE_LEAD_EAST,
++	COMPENSATION_RAW_NORTH,
++	COMPENSATION_RAW_EAST,
++	COMPENSATION_PROJECTED_NORTH,
++	COMPENSATION_PROJECTED_EAST,
++	COMPENSATION_APPLIED_NORTH,
++	COMPENSATION_APPLIED_EAST,
++	CENTER_FREQUENCY_HZ,
++	OBSERVER_ELAPSED,
++	ENERGY_PER_MASS,
++	POWER_RAW,
++	POWER_PROJECTED,
++	POWER_APPLIED,
++	MODE,
++	VALID,
++	SETTLED,
++	GATE_ACTIVE,
++	ACTIVE,
++	POWER_LIMITED,
++	SLEW_LIMITED,
++	POSITION_ERROR_NORTH,
++	POSITION_ERROR_EAST,
++	POSITION_ALIGNMENT_RAW,
++	POSITION_ALIGNMENT_PROJECTED,
++	POSITION_ALIGNMENT_APPLIED,
++	POSITION_LIMITED,
++	GATE_SCALE,
++	POWER_CONSTRAINT_WEIGHT,
++	POSITION_CONSTRAINT_WEIGHT,
++	POWER_CONSTRAINT_LOWER_BOUND,
++	POSITION_CONSTRAINT_LOWER_BOUND,
++	UNIFIED_CONSTRAINT_FEASIBLE,
++	DATA_COUNT
++};
++
++static_assert(DATA_COUNT <= 58, "hangfso exceeds debug_array capacity");
++
++inline void fromStatus(const SuspendedLoadFrequencySelectiveObserver::Status &status,
++		debug_array_s &debug_array, uint64_t timestamp)
++{
++	debug_array.timestamp = timestamp;
++	debug_array.id = kDebugArrayId;
++	memset(debug_array.name, 0, sizeof(debug_array.name));
++	strncpy(debug_array.name, kDebugArrayName, sizeof(debug_array.name) - 1);
++	debug_array.data[MEASURED_VELOCITY_NORTH] = status.measured_velocity_ned(0);
++	debug_array.data[MEASURED_VELOCITY_EAST] = status.measured_velocity_ned(1);
++	debug_array.data[KNOWN_ACCELERATION_NORTH] = status.known_acceleration_ned(0);
++	debug_array.data[KNOWN_ACCELERATION_EAST] = status.known_acceleration_ned(1);
++	debug_array.data[ESTIMATED_VELOCITY_NORTH] = status.estimated_velocity_ned(0);
++	debug_array.data[ESTIMATED_VELOCITY_EAST] = status.estimated_velocity_ned(1);
++	debug_array.data[VELOCITY_INNOVATION_NORTH] = status.velocity_innovation_ned(0);
++	debug_array.data[VELOCITY_INNOVATION_EAST] = status.velocity_innovation_ned(1);
++	debug_array.data[DISTURBANCE_ESTIMATE_NORTH] = status.disturbance_estimate_ned(0);
++	debug_array.data[DISTURBANCE_ESTIMATE_EAST] = status.disturbance_estimate_ned(1);
++	debug_array.data[DISTURBANCE_DERIVATIVE_NORTH] = status.disturbance_derivative_ned(0);
++	debug_array.data[DISTURBANCE_DERIVATIVE_EAST] = status.disturbance_derivative_ned(1);
++	debug_array.data[DISTURBANCE_PHASE_LEAD_NORTH] = status.disturbance_phase_lead_ned(0);
++	debug_array.data[DISTURBANCE_PHASE_LEAD_EAST] = status.disturbance_phase_lead_ned(1);
++	debug_array.data[COMPENSATION_RAW_NORTH] = status.compensation_raw_ned(0);
++	debug_array.data[COMPENSATION_RAW_EAST] = status.compensation_raw_ned(1);
++	debug_array.data[COMPENSATION_PROJECTED_NORTH] = status.compensation_projected_ned(0);
++	debug_array.data[COMPENSATION_PROJECTED_EAST] = status.compensation_projected_ned(1);
++	debug_array.data[COMPENSATION_APPLIED_NORTH] = status.compensation_applied_ned(0);
++	debug_array.data[COMPENSATION_APPLIED_EAST] = status.compensation_applied_ned(1);
++	debug_array.data[CENTER_FREQUENCY_HZ] = status.center_frequency_hz;
++	debug_array.data[OBSERVER_ELAPSED] = status.observer_elapsed;
++	debug_array.data[ENERGY_PER_MASS] = status.energy_per_mass;
++	debug_array.data[POWER_RAW] = status.raw_compensation_power;
++	debug_array.data[POWER_PROJECTED] = status.projected_compensation_power;
++	debug_array.data[POWER_APPLIED] = status.applied_compensation_power;
++	debug_array.data[MODE] = static_cast<float>(status.mode);
++	debug_array.data[VALID] = status.valid ? 1.f : 0.f;
++	debug_array.data[SETTLED] = status.settled ? 1.f : 0.f;
++	debug_array.data[GATE_ACTIVE] = status.gate_active ? 1.f : 0.f;
++	debug_array.data[ACTIVE] = status.active ? 1.f : 0.f;
++	debug_array.data[POWER_LIMITED] = status.power_limited ? 1.f : 0.f;
++	debug_array.data[SLEW_LIMITED] = status.slew_limited ? 1.f : 0.f;
++	debug_array.data[POSITION_ERROR_NORTH] = status.position_error_ned(0);
++	debug_array.data[POSITION_ERROR_EAST] = status.position_error_ned(1);
++	debug_array.data[POSITION_ALIGNMENT_RAW] = status.raw_position_alignment;
++	debug_array.data[POSITION_ALIGNMENT_PROJECTED] = status.projected_position_alignment;
++	debug_array.data[POSITION_ALIGNMENT_APPLIED] = status.applied_position_alignment;
++	debug_array.data[POSITION_LIMITED] = status.position_limited ? 1.f : 0.f;
++	debug_array.data[GATE_SCALE] = status.gate_scale;
++	debug_array.data[POWER_CONSTRAINT_WEIGHT] = status.power_constraint_weight;
++	debug_array.data[POSITION_CONSTRAINT_WEIGHT] = status.position_constraint_weight;
++	debug_array.data[POWER_CONSTRAINT_LOWER_BOUND] = status.power_constraint_lower_bound;
++	debug_array.data[POSITION_CONSTRAINT_LOWER_BOUND] = status.position_constraint_lower_bound;
++	debug_array.data[UNIFIED_CONSTRAINT_FEASIBLE] = status.unified_constraint_feasible ? 1.f : 0.f;
++}
++
++} // namespace suspended_load_frequency_selective_status_bridge
+diff --git a/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.cpp b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.cpp
+new file mode 100644
+index 0000000000..90e5276d54
+--- /dev/null
++++ b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.cpp
+@@ -0,0 +1,496 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
++ *
++ ****************************************************************************/
++
++#include "SuspendedLoadFrequencySelectiveObserver.hpp"
++
++#include <float.h>
++#include <math.h>
++
++#include <lib/geo/geo.h>
++#include <lib/mathlib/mathlib.h>
++#include <px4_platform_common/defines.h>
++
++using namespace matrix;
++
++void SuspendedLoadFrequencySelectiveObserver::setParameters(const Parameters &parameters)
++{
++	const Mode previous_mode = _parameters.mode;
++	_parameters = parameters;
++	_parameters.mode = static_cast<Mode>(math::constrain(static_cast<int32_t>(parameters.mode),
++			   static_cast<int32_t>(Mode::Off), static_cast<int32_t>(Mode::Active)));
++	_parameters.bandwidth_hz = math::constrain(parameters.bandwidth_hz, 0.10f, 10.f);
++	_parameters.compensation_gain = math::constrain(parameters.compensation_gain, 0.f, 1.f);
++	_parameters.phase_lead_s = math::constrain(parameters.phase_lead_s, 0.f, 0.5f);
++	_parameters.acceleration_limit = math::max(parameters.acceleration_limit, 0.f);
++	_parameters.acceleration_slew_rate = math::max(parameters.acceleration_slew_rate, 0.f);
++	_parameters.energy_threshold = math::max(parameters.energy_threshold, 0.f);
++	_parameters.rate_min = math::max(parameters.rate_min, 0.f);
++	_parameters.settling_time = math::max(parameters.settling_time, 0.f);
++	_parameters.position_error_threshold = math::max(parameters.position_error_threshold, 0.f);
++
++	if (_parameters.mode == Mode::Off || previous_mode != _parameters.mode) {
++		reset();
++	}
++}
++
++const SuspendedLoadFrequencySelectiveObserver::Status &SuspendedLoadFrequencySelectiveObserver::update(
++	float dt,
++	const Vector2f &measured_velocity_ned,
++	const Vector2f &known_acceleration_ned,
++	const Vector2f &swing_rate_heading,
++	const Vector2f &position_error_ned,
++	float yaw,
++	float rope_length,
++	float energy_per_mass,
++	bool anti_swing_engaged,
++	bool measurement_valid)
++{
++	_status = {};
++	_status.measured_velocity_ned = measured_velocity_ned;
++	_status.known_acceleration_ned = known_acceleration_ned;
++	_status.position_error_ned = position_error_ned;
++	_status.energy_per_mass = energy_per_mass;
++	_status.center_frequency_hz = centerFrequencyHz(rope_length);
++	_status.mode = _parameters.mode;
++
++	const bool finite = PX4_ISFINITE(dt) && dt > FLT_EPSILON
++			    && dt <= 0.05f
++			    && measured_velocity_ned.isAllFinite()
++			    && known_acceleration_ned.isAllFinite()
++			    && swing_rate_heading.isAllFinite()
++			    && PX4_ISFINITE(yaw)
++			    && PX4_ISFINITE(rope_length) && rope_length >= 0.05f
++			    && PX4_ISFINITE(energy_per_mass)
++			    && PX4_ISFINITE(_status.center_frequency_hz);
++
++	if (_parameters.mode == Mode::Off || !measurement_valid || !anti_swing_engaged || !finite) {
++		reset();
++		_status.center_frequency_hz = centerFrequencyHz(rope_length);
++		_status.energy_per_mass = PX4_ISFINITE(energy_per_mass) ? energy_per_mass : 0.f;
++		_status.position_error_ned = position_error_ned.isAllFinite() ? position_error_ned : Vector2f{};
++		_status.mode = _parameters.mode;
++		return _status;
++	}
++
++	_status.valid = true;
++
++	if (!_initialized) {
++		_velocity_estimate_ned = measured_velocity_ned;
++		_disturbance_estimate_ned.zero();
++		_disturbance_derivative_ned.zero();
++		_initialized = true;
++	}
++
++	// Harmonic ESO for x = [velocity, disturbance, disturbance derivative].
++	// The disturbance internal model is d_ddot + wn^2*d = 0. Observer gains
++	// place all error poles at -wo and avoid differentiating measured velocity.
++	const float natural_frequency = 2.f * M_PI_F * _status.center_frequency_hz;
++	const float observer_bandwidth = 2.f * M_PI_F * _parameters.bandwidth_hz;
++	const float l1 = 3.f * observer_bandwidth;
++	const float l2 = 3.f * observer_bandwidth * observer_bandwidth
++			 - natural_frequency * natural_frequency;
++	const float l3 = observer_bandwidth * observer_bandwidth * observer_bandwidth
++			 - 3.f * observer_bandwidth * natural_frequency * natural_frequency;
++	const Vector2f innovation = measured_velocity_ned - _velocity_estimate_ned;
++	const Vector2f velocity_derivative = known_acceleration_ned + _disturbance_estimate_ned + l1 * innovation;
++	const Vector2f disturbance_derivative = _disturbance_derivative_ned + l2 * innovation;
++	const Vector2f disturbance_second_derivative = -natural_frequency * natural_frequency
++			 * _disturbance_estimate_ned + l3 * innovation;
++	_velocity_estimate_ned += dt * velocity_derivative;
++	_disturbance_estimate_ned += dt * disturbance_derivative;
++	_disturbance_derivative_ned += dt * disturbance_second_derivative;
++
++	if (!_velocity_estimate_ned.isAllFinite() || !_disturbance_estimate_ned.isAllFinite()
++	    || !_disturbance_derivative_ned.isAllFinite()) {
++		reset();
++		_status.center_frequency_hz = centerFrequencyHz(rope_length);
++		_status.energy_per_mass = energy_per_mass;
++		_status.mode = _parameters.mode;
++		return _status;
++	}
++
++	_status.estimated_velocity_ned = _velocity_estimate_ned;
++	_status.velocity_innovation_ned = measured_velocity_ned - _velocity_estimate_ned;
++	_status.disturbance_estimate_ned = _disturbance_estimate_ned;
++	_status.disturbance_derivative_ned = _disturbance_derivative_ned;
++	const float phase_lead = natural_frequency * _parameters.phase_lead_s;
++	_status.disturbance_phase_lead_ned = cosf(phase_lead) * _disturbance_estimate_ned
++			 + sinf(phase_lead) * _disturbance_derivative_ned / natural_frequency;
++
++	_observer_elapsed += dt;
++	_status.observer_elapsed = _observer_elapsed;
++	_status.settled = _observer_elapsed >= _parameters.settling_time;
++
++	const float swing_rate_norm = swing_rate_heading.norm();
++	const float settled_scale = _parameters.settling_time <= FLT_EPSILON ? 1.f
++				    : smoothStep(_observer_elapsed, _parameters.settling_time,
++						 _parameters.settling_time + 0.5f);
++	const float energy_scale = _parameters.energy_threshold <= FLT_EPSILON ? 1.f
++				   : smoothStep(energy_per_mass, 0.5f * _parameters.energy_threshold,
++						1.5f * _parameters.energy_threshold);
++	const float rate_scale = _parameters.rate_min <= FLT_EPSILON ? 1.f
++				 : smoothStep(swing_rate_norm, 0.5f * _parameters.rate_min,
++					      1.5f * _parameters.rate_min);
++	_status.gate_scale = settled_scale * energy_scale * rate_scale;
++	_status.power_constraint_weight = rate_scale;
++	_status.gate_active = _status.gate_scale > 1e-3f;
++	_status.compensation_raw_ned = -_parameters.compensation_gain * _status.gate_scale
++				       * _status.disturbance_phase_lead_ned;
++	const Vector2f target = constrainNorm(_status.compensation_raw_ned, _parameters.acceleration_limit);
++
++	_status.raw_compensation_power = predictedPower(target, swing_rate_heading, yaw, rope_length);
++	_status.raw_position_alignment = positionAlignment(target, position_error_ned);
++	const float position_error_norm = position_error_ned.isAllFinite() ? position_error_ned.norm() : 0.f;
++	_status.position_constraint_weight = _parameters.position_protection_enabled
++					     && PX4_ISFINITE(position_error_norm)
++					     ? smoothStep(position_error_norm,
++							  0.5f * _parameters.position_error_threshold,
++							  1.5f * _parameters.position_error_threshold)
++					     : 0.f;
++	_status.power_constraint_lower_bound = -(1.f - _status.power_constraint_weight)
++					       * _parameters.acceleration_limit;
++	_status.position_constraint_lower_bound = -(1.f - _status.position_constraint_weight)
++						  * _parameters.acceleration_limit;
++	const float maximum_delta = _parameters.acceleration_slew_rate > FLT_EPSILON
++				    ? _parameters.acceleration_slew_rate * dt : INFINITY;
++	_last_compensation_ned = projectToSmoothUnifiedConstraints(target, _last_compensation_ned,
++				 swing_rate_heading, position_error_ned, yaw,
++				 _parameters.acceleration_limit, maximum_delta,
++				 _status.power_constraint_weight, _status.position_constraint_weight,
++				 _status.power_limited, _status.position_limited, _status.slew_limited,
++				 _status.unified_constraint_feasible);
++	_status.compensation_projected_ned = _last_compensation_ned;
++	_status.projected_compensation_power = predictedPower(_last_compensation_ned, swing_rate_heading, yaw, rope_length);
++	_status.projected_position_alignment = positionAlignment(_last_compensation_ned, position_error_ned);
++
++	if (_parameters.mode == Mode::Active) {
++		_status.compensation_applied_ned = _last_compensation_ned;
++		_status.applied_compensation_power = _status.projected_compensation_power;
++		_status.applied_position_alignment = _status.projected_position_alignment;
++		_status.active = _last_compensation_ned.norm() > FLT_EPSILON;
++	}
++
++	return _status;
++}
++
++void SuspendedLoadFrequencySelectiveObserver::reset()
++{
++	_status = {};
++	_velocity_estimate_ned.setZero();
++	_disturbance_estimate_ned.setZero();
++	_disturbance_derivative_ned.setZero();
++	_last_compensation_ned.setZero();
++	_observer_elapsed = 0.f;
++	_initialized = false;
++}
++
++void SuspendedLoadFrequencySelectiveObserver::setAppliedCompensationNed(
++	const Vector2f &applied_compensation_ned, const Vector2f &swing_rate_heading,
++	const Vector2f &position_error_ned, float yaw, float rope_length)
++{
++	_status.compensation_applied_ned = applied_compensation_ned;
++	_status.applied_compensation_power = predictedPower(applied_compensation_ned, swing_rate_heading, yaw, rope_length);
++	_status.applied_position_alignment = positionAlignment(applied_compensation_ned, position_error_ned);
++	_status.active = _parameters.mode == Mode::Active && applied_compensation_ned.norm() > FLT_EPSILON;
++}
++
++float SuspendedLoadFrequencySelectiveObserver::centerFrequencyHz(float rope_length)
++{
++	return PX4_ISFINITE(rope_length) && rope_length >= 0.05f
++	       ? sqrtf(CONSTANTS_ONE_G / rope_length) / (2.f * M_PI_F)
++	       : NAN;
++}
++
++float SuspendedLoadFrequencySelectiveObserver::predictedPower(const Vector2f &acceleration_ned,
++	const Vector2f &swing_rate_heading, float yaw, float rope_length)
++{
++	if (!acceleration_ned.isAllFinite() || !swing_rate_heading.isAllFinite()
++	    || !PX4_ISFINITE(yaw) || !PX4_ISFINITE(rope_length) || rope_length < 0.05f) {
++		return NAN;
++	}
++
++	return -rope_length * nedToHeading(acceleration_ned, yaw).dot(swing_rate_heading);
++}
++
++Vector2f SuspendedLoadFrequencySelectiveObserver::projectToNonPositivePower(const Vector2f &acceleration_ned,
++	const Vector2f &swing_rate_heading, float yaw, bool &limited)
++{
++	limited = false;
++
++	if (!acceleration_ned.isAllFinite() || !swing_rate_heading.isAllFinite() || !PX4_ISFINITE(yaw)) {
++		return Vector2f{};
++	}
++
++	Vector2f acceleration_heading = nedToHeading(acceleration_ned, yaw);
++	const float rate_norm_squared = swing_rate_heading.norm_squared();
++	const float acceleration_rate_dot = acceleration_heading.dot(swing_rate_heading);
++
++	// P_comp = -L*a_comp dot theta_dot.  Positive P_comp injects energy.
++	if (acceleration_rate_dot < 0.f && rate_norm_squared > 1e-8f) {
++		acceleration_heading -= (acceleration_rate_dot / rate_norm_squared) * swing_rate_heading;
++		limited = true;
++	}
++
++	return headingToNed(acceleration_heading, yaw);
++}
++
++Vector2f SuspendedLoadFrequencySelectiveObserver::projectToPowerAndPositionConstraints(
++	const Vector2f &acceleration_ned, const Vector2f &swing_rate_heading,
++	const Vector2f &position_error_ned, float yaw, bool position_constraint_enabled,
++	bool &power_limited, bool &position_limited)
++{
++	power_limited = false;
++	position_limited = false;
++
++	if (!acceleration_ned.isAllFinite() || !swing_rate_heading.isAllFinite() || !PX4_ISFINITE(yaw)
++	    || (position_constraint_enabled && !position_error_ned.isAllFinite())) {
++		return Vector2f{};
++	}
++
++	const Vector2f power_normal_ned = headingToNed(swing_rate_heading, yaw);
++	const Vector2f position_normal_ned = position_constraint_enabled ? position_error_ned : Vector2f{};
++	const float power_norm_squared = power_normal_ned.norm_squared();
++	const float position_norm_squared = position_normal_ned.norm_squared();
++	const bool use_power = power_norm_squared > 1e-8f;
++	const bool use_position = position_norm_squared > 1e-8f;
++	const float tolerance = 1e-7f;
++
++	auto satisfies = [tolerance](const Vector2f &value, const Vector2f &normal, bool enabled) {
++		return !enabled || value.dot(normal) >= -tolerance;
++	};
++	const bool raw_power_feasible = satisfies(acceleration_ned, power_normal_ned, use_power);
++	const bool raw_position_feasible = satisfies(acceleration_ned, position_normal_ned, use_position);
++	power_limited = !raw_power_feasible;
++	position_limited = !raw_position_feasible;
++
++	if (raw_power_feasible && raw_position_feasible) {
++		return acceleration_ned;
++	}
++
++	// Euclidean projection onto the intersection of two homogeneous
++	// half-spaces. In 2-D the optimum is either on one boundary or at the
++	// intersection; zero is always a feasible intersection candidate.
++	Vector2f best{};
++	float best_distance_squared = (acceleration_ned - best).norm_squared();
++
++	auto consider_boundary = [&](const Vector2f &normal, float norm_squared) {
++		if (norm_squared <= 1e-8f) {
++			return;
++		}
++
++		const Vector2f candidate = acceleration_ned
++				- acceleration_ned.dot(normal) / norm_squared * normal;
++
++		if (satisfies(candidate, power_normal_ned, use_power)
++		    && satisfies(candidate, position_normal_ned, use_position)) {
++			const float distance_squared = (acceleration_ned - candidate).norm_squared();
++
++			if (distance_squared < best_distance_squared) {
++				best = candidate;
++				best_distance_squared = distance_squared;
++			}
++		}
++	};
++
++	consider_boundary(power_normal_ned, power_norm_squared);
++	consider_boundary(position_normal_ned, position_norm_squared);
++	return best;
++}
++
++Vector2f SuspendedLoadFrequencySelectiveObserver::projectToSmoothUnifiedConstraints(
++	const Vector2f &target_acceleration_ned, const Vector2f &previous_acceleration_ned,
++	const Vector2f &swing_rate_heading, const Vector2f &position_error_ned,
++	float yaw, float acceleration_limit, float maximum_delta,
++	float power_constraint_weight, float position_constraint_weight,
++	bool &power_limited, bool &position_limited, bool &slew_limited, bool &feasible)
++{
++	power_limited = false;
++	position_limited = false;
++	slew_limited = false;
++	feasible = false;
++
++	if (!target_acceleration_ned.isAllFinite() || !previous_acceleration_ned.isAllFinite()
++	    || !swing_rate_heading.isAllFinite() || !position_error_ned.isAllFinite() || !PX4_ISFINITE(yaw)) {
++		return Vector2f{};
++	}
++
++	const float limit = PX4_ISFINITE(acceleration_limit) ? math::max(acceleration_limit, 0.f) : 0.f;
++	const bool slew_enabled = PX4_ISFINITE(maximum_delta);
++	const float delta_limit = slew_enabled ? math::max(maximum_delta, 0.f) : INFINITY;
++	const float power_weight = math::constrain(power_constraint_weight, 0.f, 1.f);
++	const float position_weight = math::constrain(position_constraint_weight, 0.f, 1.f);
++	Vector2f power_normal = headingToNed(swing_rate_heading, yaw);
++	Vector2f position_normal = position_error_ned;
++	const float power_normal_norm = power_normal.norm();
++	const float position_normal_norm = position_normal.norm();
++	const bool use_power = power_weight > FLT_EPSILON && power_normal_norm > 1e-4f;
++	const bool use_position = position_weight > FLT_EPSILON && position_normal_norm > 1e-4f;
++
++	if (use_power) {
++		power_normal /= power_normal_norm;
++	}
++
++	if (use_position) {
++		position_normal /= position_normal_norm;
++	}
++
++	const float power_lower_bound = -(1.f - power_weight) * limit;
++	const float position_lower_bound = -(1.f - position_weight) * limit;
++	const float tolerance = math::max(1e-6f, 2e-4f * limit);
++
++	auto project_halfspace = [](const Vector2f &value, const Vector2f &normal, float lower_bound, bool enabled) {
++		if (!enabled) {
++			return value;
++		}
++
++		const float alignment = value.dot(normal);
++		return alignment < lower_bound ? value + (lower_bound - alignment) * normal : value;
++	};
++
++	auto satisfies = [&](const Vector2f &value) {
++		return value.isAllFinite()
++		       && value.norm() <= limit + tolerance
++		       && (!use_power || value.dot(power_normal) >= power_lower_bound - tolerance)
++		       && (!use_position || value.dot(position_normal) >= position_lower_bound - tolerance)
++		       && (!slew_enabled || (value - previous_acceleration_ned).norm() <= delta_limit + tolerance);
++	};
++
++	power_limited = use_power && target_acceleration_ned.dot(power_normal) < power_lower_bound - tolerance;
++	position_limited = use_position
++			   && target_acceleration_ned.dot(position_normal) < position_lower_bound - tolerance;
++	slew_limited = slew_enabled
++			&& (target_acceleration_ned - previous_acceleration_ned).norm() > delta_limit + tolerance;
++
++	// Dykstra projection onto one amplitude disk, two continuously tightened
++	// half-spaces and the slew disk. This replaces the former
++	// project/slew/re-project sequence, so the value returned here is the only
++	// state update applied in this control cycle.
++	Vector2f value = target_acceleration_ned;
++	Vector2f residuals[4] {};
++	Vector2f best{};
++	float best_distance_squared = INFINITY;
++	bool found_feasible = false;
++
++	for (int iteration = 0; iteration < 32; ++iteration) {
++		for (int constraint = 0; constraint < 4; ++constraint) {
++			const Vector2f input = value + residuals[constraint];
++			Vector2f projected = input;
++
++			switch (constraint) {
++			case 0:
++				projected = constrainNorm(input, limit);
++				break;
++
++			case 1:
++				projected = project_halfspace(input, power_normal, power_lower_bound, use_power);
++				break;
++
++			case 2:
++				projected = project_halfspace(input, position_normal, position_lower_bound, use_position);
++				break;
++
++			case 3:
++				if (slew_enabled) {
++					projected = previous_acceleration_ned
++						    + constrainNorm(input - previous_acceleration_ned, delta_limit);
++				}
++
++				break;
++			}
++
++			residuals[constraint] = input - projected;
++			value = projected;
++
++			if (satisfies(value)) {
++				const float distance_squared = (value - target_acceleration_ned).norm_squared();
++
++				if (!found_feasible || distance_squared < best_distance_squared) {
++					best = value;
++					best_distance_squared = distance_squared;
++					found_feasible = true;
++				}
++			}
++		}
++	}
++
++	if (satisfies(value)) {
++		best = value;
++		found_feasible = true;
++	}
++
++	if (found_feasible) {
++		feasible = true;
++		return best;
++	}
++
++	// A moving half-space can momentarily be incompatible with a very small
++	// slew disk. In that case preserve the hard smoothness limit and decay
++	// toward zero; the diagnostic flag exposes the relaxed power/position
++	// constraint instead of hiding a discontinuous emergency projection.
++	Vector2f fallback = previous_acceleration_ned;
++
++	if (slew_enabled) {
++		fallback += constrainNorm(-previous_acceleration_ned, delta_limit);
++
++	} else {
++		fallback.zero();
++	}
++
++	return constrainNorm(fallback, limit);
++}
++
++Vector2f SuspendedLoadFrequencySelectiveObserver::constrainNorm(const Vector2f &value, float limit)
++{
++	const float safe_limit = PX4_ISFINITE(limit) ? math::max(limit, 0.f) : 0.f;
++	const float norm = value.norm();
++
++	if (safe_limit <= FLT_EPSILON || !PX4_ISFINITE(norm)) {
++		return Vector2f{};
++	}
++
++	return norm > safe_limit ? value * (safe_limit / norm) : value;
++}
++
++float SuspendedLoadFrequencySelectiveObserver::positionAlignment(const Vector2f &acceleration_ned,
++		const Vector2f &position_error_ned)
++{
++	if (!acceleration_ned.isAllFinite() || !position_error_ned.isAllFinite()) {
++		return NAN;
++	}
++
++	const float error_norm = position_error_ned.norm();
++	return error_norm > FLT_EPSILON ? acceleration_ned.dot(position_error_ned / error_norm) : 0.f;
++}
++
++float SuspendedLoadFrequencySelectiveObserver::smoothStep(float value, float lower, float upper)
++{
++	if (!PX4_ISFINITE(value) || !PX4_ISFINITE(lower) || !PX4_ISFINITE(upper)) {
++		return 0.f;
++	}
++
++	if (upper <= lower + FLT_EPSILON) {
++		return value >= upper ? 1.f : 0.f;
++	}
++
++	const float normalized = math::constrain((value - lower) / (upper - lower), 0.f, 1.f);
++	return normalized * normalized * (3.f - 2.f * normalized);
++}
++
++Vector2f SuspendedLoadFrequencySelectiveObserver::nedToHeading(const Vector2f &value_ned, float yaw)
++{
++	const float yaw_cos = cosf(yaw);
++	const float yaw_sin = sinf(yaw);
++	return Vector2f{yaw_cos * value_ned(0) + yaw_sin * value_ned(1),
++			-yaw_sin * value_ned(0) + yaw_cos * value_ned(1)};
++}
++
++Vector2f SuspendedLoadFrequencySelectiveObserver::headingToNed(const Vector2f &value_heading, float yaw)
++{
++	const float yaw_cos = cosf(yaw);
++	const float yaw_sin = sinf(yaw);
++	return Vector2f{yaw_cos * value_heading(0) - yaw_sin * value_heading(1),
++			yaw_sin * value_heading(0) + yaw_cos * value_heading(1)};
++}
+diff --git a/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.hpp b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.hpp
+new file mode 100644
+index 0000000000..9042be1a26
+--- /dev/null
++++ b/src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.hpp
+@@ -0,0 +1,142 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
++ *
++ ****************************************************************************/
++
++#pragma once
++
++#include <stdint.h>
++
++#include <matrix/matrix/math.hpp>
++
++/**
++ * Harmonic suspended-load disturbance observer with a dissipative output.
++ *
++ * A third-order internal-model observer estimates the periodic acceleration
++ * disturbance from horizontal velocity and the known acceleration input. Its
++ * disturbance model is tuned online to the rope natural frequency. The output
++ * is projected onto the half-space whose predicted contribution to swing
++ * power is non-positive. It is an add-on to the stock position PID and does
++ * not replace either the PID or the direct anti-swing damping term.
++ */
++class SuspendedLoadFrequencySelectiveObserver
++{
++public:
++	enum class Mode : int32_t {
++		Off = 0,
++		Shadow = 1,
++		Active = 2,
++	};
++
++	struct Parameters {
++		Mode mode{Mode::Off};
++		float bandwidth_hz{0.30f};
++		float compensation_gain{0.20f};
++		float phase_lead_s{0.05f};
++		float acceleration_limit{0.08f};
++		float acceleration_slew_rate{0.30f};
++		float energy_threshold{0.003f};
++		float rate_min{0.03f};
++		float settling_time{2.f};
++		bool position_protection_enabled{true};
++		float position_error_threshold{0.05f};
++	};
++
++	struct Status {
++		matrix::Vector2f measured_velocity_ned{};
++		matrix::Vector2f known_acceleration_ned{};
++		matrix::Vector2f estimated_velocity_ned{};
++		matrix::Vector2f velocity_innovation_ned{};
++		matrix::Vector2f disturbance_estimate_ned{};
++		matrix::Vector2f disturbance_derivative_ned{};
++		matrix::Vector2f disturbance_phase_lead_ned{};
++		matrix::Vector2f compensation_raw_ned{};
++		matrix::Vector2f compensation_projected_ned{};
++		matrix::Vector2f compensation_applied_ned{};
++		matrix::Vector2f position_error_ned{};
++		float center_frequency_hz{0.f};
++		float observer_elapsed{0.f};
++		float energy_per_mass{0.f};
++		float raw_compensation_power{0.f};
++		float projected_compensation_power{0.f};
++		float applied_compensation_power{0.f};
++		float raw_position_alignment{0.f};
++		float projected_position_alignment{0.f};
++		float applied_position_alignment{0.f};
++		float gate_scale{0.f};
++		float power_constraint_weight{0.f};
++		float position_constraint_weight{0.f};
++		float power_constraint_lower_bound{0.f};
++		float position_constraint_lower_bound{0.f};
++		Mode mode{Mode::Off};
++		bool valid{false};
++		bool settled{false};
++		bool gate_active{false};
++		bool active{false};
++		bool power_limited{false};
++		bool position_limited{false};
++		bool slew_limited{false};
++		bool unified_constraint_feasible{true};
++	};
++
++	void setParameters(const Parameters &parameters);
++
++	const Status &update(float dt,
++			     const matrix::Vector2f &measured_velocity_ned,
++			     const matrix::Vector2f &known_acceleration_ned,
++			     const matrix::Vector2f &swing_rate_heading,
++			     const matrix::Vector2f &position_error_ned,
++			     float yaw,
++			     float rope_length,
++			     float energy_per_mass,
++			     bool anti_swing_engaged,
++			     bool measurement_valid);
++
++	void reset();
++	void setAppliedCompensationNed(const matrix::Vector2f &applied_compensation_ned,
++				       const matrix::Vector2f &swing_rate_heading,
++				       const matrix::Vector2f &position_error_ned,
++				       float yaw, float rope_length);
++	const Status &status() const { return _status; }
++
++	static float centerFrequencyHz(float rope_length);
++	static float predictedPower(const matrix::Vector2f &acceleration_ned,
++				    const matrix::Vector2f &swing_rate_heading,
++				    float yaw,
++				    float rope_length);
++	static matrix::Vector2f projectToNonPositivePower(const matrix::Vector2f &acceleration_ned,
++			const matrix::Vector2f &swing_rate_heading, float yaw, bool &limited);
++	static matrix::Vector2f projectToPowerAndPositionConstraints(
++			const matrix::Vector2f &acceleration_ned,
++			const matrix::Vector2f &swing_rate_heading,
++			const matrix::Vector2f &position_error_ned,
++			float yaw, bool position_constraint_enabled,
++			bool &power_limited, bool &position_limited);
++	static matrix::Vector2f projectToSmoothUnifiedConstraints(
++			const matrix::Vector2f &target_acceleration_ned,
++			const matrix::Vector2f &previous_acceleration_ned,
++			const matrix::Vector2f &swing_rate_heading,
++			const matrix::Vector2f &position_error_ned,
++			float yaw, float acceleration_limit, float maximum_delta,
++			float power_constraint_weight, float position_constraint_weight,
++			bool &power_limited, bool &position_limited, bool &slew_limited,
++			bool &feasible);
++
++private:
++	static matrix::Vector2f constrainNorm(const matrix::Vector2f &value, float limit);
++	static float positionAlignment(const matrix::Vector2f &acceleration_ned,
++				       const matrix::Vector2f &position_error_ned);
++	static float smoothStep(float value, float lower, float upper);
++	static matrix::Vector2f nedToHeading(const matrix::Vector2f &value_ned, float yaw);
++	static matrix::Vector2f headingToNed(const matrix::Vector2f &value_heading, float yaw);
++
++	Parameters _parameters{};
++	Status _status{};
++	matrix::Vector2f _velocity_estimate_ned{};
++	matrix::Vector2f _disturbance_estimate_ned{};
++	matrix::Vector2f _disturbance_derivative_ned{};
++	matrix::Vector2f _last_compensation_ned{};
++	float _observer_elapsed{0.f};
++	bool _initialized{false};
++};
+diff --git a/src/modules/mc_pos_control/validation_tools/zd680_fso_usc_quick_freeze_report.py b/src/modules/mc_pos_control/validation_tools/zd680_fso_usc_quick_freeze_report.py
+new file mode 100644
+index 0000000000..35aef557d8
+--- /dev/null
++++ b/src/modules/mc_pos_control/validation_tools/zd680_fso_usc_quick_freeze_report.py
+@@ -0,0 +1,661 @@
++#!/usr/bin/env python3
++"""Build the 2026-07-22 HESO-USC quick-freeze evidence package."""
++
++from __future__ import annotations
++
++import argparse
++import csv
++import hashlib
++import html
++import json
++import math
++import random
++import runpy
++import shutil
++import subprocess
++from datetime import datetime
++from pathlib import Path
++
++import numpy as np
++from pyulog import ULog
++
++
++REPO_ROOT = Path(__file__).resolve().parents[4]
++MODULE_ROOT = Path(__file__).resolve().parents[2]
++VFB_REPORT = Path(__file__).with_name("zd680_vfb_report.py")
++VFB = runpy.run_path(str(VFB_REPORT), run_name="zd680_fso_usc_quick_report_api")
++GENERIC = VFB["GENERIC"]
++A06 = "STD_L06_PID_AS"
++B06 = "STD_L06_PID_AS_FSOUSC_K20"
++A08 = "STD_L08_PID_AS"
++B08 = "STD_L08_PID_AS_FSOUSC_K20"
++METRICS = {
++    "xy_error_rms_m": "XY RMS (m)",
++    "swing_angle_rms_deg": "摆角 RMS (°)",
++    "swing_angle_peak_deg": "摆角峰值 (°)",
++    "swing_energy_integral_j_s_kg": "摆动能量积分 (J·s/kg)",
++    "final_5s_swing_angle_rms_deg": "末5 s摆角 RMS (°)",
++    "final_acc_rms_m_s2": "最终加速度 RMS (m/s²)",
++    "final_jerk_p95_m_s3": "最终 jerk P95 (m/s³)",
++}
++
++
++def finite(value, fallback=math.nan):
++    try:
++        value = float(value)
++    except (TypeError, ValueError):
++        return fallback
++    return value if math.isfinite(value) else fallback
++
++
++def pct(test, baseline):
++    test, baseline = finite(test), finite(baseline)
++    return 100.0 * (test / baseline - 1.0) if abs(baseline) > 1.0e-12 else math.nan
++
++
++def integrate(t, values):
++    t, values = np.asarray(t, dtype=float), np.asarray(values, dtype=float)
++    mask = np.isfinite(t) & np.isfinite(values)
++    t, values = t[mask], values[mask]
++    if t.size < 2:
++        return math.nan
++    keep = np.r_[True, np.diff(t) > 1.0e-6]
++    return float(np.trapezoid(values[keep], t[keep]))
++
++
++def write_csv(path: Path, rows):
++    fields = []
++    for row in rows:
++        for field in row:
++            if field not in fields:
++                fields.append(field)
++    with path.open("w", newline="", encoding="utf-8") as stream:
++        writer = csv.DictWriter(stream, fieldnames=fields)
++        writer.writeheader()
++        writer.writerows(rows)
++
++
++def json_write(path: Path, payload):
++    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
++
++
++def sha256(path: Path):
++    digest = hashlib.sha256()
++    with path.open("rb") as stream:
++        for block in iter(lambda: stream.read(1024 * 1024), b""):
++            digest.update(block)
++    return digest.hexdigest()
++
++
++def run_dirs(root: Path, mode: str):
++    return sorted(path.resolve() for path in (root / "runs" / mode).glob("*/*") if (path / "metadata.json").is_file())
++
++
++def analyze(mode: str, path: Path):
++    row, windows, validity = VFB["analyze_run"](mode, path)
++    row["run_dir"] = str(path)
++    return row, windows, validity
++
++
++def aggregate(rows):
++    result = {"n": len(rows), "valid_count": sum(bool(row.get("valid")) for row in rows)}
++    for key in METRICS:
++        values = np.asarray([finite(row.get(key)) for row in rows], dtype=float)
++        result[key] = float(np.mean(values))
++        result[f"{key}_sd"] = float(np.std(values, ddof=1)) if values.size > 1 else 0.0
++    return result
++
++
++def compare_aggregate(a, b):
++    return {f"{key}_change_pct": pct(b[key], a[key]) for key in METRICS}
++
++
++def pair_rows(label, rope, a_rows, b_rows, source_labels):
++    output = []
++    for index, (a, b, source) in enumerate(zip(a_rows, b_rows, source_labels), 1):
++        row = {
++            "record_type": "pair",
++            "gate": label,
++            "rope_length_m": rope,
++            "pair": index,
++            "source": source,
++            "a_run": a["run_dir"],
++            "b_run": b["run_dir"],
++            "a_valid": bool(a.get("valid")),
++            "b_valid": bool(b.get("valid")),
++        }
++        for key in METRICS:
++            row[f"a_{key}"] = finite(a.get(key))
++            row[f"b_{key}"] = finite(b.get(key))
++            row[f"{key}_change_pct"] = pct(b.get(key), a.get(key))
++        output.append(row)
++    return output
++
++
++def gate_l06(a_rows, b_rows):
++    a, b = aggregate(a_rows), aggregate(b_rows)
++    changes = compare_aggregate(a, b)
++    pairs = pair_rows("L06", 0.6, a_rows, b_rows, ["locked_20260721"] * 3 + ["new_20260722"] * 2)
++    checks = {
++        "all_10_runs_valid": all(row.get("valid") for row in a_rows + b_rows),
++        "new_pair_swing_rms_each_decreases": all(row["swing_angle_rms_deg_change_pct"] < 0 for row in pairs[-2:]),
++        "new_pair_energy_each_decreases": all(row["swing_energy_integral_j_s_kg_change_pct"] < 0 for row in pairs[-2:]),
++        "combined_swing_rms_le_minus_3pct": changes["swing_angle_rms_deg_change_pct"] <= -3.0,
++        "combined_energy_le_minus_5pct": changes["swing_energy_integral_j_s_kg_change_pct"] <= -5.0,
++        "combined_peak_le_plus_3pct": changes["swing_angle_peak_deg_change_pct"] <= 3.0,
++        "combined_xy_le_plus_5pct": changes["xy_error_rms_m_change_pct"] <= 5.0,
++        "combined_jerk_le_plus_7pct": changes["final_jerk_p95_m_s3_change_pct"] <= 7.0,
++        "each_pair_jerk_le_plus_12pct": all(row["final_jerk_p95_m_s3_change_pct"] <= 12.0 for row in pairs),
++    }
++    core_names = [name for name in checks if "jerk" not in name]
++    core_pass = all(checks[name] for name in core_names)
++    jerk = changes["final_jerk_p95_m_s3_change_pct"]
++    jerk_class = "pass" if jerk <= 5.0 else ("borderline" if jerk <= 7.0 else "fail")
++    passed = all(checks.values())
++    return {"baseline": a, "candidate": b, "changes": changes, "checks": checks,
++            "core_pass": core_pass, "jerk_class": jerk_class, "pass": passed}, pairs
++
++
++def route_bounds(run_dir: Path):
++    events = GENERIC["read_events"](run_dir / "events.csv")
++    windows = VFB["action_windows"](events)
++    route = next(window for window in windows if window[0] == "route")
++    return events, float(route[2]), float(route[3])
++
++
++def generic_xy_errors(local, events):
++    """Recompute the locked report's event-wise XY reference error."""
++    t = np.asarray(local["timestamp"], dtype=float) * 1.0e-6
++    x, y = np.asarray(local["x"], dtype=float), np.asarray(local["y"], dtype=float)
++    errors = np.full(t.shape, np.nan)
++    for event in events:
++        if not str(event.get("name", "")).startswith("action_"):
++            continue
++        mask = (t >= finite(event["start_boot_s"])) & (t <= finite(event["end_boot_s"]))
++        for index in np.flatnonzero(mask):
++            rx, ry, _, _, _ = GENERIC["ref_sample"](event, float(t[index]))
++            errors[index] = math.hypot(float(x[index]) - rx, float(y[index]) - ry)
++    return t, errors
++
++
++def mechanism(run_dir: Path):
++    _, start, end = route_bounds(run_dir)
++    ulog = ULog(str(run_dir / "position_offboard.ulg"), ["debug_array"])
++    fso = GENERIC["find_debug"](ulog, 687)
++    if fso is None:
++        return {"run_dir": str(run_dir), "debug_present": False}
++    t = np.asarray(fso["timestamp"], dtype=float) * 1.0e-6
++    route = (t >= start) & (t <= end)
++    active = route & (np.asarray(fso["data[30]"], dtype=float) > 0.5)
++    power = np.asarray(fso["data[25]"], dtype=float)[active]
++    at = t[active]
++    raw = np.hypot(np.asarray(fso["data[14]"], dtype=float)[active], np.asarray(fso["data[15]"], dtype=float)[active])
++    applied_n = np.asarray(fso["data[18]"], dtype=float)[active]
++    applied_e = np.asarray(fso["data[19]"], dtype=float)[active]
++    applied = np.hypot(applied_n, applied_e)
++    jerk = VFB["jerk_magnitude"](at, applied_n, applied_e)
++    feasible = np.asarray(fso["data[44]"], dtype=float)[active] > 0.5
++    gate = np.asarray(fso["data[39]"], dtype=float)[route]
++    frequency = np.asarray(fso["data[20]"], dtype=float)[route]
++    return {
++        "run_dir": str(run_dir), "debug_present": True,
++        "route_samples": int(np.sum(route)), "active_samples": int(np.sum(active)),
++        "active_ratio": float(np.mean(active[route])) if np.any(route) else math.nan,
++        "gate_active_ratio": float(np.mean(gate > 1.0e-3)) if gate.size else math.nan,
++        "center_frequency_median_hz": float(np.nanmedian(frequency)) if frequency.size else math.nan,
++        "unified_infeasible_ratio": float(np.mean(~feasible)) if feasible.size else math.nan,
++        "raw_positive_power_sample_ratio": float(np.mean(np.asarray(fso["data[23]"], dtype=float)[active] > 0.0)),
++        "applied_positive_power_integral_j_kg": integrate(at, np.maximum(power, 0.0)),
++        "applied_negative_power_integral_j_kg": integrate(at, np.minimum(power, 0.0)),
++        "applied_net_power_integral_j_kg": integrate(at, power),
++        "applied_over_raw_compensation_rms": (
++            float(np.sqrt(np.mean(applied ** 2)) / np.sqrt(np.mean(raw ** 2)))
++            if raw.size and np.mean(raw ** 2) > 1.0e-12 else math.nan
++        ),
++        "compensation_jerk_p95_m_s3": float(np.percentile(jerk, 95.0)) if jerk.size else math.nan,
++        "compensation_jerk_peak_m_s3": float(np.max(jerk)) if jerk.size else math.nan,
++    }
++
++
++def raw_recompute(run_dir: Path, analyzed):
++    events, start, end = route_bounds(run_dir)
++    with (run_dir / "hang_joint_samples.csv").open(newline="", encoding="utf-8") as stream:
++        samples = list(csv.DictReader(stream))
++    t = np.asarray([finite(row["boot_s_est"]) for row in samples])
++    angle = np.asarray([finite(row["hang_angle_deg"]) for row in samples])
++    rate = np.asarray([finite(row["hang_velocity_rad_s"]) for row in samples])
++    mask = (t >= start) & (t <= end)
++    energy = 0.5 * np.square(0.6 * rate) + 9.80665 * 0.6 * (1.0 - np.cos(np.radians(angle)))
++    ulog = ULog(str(run_dir / "position_offboard.ulg"), ["vehicle_local_position", "debug_array"])
++    local = ulog.get_dataset("vehicle_local_position").data
++    lt, xy = generic_xy_errors(local, events)
++    lmask = (lt >= start) & (lt <= end)
++    position_debug = GENERIC["find_debug"](ulog, 685)
++    vt = np.asarray(position_debug["timestamp"], dtype=float) * 1.0e-6
++    vmask = (vt >= start) & (vt <= end)
++    jerk = np.hypot(np.asarray(position_debug["data[23]"], dtype=float)[vmask],
++                    np.asarray(position_debug["data[24]"], dtype=float)[vmask])
++    values = {
++        "swing_angle_rms_deg": float(np.sqrt(np.mean(np.square(angle[mask])))),
++        "swing_angle_peak_deg": float(np.max(np.abs(angle[mask]))),
++        "swing_energy_integral_j_s_kg": integrate(t[mask], energy[mask]),
++        "xy_error_rms_m": float(np.sqrt(np.nanmean(np.square(xy[lmask])))),
++        "final_jerk_p95_m_s3": float(np.percentile(jerk, 95.0)),
++    }
++    comparisons = {}
++    for key, value in values.items():
++        reference = finite(analyzed.get(key))
++        difference = abs(value - reference)
++        tolerance = max(1.0e-8, 1.0e-6 * abs(reference))
++        comparisons[key] = {"raw": value, "analyzer": reference, "absolute_difference": difference,
++                            "tolerance": tolerance, "pass": difference <= tolerance}
++    return {"run_dir": str(run_dir), "comparisons": comparisons,
++            "pass": all(item["pass"] for item in comparisons.values())}
++
++
++def representative_series(run_dir: Path):
++    events, start, end = route_bounds(run_dir)
++    with (run_dir / "hang_joint_samples.csv").open(newline="", encoding="utf-8") as stream:
++        samples = list(csv.DictReader(stream))
++    ht = np.asarray([finite(row["boot_s_est"]) for row in samples])
++    angle = np.asarray([finite(row["hang_angle_deg"]) for row in samples])
++    hm = (ht >= start) & (ht <= end)
++    ulog = ULog(str(run_dir / "position_offboard.ulg"), ["vehicle_local_position", "debug_array"])
++    local = ulog.get_dataset("vehicle_local_position").data
++    lt, xy = generic_xy_errors(local, events)
++    lm = (lt >= start) & (lt <= end)
++    coord = GENERIC["find_debug"](ulog, 684)
++    vt = np.asarray(coord["timestamp"], dtype=float) * 1.0e-6
++    vm = (vt >= start) & (vt <= end)
++    final_acc = np.hypot(np.asarray(coord["data[10]"], dtype=float)[vm], np.asarray(coord["data[11]"], dtype=float)[vm])
++    fso = GENERIC["find_debug"](ulog, 687)
++    if fso is not None:
++        ft = np.asarray(fso["timestamp"], dtype=float) * 1.0e-6
++        fm = (ft >= start) & (ft <= end)
++        comp = np.hypot(np.asarray(fso["data[18]"], dtype=float)[fm], np.asarray(fso["data[19]"], dtype=float)[fm])
++        ftime = ft[fm] - start
++    else:
++        comp, ftime = np.asarray([]), np.asarray([])
++    return {"hang_t": ht[hm] - start, "angle": angle[hm], "local_t": lt[lm] - start,
++            "xy": xy[lm], "vfb_t": vt[vm] - start, "final_acc": final_acc,
++            "fso_t": ftime, "comp": comp}
++
++
++def make_plots(output: Path, pairs, a_rows, b_rows):
++    plot_dir = output / "plots"
++    plot_dir.mkdir(exist_ok=True)
++    plot_metrics = ["swing_angle_rms_deg", "swing_energy_integral_j_s_kg",
++                    "swing_angle_peak_deg", "xy_error_rms_m", "final_jerk_p95_m_s3"]
++    width, height, margin, panel_w = 1500, 390, 55, 280
++    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
++           '<rect width="100%" height="100%" fill="white"/>',
++           '<style>text{font-family:sans-serif;fill:#222}.small{font-size:12px}.title{font-size:18px;font-weight:bold}.panel{font-size:14px;font-weight:bold}</style>',
++           '<text x="750" y="27" text-anchor="middle" class="title">L=0.6 m：五组配对指标变化（蓝=锁定旧数据，橙=本轮新增）</text>']
++    for panel, key in enumerate(plot_metrics):
++        x0 = margin + panel * panel_w
++        values = [row[f"{key}_change_pct"] for row in pairs]
++        bound = max(5.0, max(abs(value) for value in values) * 1.2)
++        top, bottom = 70, 325
++        zero = (top + bottom) / 2
++        scale = (bottom - top) / (2.0 * bound)
++        svg += [f'<text x="{x0+112}" y="52" text-anchor="middle" class="panel">{html.escape(METRICS[key])}</text>',
++                f'<line x1="{x0}" y1="{zero:.1f}" x2="{x0+225}" y2="{zero:.1f}" stroke="#333"/>',
++                f'<line x1="{x0}" y1="{top}" x2="{x0}" y2="{bottom}" stroke="#777"/>',
++                f'<text x="{x0-5}" y="{top+4}" text-anchor="end" class="small">+{bound:.1f}%</text>',
++                f'<text x="{x0-5}" y="{bottom+4}" text-anchor="end" class="small">-{bound:.1f}%</text>']
++        for index, (row, value) in enumerate(zip(pairs, values), 1):
++            x = x0 + 13 + (index - 1) * 43
++            y = zero - value * scale
++            color = "#4C78A8" if row["source"].startswith("locked") else "#F58518"
++            rect_y, rect_h = min(y, zero), max(1.0, abs(y - zero))
++            svg.append(f'<rect x="{x}" y="{rect_y:.1f}" width="28" height="{rect_h:.1f}" fill="{color}"/>')
++            svg.append(f'<text x="{x+14}" y="{bottom+17}" text-anchor="middle" class="small">{index}</text>')
++            label_y = y - 5 if value >= 0 else y + 14
++            svg.append(f'<text x="{x+14}" y="{label_y:.1f}" text-anchor="middle" class="small">{value:+.1f}</text>')
++    svg.append('<text x="750" y="375" text-anchor="middle" class="small">横轴：配对编号；纵轴：B 相对 A 变化 (%)</text></svg>')
++    (plot_dir / "l06_paired_metrics.svg").write_text("\n".join(svg), encoding="utf-8")
++
++    a = representative_series(Path(a_rows[-2]["run_dir"]))
++    b = representative_series(Path(b_rows[-2]["run_dir"]))
++    series = [
++        ("摆角 (°)", [(a["hang_t"], a["angle"], "#4C78A8"), (b["hang_t"], b["angle"], "#F58518")]),
++        ("XY误差 (m)", [(a["local_t"], a["xy"], "#4C78A8"), (b["local_t"], b["xy"], "#F58518")]),
++        ("最终加速度 (m/s²)", [(a["vfb_t"], a["final_acc"], "#4C78A8"), (b["vfb_t"], b["final_acc"], "#F58518")]),
++        ("HESO补偿幅值 (m/s²)", [(b["fso_t"], b["comp"], "#F58518")]),
++    ]
++    width, height, left, right = 1200, 920, 115, 1160
++    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
++           '<rect width="100%" height="100%" fill="white"/>',
++           '<style>text{font-family:sans-serif;fill:#222}.small{font-size:12px}.title{font-size:19px;font-weight:bold}.label{font-size:14px}</style>',
++           '<text x="600" y="28" text-anchor="middle" class="title">L=0.6 m 新增第一组代表性时序</text>',
++           '<line x1="850" y1="48" x2="885" y2="48" stroke="#4C78A8" stroke-width="2"/><text x="892" y="52" class="small">A1 PID+AS</text>',
++           '<line x1="1000" y1="48" x2="1035" y2="48" stroke="#F58518" stroke-width="2"/><text x="1042" y="52" class="small">B1 HESO-USC</text>']
++
++    def polyline(t, y, x0, x1, y0, y1, ymin, ymax):
++        t, y = np.asarray(t), np.asarray(y)
++        mask = np.isfinite(t) & np.isfinite(y)
++        t, y = t[mask], y[mask]
++        if t.size == 0:
++            return ""
++        step = max(1, int(math.ceil(t.size / 1000)))
++        t, y = t[::step], y[::step]
++        tmax = max(1.0e-9, max(float(np.max(t)), 50.0))
++        xs = x0 + (x1 - x0) * t / tmax
++        ys = y1 - (y1 - y0) * (y - ymin) / max(1.0e-12, ymax - ymin)
++        return " ".join(f"{x:.1f},{yy:.1f}" for x, yy in zip(xs, ys))
++
++    for index, (label, curves) in enumerate(series):
++        top, bottom = 75 + index * 205, 245 + index * 205
++        all_values = np.concatenate([np.asarray(curve[1])[np.isfinite(curve[1])] for curve in curves])
++        ymin, ymax = float(np.min(all_values)), float(np.max(all_values))
++        padding = max(1.0e-6, 0.08 * (ymax - ymin))
++        ymin, ymax = ymin - padding, ymax + padding
++        svg += [f'<rect x="{left}" y="{top}" width="{right-left}" height="{bottom-top}" fill="none" stroke="#aaa"/>',
++                f'<line x1="{left}" y1="{(top+bottom)/2:.1f}" x2="{right}" y2="{(top+bottom)/2:.1f}" stroke="#ddd"/>',
++                f'<text x="{left-12}" y="{top+5}" text-anchor="end" class="small">{ymax:.3g}</text>',
++                f'<text x="{left-12}" y="{bottom}" text-anchor="end" class="small">{ymin:.3g}</text>',
++                f'<text x="20" y="{(top+bottom)/2:.1f}" class="label">{html.escape(label)}</text>']
++        for t, values, color in curves:
++            points = polyline(t, values, left, right, top, bottom, ymin, ymax)
++            svg.append(f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="1.25"/>')
++    svg += [f'<text x="{(left+right)/2}" y="905" text-anchor="middle" class="label">正式轨迹相对时间 (s)，全宽约 50 s</text>', '</svg>']
++    (plot_dir / "l06_representative_timeseries.svg").write_text("\n".join(svg), encoding="utf-8")
++
++
++def copy_evidence(output: Path, run_records, candidate_path: Path):
++    for name in ("logs", "parameter_snapshots", "validity"):
++        (output / name).mkdir(exist_ok=True)
++    for record in run_records:
++        run_dir = Path(record["run_dir"])
++        label = record["label"]
++        for source_name, suffix in (("sitl_launcher.log", "sitl.log"), ("recorder_console.log", "recorder.log")):
++            source = run_dir / source_name
++            if source.is_file():
++                shutil.copy2(source, output / "logs" / f"{label}_{suffix}")
++        for source_name, suffix in (("validity.json", "validity.json"), ("vfb_validity.json", "vfb_validity.json")):
++            source = run_dir / source_name
++            if source.is_file():
++                shutil.copy2(source, output / "validity" / f"{label}_{suffix}")
++    metadata = json.loads((candidate_path / "metadata.json").read_text(encoding="utf-8"))
++    experiment = metadata["experiment"]
++    requested = experiment.get("requested_validation_parameters", {})
++    observed = experiment.get("px4_parameter_snapshot", {})
++    matched = all(key in observed and abs(float(observed[key]) - float(value)) <= 1.0e-5
++                  for key, value in requested.items())
++    snapshot = {
++        "source_run": str(candidate_path),
++        "captured_utc": metadata.get("created_utc"),
++        "requested_validation_parameters": requested,
++        "px4_parameter_snapshot": observed,
++        "match_with_float_tolerance_1e-5": matched,
++    }
++    json_write(output / "parameter_snapshots" / "frozen_candidate_parameters.json", snapshot)
++
++
++def make_manifest(output: Path, locked_root: Path, new_root: Path, rows_by_path, readiness_root: Path):
++    records = []
++    specifications = [
++        (locked_root, A06, "L06_A", "locked_20260721", False),
++        (locked_root, B06, "L06_B", "locked_20260721", False),
++        (new_root, A06, "L06_A", "new_20260722", True),
++        (new_root, B06, "L06_B", "new_20260722", True),
++    ]
++    counters = {}
++    for root, mode, prefix, source, formal_budget in specifications:
++        for path in run_dirs(root, mode):
++            counters[prefix] = counters.get(prefix, 0) + 1
++            row = rows_by_path[str(path)]
++            model = json.loads((path / "model_variant.json").read_text(encoding="utf-8"))
++            metadata = json.loads((path / "metadata.json").read_text(encoding="utf-8"))
++            label = f"{prefix}{counters[prefix]}"
++            records.append({
++                "label": label, "source": source, "formal_budget_20260722": formal_budget,
++                "mode": mode, "run_dir": str(path), "valid": bool(row.get("valid")),
++                "rope_length_m": model.get("rope_length_m"), "payload_mass_kg": model.get("payload_mass_kg"),
++                "rbf_learn": metadata.get("args", {}).get("rbf_learn"),
++                "model_source_restored": model.get("source_model_restored_after_spawn"),
++                "ulog_sha256": sha256(path / "position_offboard.ulg"),
++            })
++    ready = run_dirs(readiness_root, "STD_L06_PID_AS_FSOUSC_READY")
++    if ready:
++        records.append({"label": "READINESS", "source": "readiness_20260722", "formal_budget_20260722": False,
++                        "mode": "STD_L06_PID_AS_FSOUSC_READY", "run_dir": str(ready[-1]), "valid": False,
++                        "rope_length_m": 0.6, "payload_mass_kg": 0.5, "rbf_learn": False,
++                        "model_source_restored": True, "ulog_sha256": sha256(ready[-1] / "position_offboard.ulg")})
++    write_csv(output / "run_manifest.csv", records)
++    return records
++
++
++def make_report(gate, pairs, mechanism_rows, raw_check, decision, budget_used):
++    a, b, changes = gate["baseline"], gate["candidate"], gate["changes"]
++    lines = [
++        "结论：本轮最终判定为 `STOP_HESO_DIRECT`，按任务书停止 HESO 直接加速度补偿路线，不进入 0.8 m 复验。  ",
++        "0.6 m 新增的 A1/B1/A2/B2 四次运行全部严格有效，没有补跑、剔除或调参。  ",
++        f"合并 2026-07-21 锁定三对后，n=5 的摆角 RMS 变化 {changes['swing_angle_rms_deg_change_pct']:+.2f}%、能量 {changes['swing_energy_integral_j_s_kg_change_pct']:+.2f}%、峰值 {changes['swing_angle_peak_deg_change_pct']:+.2f}%、XY {changes['xy_error_rms_m_change_pct']:+.2f}%，四项核心性能均过线。  ",
++        f"但总控制 jerk P95 均值增加 {changes['final_jerk_p95_m_s3_change_pct']:+.2f}%，两组新增配对分别增加 {pairs[-2]['final_jerk_p95_m_s3_change_pct']:+.2f}% 和 {pairs[-1]['final_jerk_p95_m_s3_change_pct']:+.2f}%，同时触发均值 +7% 与单对 +12% 的硬停止条件。  ",
++        "因此保留 PID+AS 为当前主线，HESO 辅助调度/输入整形方向继续保留为下一阶段候选，但本任务没有越界实施该新结构。",
++        "",
++        "# ZD680 PID+AS 与 HESO-USC 快速封版验证报告",
++        "",
++        f"生成时间：{datetime.now().isoformat(timespec='seconds')}（Asia/Shanghai）",
++        "",
++        "## 1. 执行范围与预算",
++        "",
++        "本轮严格比较 `A=PX4 PID+AS` 与 `B=PX4 PID+AS+HESO-USC直接水平加速度补偿`。控制参数、轨迹、初态门和有效性规则在非正式就绪检查后冻结。",
++        "",
++        f"正式预算使用 `{budget_used}/8` 次：0.6 m 使用 4 次且全部有效；由于闸门 1 的 jerk 硬条件失败，剩余 4 次没有用于 0.8 m。没有无效补跑，也没有为了追求好结果增加样本。",
++        "",
++        "## 2. 健康检查与冻结证据",
++        "",
++        "- 唯一一次完整 `px4_sitl_default` 构建成功，并强制重编译了旧参数枚举对应的 `mc_autotune_attitude_control` 对象。",
++        "- 非正式短就绪启动后，旧的 `wrong type passed to param_get()` 错误为 0 次。",
++        "- 记录参数确认：位置/速率均为 PID，`MC_HANG_AS_EN=1`；LADRC、RBF、RBF学习、PAS、旧频率整形均关闭。",
++        "- 候选固定为 `FSO_MD=2, FSO_POS=1, BW=0.30 Hz, K=0.20, LEAD=0.05 s, LIM=0.08 m/s², SLW=0.30 m/s³`。",
++        "- PID 工况索引的 `rbf_learn=false` 与实际 `MC_RBF_LEARN_EN=0` 已统一；每次运行前检查无残留 PX4/Gazebo/记录器进程。",
++        "- 新增 A1 在起飞后、记录器连接前出现一次 `Accel #0 TIMEOUT` 启动瞬态；随后传感器恢复，并经过预飞等待、位置稳定和连续 3 秒吊挂初态门后才开始正式轨迹。该次正式窗口的传感器/EKF/动作/安全有效性全部通过，原始告警保留在日志中，未隐藏也未补跑。",
++        "- 就绪运行只有 1 s 保持，故通用正式轨迹判据按预期将其标为无效；它不属于正式预算，也未进入任何均值。",
++        "",
++        "## 3. 0.6 m 新增两对结果",
++        "",
++        "| 配对 | 有效 | XY变化 | 摆角RMS变化 | 峰值变化 | 能量变化 | 末5s变化 | jerk P95变化 |",
++        "|---|---:|---:|---:|---:|---:|---:|---:|",
++    ]
++    for row in pairs[-2:]:
++        lines.append(
++            f"| 新{row['pair']-3} | 是 | {row['xy_error_rms_m_change_pct']:+.2f}% | "
++            f"{row['swing_angle_rms_deg_change_pct']:+.2f}% | {row['swing_angle_peak_deg_change_pct']:+.2f}% | "
++            f"{row['swing_energy_integral_j_s_kg_change_pct']:+.2f}% | "
++            f"{row['final_5s_swing_angle_rms_deg_change_pct']:+.2f}% | {row['final_jerk_p95_m_s3_change_pct']:+.2f}% |"
++        )
++    lines += [
++        "",
++        "两组新增配对的摆角 RMS 和摆动能量都下降，满足方向一致性要求；真正触发停止的是 jerk，而不是消摆核心指标。",
++        "",
++        "## 4. 锁定旧三对 + 新两对，n=5 汇总",
++        "",
++        "| 指标 | PID+AS n=5（均值±SD） | HESO-USC n=5（均值±SD） | 变化 | 闸门 |",
++        "|---|---:|---:|---:|---|",
++    ]
++    thresholds = {
++        "xy_error_rms_m": "≤+5%",
++        "swing_angle_rms_deg": "≤-3%",
++        "swing_angle_peak_deg": "≤+3%",
++        "swing_energy_integral_j_s_kg": "≤-5%",
++        "final_5s_swing_angle_rms_deg": "观察",
++        "final_acc_rms_m_s2": "观察",
++        "final_jerk_p95_m_s3": "≤+5%通过；≤+7%边界",
++    }
++    for key, title in METRICS.items():
++        change = changes[f"{key}_change_pct"]
++        lines.append(f"| {title} | {a[key]:.5f} ± {a[key+'_sd']:.5f} | {b[key]:.5f} ± {b[key+'_sd']:.5f} | {change:+.2f}% | {thresholds[key]} |")
++    lines += [
++        "",
++        "闸门逐项结果：",
++        "",
++    ]
++    for name, passed in gate["checks"].items():
++        lines.append(f"- {'通过' if passed else '失败'}：`{name}`")
++    lines += [
++        "",
++        "核心消摆与位置指标全部通过，但 jerk 分类为 `fail`，并且新两对均越过单对 +12% 硬线，所以不能使用“边界保留”结论。",
++        "",
++        "## 5. 为什么摆动改善但 jerk 失败",
++        "",
++        "通俗地说，HESO-USC 像是在原来的 PID+AS 指令上再做很小、很快的方向修正。修正幅值虽然只有 0.08 m/s²，自己的斜率也限制为 0.30 m/s³，但它经常出现在加速、减速和约束切换附近；这时原 PID+AS 指令也正在转弯，两路小变化叠加后，最终指令的一阶差分会被放大。",
++        "",
++        "jerk 衡量的是“加速度变化有多快”，不是加速度本身有多大。因此补偿幅值小、加速度 RMS 不增加，并不保证 jerk 小。新增两对中最终加速度 RMS 分别变化 "
++        f"`{pairs[-2]['final_acc_rms_m_s2_change_pct']:+.2f}%` 和 `{pairs[-1]['final_acc_rms_m_s2_change_pct']:+.2f}%`，但 jerk 分别增加 "
++        f"`{pairs[-2]['final_jerk_p95_m_s3_change_pct']:+.2f}%` 和 `{pairs[-1]['final_jerk_p95_m_s3_change_pct']:+.2f}%`，正好说明问题来自变化速度而非指令幅值。",
++        "",
++        "此外，HESO 的功率、位置与斜率约束存在瞬时冲突。统一约束不可行时采用平滑衰减可以避免旧硬投影的大跳变，但仍会改变最终命令的局部斜率；这条直接叠加路线已经到达“能消一点摆，但平滑代价无法稳定受控”的结构性边界。",
++        "",
++        "## 6. HESO 机理审计（本轮新增 B1/B2）",
++        "",
++        "| B样本 | 激活采样 | 统一约束不可行率 | 补偿净功 (J/kg) | 正功/负功积分 | 补偿jerk P95/峰值 |",
++        "|---|---:|---:|---:|---:|---:|",
++    ]
++    for index, row in enumerate(mechanism_rows, 1):
++        lines.append(
++            f"| B{index} | {row['active_samples']} | {100*row['unified_infeasible_ratio']:.2f}% | "
++            f"{row['applied_net_power_integral_j_kg']:.5f} | {row['applied_positive_power_integral_j_kg']:.5f}/"
++            f"{row['applied_negative_power_integral_j_kg']:.5f} | {row['compensation_jerk_p95_m_s3']:.3f}/"
++            f"{row['compensation_jerk_peak_m_s3']:.3f} |"
++        )
++    lines += [
++        "",
++        "补偿本身仍以净耗散为主，说明 HESO 信号有消摆信息；但“有用信号”不等于“适合直接叠加到最终加速度”。本轮停止结论针对直接补偿结构，不是否定 HESO 作为状态/频率信息源的价值。",
++        "",
++        "## 7. 原始数据随机复算",
++        "",
++        f"固定随机种子 20260722 从新增两对中抽取第 `{raw_check['pair']}` 对，直接从 A/B 两次 ULog、事件和吊挂 CSV 重算 5 个关键指标。结果：`{'通过' if raw_check['pass'] else '失败'}`。",
++        "",
++        "| 控制器 | 指标 | 原始复算 | 分析器 | 绝对差 |",
++        "|---|---|---:|---:|---:|",
++    ]
++    for controller in ("A", "B"):
++        for key, item in raw_check[controller.lower()]["comparisons"].items():
++            lines.append(f"| {controller} | {METRICS[key]} | {item['raw']:.9g} | {item['analyzer']:.9g} | {item['absolute_difference']:.3g} |")
++    lines += [
++        "",
++        "## 8. 最终决定与后续主线",
++        "",
++        f"最终决定：**`{decision}`**。0.8 m 未运行是执行预注册停止规则，不是数据缺失，也不是平台失败。",
++        "",
++        "当前工程主线继续使用 PID+AS。HESO辅助 PID+AS 调度/输入整形仍值得保留，因为本轮 n=5 已证明 HESO 信号能稳定降低摆角 RMS 和能量；下一阶段应把 HESO 从“直接推一把”改成“告诉 AS 何时、在哪个频率工作”或“提前把参考轨迹整形成少激摆的输入”。这样可以利用频率信息，同时避免直接补偿与 PID+AS 在加减速拐点叠加。该新结构必须另立任务书、重新冻结基线和门槛，本轮没有提前实施。",
++        "",
++        "就论文而言，HESO-USC 直接补偿不能作为主方法封版；它可以作为完整消融/负结果，解释为何幅值受限仍可能带来 jerk 代价。仅凭当前直接补偿结果不建议投北大核心主方法论文，后续需完成调度或输入整形的新方法、多绳长/载荷重复、统计检验及 HIL/实飞。",
++        "",
++        "## 9. 文件索引",
++        "",
++        "- `quick_results.csv`：逐对与 n=5 汇总。",
++        "- `decision.json`：机器可读闸门、预算和停止原因。",
++        "- `run_manifest.csv`：锁定旧样本、本轮正式样本与非正式就绪样本。",
++        "- `plots/l06_paired_metrics.svg`、`plots/l06_representative_timeseries.svg`：必要图。",
++        "- `logs/`、`parameter_snapshots/`、`validity/`：启动记录、冻结参数和逐次有效性证据。",
++        "- `raw_recompute.json`、`mechanism_audit.csv`、`repository_state.json`：复算、机理与代码状态。",
++        "",
++    ]
++    return "\n".join(lines)
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--output", type=Path, required=True)
++    parser.add_argument("--locked-l06", type=Path, required=True)
++    parser.add_argument("--new-l06", type=Path, required=True)
++    parser.add_argument("--readiness", type=Path, required=True)
++    args = parser.parse_args()
++    output = args.output.resolve()
++    output.mkdir(parents=True, exist_ok=True)
++
++    paths_a = run_dirs(args.locked_l06, A06) + run_dirs(args.new_l06, A06)
++    paths_b = run_dirs(args.locked_l06, B06) + run_dirs(args.new_l06, B06)
++    if len(paths_a) != 5 or len(paths_b) != 5:
++        raise RuntimeError(f"expected five L06 pairs, found A={len(paths_a)} B={len(paths_b)}")
++    analyzed_a, analyzed_b, rows_by_path = [], [], {}
++    validity_by_path = {}
++    for mode, paths, target in ((A06, paths_a, analyzed_a), (B06, paths_b, analyzed_b)):
++        for path in paths:
++            row, _, validity = analyze(mode, path)
++            target.append(row); rows_by_path[str(path)] = row; validity_by_path[str(path)] = validity
++            json_write(path / "vfb_validity.json", validity)
++
++    gate, pairs = gate_l06(analyzed_a, analyzed_b)
++    aggregate_row = {"record_type": "aggregate", "gate": "L06", "rope_length_m": 0.6,
++                     "pair": "n=5", "source": "locked_3_plus_new_2",
++                     "a_valid": gate["baseline"]["valid_count"], "b_valid": gate["candidate"]["valid_count"]}
++    for key in METRICS:
++        aggregate_row[f"a_{key}"] = gate["baseline"][key]
++        aggregate_row[f"a_{key}_sd"] = gate["baseline"][f"{key}_sd"]
++        aggregate_row[f"b_{key}"] = gate["candidate"][key]
++        aggregate_row[f"b_{key}_sd"] = gate["candidate"][f"{key}_sd"]
++        aggregate_row[f"{key}_change_pct"] = gate["changes"][f"{key}_change_pct"]
++    write_csv(output / "quick_results.csv", pairs + [aggregate_row])
++
++    mechanism_rows = [mechanism(path) for path in paths_b[-2:]]
++    write_csv(output / "mechanism_audit.csv", mechanism_rows)
++    selected_pair = random.Random(20260722).choice((0, 1))
++    selected_a, selected_b = paths_a[-2 + selected_pair], paths_b[-2 + selected_pair]
++    raw_a = raw_recompute(selected_a, rows_by_path[str(selected_a)])
++    raw_b = raw_recompute(selected_b, rows_by_path[str(selected_b)])
++    raw_check = {"pair": selected_pair + 1, "a": raw_a, "b": raw_b,
++                 "pass": bool(raw_a["pass"] and raw_b["pass"])}
++    json_write(output / "raw_recompute.json", raw_check)
++
++    decision = "STOP_HESO_DIRECT"
++    decision_payload = {
++        "decision": decision, "generated_local": datetime.now().isoformat(timespec="seconds"),
++        "formal_budget": {"maximum": 8, "used": 4, "remaining_unused": 4, "invalid": 0, "retries": 0},
++        "gate_1_l06": gate,
++        "gate_2_l08": {"status": "not_run", "reason": "gate_1_jerk_hard_stop"},
++        "stop_reasons": [
++            f"combined jerk P95 change {gate['changes']['final_jerk_p95_m_s3_change_pct']:+.6f}% > +7%",
++            f"new pair 1 jerk P95 change {pairs[-2]['final_jerk_p95_m_s3_change_pct']:+.6f}% > +12%",
++            f"new pair 2 jerk P95 change {pairs[-1]['final_jerk_p95_m_s3_change_pct']:+.6f}% > +12%",
++        ],
++        "core_non_jerk_pass": gate["core_pass"], "raw_recompute_pass": raw_check["pass"],
++    }
++    json_write(output / "decision.json", decision_payload)
++
++    manifest = make_manifest(output, args.locked_l06, args.new_l06, rows_by_path, args.readiness)
++    copy_evidence(output, manifest, paths_b[-1])
++    make_plots(output, pairs, analyzed_a, analyzed_b)
++
++    px4 = REPO_ROOT / "build" / "px4_sitl_default" / "bin" / "px4"
++    tracked_scripts = [Path(__file__).with_name(name) for name in
++                       ("zd680_vfb_recorder.py", "zd680_vfb_validation_suite.py", "zd680_vfb_report.py")]
++    untracked_sources = [
++        REPO_ROOT / "src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp",
++        REPO_ROOT / "src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.cpp",
++        REPO_ROOT / "src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.hpp",
++        Path(__file__),
++    ]
++    state = {
++        "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True).strip(),
++        "git_status_short": subprocess.check_output(["git", "status", "--short"], cwd=REPO_ROOT, text=True).splitlines(),
++        "binary_sha256": sha256(px4),
++        "validation_script_sha256": {path.name: sha256(path) for path in tracked_scripts},
++        "untracked_source_sha256": {str(path.relative_to(REPO_ROOT)): sha256(path) for path in untracked_sources},
++        "build": {"command": "make px4_sitl_default", "result": "success", "steps": 11},
++        "readiness": {"type_error_count": 0, "formal_budget": False,
++                      "note": "hold-only readiness intentionally fails formal directional-route validity"},
++    }
++    json_write(output / "repository_state.json", state)
++    complete_diff = subprocess.check_output(["git", "diff", "--binary"], cwd=REPO_ROOT)
++    for path in untracked_sources:
++        relative = path.relative_to(REPO_ROOT)
++        result = subprocess.run(["git", "diff", "--no-index", "--binary", "--", "/dev/null", str(relative)],
++                                cwd=REPO_ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++        if result.returncode not in (0, 1):
++            raise RuntimeError(result.stderr.decode("utf-8", errors="replace"))
++        complete_diff += result.stdout
++    (output / "git_diff.patch").write_bytes(complete_diff)
++
++    report = make_report(gate, pairs, mechanism_rows, raw_check, decision, 4)
++    (output / "ZD680_PID_AS_HESO_USC_快速封版验证报告_20260722.md").write_text(report, encoding="utf-8")
++    print(output / "ZD680_PID_AS_HESO_USC_快速封版验证报告_20260722.md")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())

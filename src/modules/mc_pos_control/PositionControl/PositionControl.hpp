@@ -51,6 +51,7 @@
 
 #include <SuspendedLoadAntiSwing.hpp>
 #include <SuspendedLoadEnergySupervisor.hpp>
+#include <SuspendedLoadFrequencySelectiveObserver.hpp>
 #include <SuspendedLoadCoordinationStatus.hpp>
 
 struct PositionControlStates {
@@ -208,6 +209,11 @@ public:
 	{
 		_suspended_load_energy_supervisor.setParameters(parameters);
 	}
+	void setSuspendedLoadFrequencySelectiveObserverParameters(
+		const SuspendedLoadFrequencySelectiveObserver::Parameters &parameters)
+	{
+		_suspended_load_frequency_selective_observer.setParameters(parameters);
+	}
 
 	void setSuspendedLoadJointState(const SuspendedLoadAntiSwing::JointState &joint_state)
 	{
@@ -224,6 +230,11 @@ public:
 	const SuspendedLoadAntiSwing::Status &suspendedLoadAntiSwingStatus() const
 	{
 		return _suspended_load_anti_swing.status();
+	}
+
+	const SuspendedLoadFrequencySelectiveObserver::Status &suspendedLoadFrequencySelectiveObserverStatus() const
+	{
+		return _suspended_load_frequency_selective_observer.status();
 	}
 
 	/**
@@ -330,9 +341,11 @@ private:
 
 	SuspendedLoadAntiSwing _suspended_load_anti_swing{};
 	SuspendedLoadEnergySupervisor _suspended_load_energy_supervisor{};
+	SuspendedLoadFrequencySelectiveObserver _suspended_load_frequency_selective_observer{};
 	SuspendedLoadCoordinationStatus _coordination_status{};
 	matrix::Vector2f _last_suspended_load_base_acceleration{};
 	matrix::Vector2f _last_suspended_load_final_acceleration{};
+	float _suspended_load_as_permission{1.f};
 	bool _suspended_load_jerk_valid{false};
 	bool _suspended_load_anti_swing_flying{false};
 	ControllerMode _controller_mode{ControllerMode::PID};

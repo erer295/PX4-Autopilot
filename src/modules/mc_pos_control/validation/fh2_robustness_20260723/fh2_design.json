@@ -1,0 +1,404 @@
+[
+  {
+    "rope_length_m": 0.5,
+    "version": "FHv2_full_horizon_convex",
+    "order": 16,
+    "basis": "u^(k+3)*(1-u)^(14-k), k=0..11 (recorder coefficients are unnormalized)",
+    "design_ratios": [
+      0.9,
+      0.95,
+      1.0,
+      1.05,
+      1.1,
+      1.15,
+      1.2
+    ],
+    "ratio_interval": [
+      0.9,
+      1.2
+    ],
+    "init_corners": {
+      "angle_deg": 0.5,
+      "rate_rad_s": 0.02
+    },
+    "bounds": {
+      "swing_max_zero_init_deg": 3.0,
+      "swing_max_init_deg": 4.0,
+      "jerk_max_m_s3": 1.59,
+      "velocity_range_m_s": [
+        -0.01,
+        0.54
+      ],
+      "acceleration_max_m_s2": 0.65,
+      "progress_range": [
+        -0.0025,
+        1.0025
+      ],
+      "coefficient_max_m": 0.2
+    },
+    "objective_weights": {
+      "tracking": 20.0,
+      "terminal": 5.0,
+      "acceleration": 0.02,
+      "regularization": 0.0001
+    },
+    "solver": {
+      "method": "ADMM_QP",
+      "penalty": 1.0,
+      "iterations_requested": 4000,
+      "iterations_used": 1031,
+      "max_constraint_violation": 0.00030812141025376993
+    },
+    "basis_scale": [
+      0.00018182889815860492,
+      3.6246479848942615e-05,
+      9.866527409725815e-06,
+      3.4968028549021584e-06,
+      1.5662951032379564e-06,
+      8.697175678035213e-07,
+      5.912241685890732e-07,
+      4.883306395075596e-07,
+      4.883306395097257e-07,
+      5.912241685891252e-07,
+      8.697175678026487e-07,
+      1.5662951032397098e-06,
+      3.4968028549023413e-06,
+      9.866527409722557e-06,
+      3.624647984894417e-05,
+      0.0001818288981586028
+    ],
+    "coefficients": [
+      -14.736558789002734,
+      189.20477880674156,
+      -6457.023589192295,
+      -22244.952498153372,
+      127689.80089056144,
+      -229959.809095296,
+      13125.578530115674,
+      409558.6762796162,
+      -354009.3671253821,
+      -119225.80888728978,
+      229959.73717080167,
+      -64524.26621462968,
+      -9754.819624678858,
+      11226.643280761924,
+      -336.9661242528884,
+      16.90569076912983
+    ],
+    "coefficients_offset_m": [
+      -0.0026795322472538724,
+      0.006858007202342203,
+      -0.06370840022801194,
+      -0.07778621340270561,
+      0.19999990986831603,
+      -0.2000000858589229,
+      0.0077601592537182296,
+      0.20000005030349458,
+      -0.1728736206407711,
+      -0.07048917973375383,
+      0.200000023304726,
+      -0.1010640422121099,
+      -0.03411068111263441,
+      0.1107679836488151,
+      -0.012213835832509136,
+      0.0030739431251609398
+    ],
+    "command_offset_rms_m": 0.0716356502131517,
+    "command_offset_peak_m": 0.12883877537139785,
+    "position_min": 0.0,
+    "position_max": 1.0,
+    "velocity_min_m_s": 0.0,
+    "peak_velocity_m_s": 0.5226445669922533,
+    "peak_acceleration_m_s2": 0.4748659085975085,
+    "peak_jerk_m_s3": 1.5904634866733096,
+    "worst_terminal_modal_amplitude_deg": 1.010382834932317,
+    "worst_terminal_modal_frequency_ratio": 0.9,
+    "nominal_terminal_modal_amplitude_deg": 0.403554026679682,
+    "worst_transient_swing_zero_init_deg": 3.000203601159647,
+    "worst_transient_swing_frequency_ratio": 0.9,
+    "worst_transient_swing_with_init_deg": 3.415780176842291,
+    "base_nominal_transient_swing_deg": 6.172789741455086,
+    "base_nominal_terminal_modal_deg": 5.956371108858255,
+    "offline_gates": {
+      "command_offset_rms_le_0p095_m": true,
+      "peak_velocity_le_0p55_m_s": true,
+      "peak_acceleration_le_0p65_m_s2": true,
+      "peak_jerk_le_1p61_m_s3": true,
+      "worst_terminal_mode_le_1p15_deg": true,
+      "worst_transient_zero_init_within_bound": true,
+      "worst_transient_with_init_within_bound": true,
+      "position_overshoot_le_0p005_m": true,
+      "velocity_never_reverses_past_0p02": true,
+      "solver_violation_le_5e-3": true
+    },
+    "offline_all_pass": true
+  },
+  {
+    "rope_length_m": 0.6,
+    "version": "FHv2_full_horizon_convex",
+    "order": 16,
+    "basis": "u^(k+3)*(1-u)^(14-k), k=0..11 (recorder coefficients are unnormalized)",
+    "design_ratios": [
+      0.9,
+      0.95,
+      1.0,
+      1.05,
+      1.1,
+      1.15,
+      1.2
+    ],
+    "ratio_interval": [
+      0.9,
+      1.2
+    ],
+    "init_corners": {
+      "angle_deg": 0.5,
+      "rate_rad_s": 0.02
+    },
+    "bounds": {
+      "swing_max_zero_init_deg": 3.0,
+      "swing_max_init_deg": 4.0,
+      "jerk_max_m_s3": 1.59,
+      "velocity_range_m_s": [
+        -0.01,
+        0.54
+      ],
+      "acceleration_max_m_s2": 0.65,
+      "progress_range": [
+        -0.0025,
+        1.0025
+      ],
+      "coefficient_max_m": 0.2
+    },
+    "objective_weights": {
+      "tracking": 20.0,
+      "terminal": 5.0,
+      "acceleration": 0.02,
+      "regularization": 0.0001
+    },
+    "solver": {
+      "method": "ADMM_QP",
+      "penalty": 1.0,
+      "iterations_requested": 4000,
+      "iterations_used": 897,
+      "max_constraint_violation": 8.881784197001252e-15
+    },
+    "basis_scale": [
+      0.00018182889815860492,
+      3.6246479848942615e-05,
+      9.866527409725815e-06,
+      3.4968028549021584e-06,
+      1.5662951032379564e-06,
+      8.697175678035213e-07,
+      5.912241685890732e-07,
+      4.883306395075596e-07,
+      4.883306395097257e-07,
+      5.912241685891252e-07,
+      8.697175678026487e-07,
+      1.5662951032397098e-06,
+      3.4968028549023413e-06,
+      9.866527409722557e-06,
+      3.624647984894417e-05,
+      0.0001818288981586028
+    ],
+    "coefficients": [
+      -13.016965883055223,
+      111.2243033227166,
+      -4483.272369253868,
+      -31961.47175276973,
+      127689.85843507123,
+      -151211.73001578767,
+      -115843.58069529146,
+      409558.57326847897,
+      -325496.6102732162,
+      -72609.34184061167,
+      229959.71037506143,
+      -99789.50083274151,
+      8988.968878595917,
+      8198.538966351496,
+      -229.98085434724538,
+      14.849441044438327
+    ],
+    "coefficients_offset_m": [
+      -0.002366860563884083,
+      0.004031489469099528,
+      -0.04423432971650969,
+      -0.11176296567195988,
+      0.19999999999999993,
+      -0.13151149805269358,
+      -0.06848952468295491,
+      0.20000000000000004,
+      -0.15894996785296764,
+      -0.042928397761519216,
+      0.19999999999999996,
+      -0.15629980650905798,
+      0.0314326520373025,
+      0.08089110943118548,
+      -0.008335996402740393,
+      0.002700057503381353
+    ],
+    "command_offset_rms_m": 0.0745752703765542,
+    "command_offset_peak_m": 0.1302180949304586,
+    "position_min": 0.0,
+    "position_max": 1.0,
+    "velocity_min_m_s": 0.0,
+    "peak_velocity_m_s": 0.5116156815566523,
+    "peak_acceleration_m_s2": 0.4868783867003338,
+    "peak_jerk_m_s3": 1.599649228085892,
+    "worst_terminal_modal_amplitude_deg": 1.052643922128373,
+    "worst_terminal_modal_frequency_ratio": 0.925,
+    "nominal_terminal_modal_amplitude_deg": 0.7583956239319425,
+    "worst_transient_swing_zero_init_deg": 3.0014475242283045,
+    "worst_transient_swing_frequency_ratio": 1.0925,
+    "worst_transient_swing_with_init_deg": 3.4199895606007784,
+    "base_nominal_transient_swing_deg": 5.4731255471529865,
+    "base_nominal_terminal_modal_deg": 5.167567332225103,
+    "offline_gates": {
+      "command_offset_rms_le_0p095_m": true,
+      "peak_velocity_le_0p55_m_s": true,
+      "peak_acceleration_le_0p65_m_s2": true,
+      "peak_jerk_le_1p61_m_s3": true,
+      "worst_terminal_mode_le_1p15_deg": true,
+      "worst_transient_zero_init_within_bound": true,
+      "worst_transient_with_init_within_bound": true,
+      "position_overshoot_le_0p005_m": true,
+      "velocity_never_reverses_past_0p02": true,
+      "solver_violation_le_5e-3": true
+    },
+    "offline_all_pass": true
+  },
+  {
+    "rope_length_m": 0.8,
+    "version": "FHv2_full_horizon_convex",
+    "order": 16,
+    "basis": "u^(k+3)*(1-u)^(14-k), k=0..11 (recorder coefficients are unnormalized)",
+    "design_ratios": [
+      0.9,
+      0.95,
+      1.0,
+      1.05,
+      1.1,
+      1.15,
+      1.2
+    ],
+    "ratio_interval": [
+      0.9,
+      1.2
+    ],
+    "init_corners": {
+      "angle_deg": 0.5,
+      "rate_rad_s": 0.02
+    },
+    "bounds": {
+      "swing_max_zero_init_deg": 3.5,
+      "swing_max_init_deg": 4.5,
+      "jerk_max_m_s3": 1.59,
+      "velocity_range_m_s": [
+        -0.01,
+        0.54
+      ],
+      "acceleration_max_m_s2": 0.65,
+      "progress_range": [
+        -0.0025,
+        1.0025
+      ],
+      "coefficient_max_m": 0.2
+    },
+    "objective_weights": {
+      "tracking": 20.0,
+      "terminal": 5.0,
+      "acceleration": 0.02,
+      "regularization": 0.0001
+    },
+    "solver": {
+      "method": "ADMM_QP",
+      "penalty": 1.0,
+      "iterations_requested": 4000,
+      "iterations_used": 802,
+      "max_constraint_violation": 1.3322676295501878e-14
+    },
+    "basis_scale": [
+      0.00018182889815860492,
+      3.6246479848942615e-05,
+      9.866527409725815e-06,
+      3.4968028549021584e-06,
+      1.5662951032379564e-06,
+      8.697175678035213e-07,
+      5.912241685890732e-07,
+      4.883306395075596e-07,
+      4.883306395097257e-07,
+      5.912241685891252e-07,
+      8.697175678026487e-07,
+      1.5662951032397098e-06,
+      3.4968028549023413e-06,
+      9.866527409722557e-06,
+      3.624647984894417e-05,
+      0.0001818288981586028
+    ],
+    "coefficients": [
+      -8.230390369458915,
+      -96.50678289905693,
+      472.044335249337,
+      -49485.76370391753,
+      127689.85843507123,
+      -2632.1072875086015,
+      -338281.1641095287,
+      303979.2676651943,
+      -47831.27018348424,
+      -95067.14360711104,
+      182594.86443961575,
+      -127689.8584349283,
+      38793.31014999738,
+      2102.9503317038834,
+      1.4280273046657794,
+      10.05822111767407
+    ],
+    "coefficients_offset_m": [
+      -0.0014965228122939078,
+      -0.003498031161636947,
+      0.004657438372343385,
+      -0.17304195979687242,
+      0.19999999999999993,
+      -0.0022891899482899046,
+      -0.19999999999999996,
+      0.14844239017598396,
+      -0.02335747475726333,
+      -0.056205992939257196,
+      0.15880596139367698,
+      -0.19999999999999996,
+      0.1356525576836228,
+      0.02074881708904151,
+      5.1760962922310226e-05,
+      0.0018288752632622664
+    ],
+    "command_offset_rms_m": 0.06992444934399888,
+    "command_offset_peak_m": 0.1297944504342734,
+    "position_min": 0.0,
+    "position_max": 1.0,
+    "velocity_min_m_s": 0.0,
+    "peak_velocity_m_s": 0.5072391106766547,
+    "peak_acceleration_m_s2": 0.45185727699594547,
+    "peak_jerk_m_s3": 1.5973296902829572,
+    "worst_terminal_modal_amplitude_deg": 0.8831358105507927,
+    "worst_terminal_modal_frequency_ratio": 0.965,
+    "nominal_terminal_modal_amplitude_deg": 0.8215465218819886,
+    "worst_transient_swing_zero_init_deg": 3.500242786532796,
+    "worst_transient_swing_frequency_ratio": 0.9,
+    "worst_transient_swing_with_init_deg": 3.882072040237465,
+    "base_nominal_transient_swing_deg": 5.301185430314619,
+    "base_nominal_terminal_modal_deg": 5.247713236823143,
+    "offline_gates": {
+      "command_offset_rms_le_0p095_m": true,
+      "peak_velocity_le_0p55_m_s": true,
+      "peak_acceleration_le_0p65_m_s2": true,
+      "peak_jerk_le_1p61_m_s3": true,
+      "worst_terminal_mode_le_1p15_deg": true,
+      "worst_transient_zero_init_within_bound": true,
+      "worst_transient_with_init_within_bound": true,
+      "position_overshoot_le_0p005_m": true,
+      "velocity_never_reverses_past_0p02": true,
+      "solver_violation_le_5e-3": true
+    },
+    "offline_all_pass": true
+  }
+]

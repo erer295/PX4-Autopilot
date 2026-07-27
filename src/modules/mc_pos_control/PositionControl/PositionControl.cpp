@@ -44,6 +44,21 @@
 
 using namespace matrix;
 
+namespace
+{
+
+float smoothStepPermission(float value, float lower, float upper)
+{
+	if (!PX4_ISFINITE(value) || !PX4_ISFINITE(lower) || !PX4_ISFINITE(upper) || upper <= lower) {
+		return value >= upper ? 1.f : 0.f;
+	}
+
+	const float ratio = math::constrain((value - lower) / (upper - lower), 0.f, 1.f);
+	return ratio * ratio * (3.f - 2.f * ratio);
+}
+
+} // namespace
+
 const trajectory_setpoint_s PositionControl::empty_trajectory_setpoint = {0, {NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}, NAN, NAN};
 
 PositionControl::ControllerMode PositionControl::sanitizeControllerMode(int32_t mode)
@@ -381,15 +396,64 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
 		total_acc_saturated = true;
 	}
 
-	const Vector2f anti_swing_requested =
+	// The HESO scheduler output from the preceding control sample only scales
+	// the existing AS damping path. OFF/invalid scheduler state is exactly 1.
+	_suspended_load_anti_swing.setGainScheduleScale(
+		_suspended_load_frequency_selective_observer.status().gain_scale_applied);
+	const Vector2f anti_swing_requested_raw =
 		_suspended_load_anti_swing.update(dt, _control_timestamp, _yaw, _suspended_load_anti_swing_flying);
-	_coordination_status.anti_swing_requested_ned = anti_swing_requested;
+	_coordination_status.anti_swing_requested_ned = anti_swing_requested_raw;
 	const SuspendedLoadAntiSwing::Status &anti_swing_status = _suspended_load_anti_swing.status();
-	const Vector2f passivity_candidate = base_acceleration + anti_swing_requested;
 	const Vector2f position_error_ned{
 		_pos_sp(0) - _pos(0),
 		_pos_sp(1) - _pos(1)
 	};
+	const SuspendedLoadFrequencySelectiveObserver::Status &frequency_selective_status =
+		_suspended_load_frequency_selective_observer.update(
+			dt, _vel.xy(), _last_applied_acceleration.xy(),
+			anti_swing_status.angle_filtered, anti_swing_status.rate_filtered,
+			position_error_ned, _yaw, anti_swing_status.rope_length,
+			anti_swing_status.energy_per_mass, anti_swing_status.engaged,
+			anti_swing_status.measurement_valid && _suspended_load_jerk_valid);
+	const bool unified_coordinator = frequency_selective_status.mode
+				       == SuspendedLoadFrequencySelectiveObserver::Mode::UnifiedShapingCoordinator;
+	Vector2f anti_swing_requested = anti_swing_requested_raw;
+
+	if (unified_coordinator) {
+		const float position_error_norm = position_error_ned.norm();
+		const float position_permission = 1.f - smoothStepPermission(position_error_norm, 0.05f, 0.12f);
+		float acceleration_permission = 1.f;
+
+		if (_lim_acc_horizontal > FLT_EPSILON && anti_swing_requested_raw.norm() > FLT_EPSILON) {
+			const float remaining_acceleration = math::max(_lim_acc_horizontal - base_acceleration.norm(), 0.f);
+			acceleration_permission = math::constrain(
+				remaining_acceleration / anti_swing_requested_raw.norm(), 0.f, 1.f);
+		}
+
+	float jerk_permission = 1.f;
+
+	if (_suspended_load_jerk_valid && PX4_ISFINITE(dt) && dt > FLT_EPSILON) {
+		const Vector2f base_jerk_vector =
+			(base_acceleration - _last_suspended_load_base_acceleration) / dt;
+		const float base_jerk = base_jerk_vector.norm();
+		jerk_permission = 1.f - smoothStepPermission(base_jerk, 1.5f, 3.f);
+	}
+
+		const float permission_target = math::min(position_permission,
+					      math::min(acceleration_permission, jerk_permission));
+		const float permission_delta = math::constrain(permission_target - _suspended_load_as_permission,
+					 -dt, dt);
+		_suspended_load_as_permission = math::constrain(_suspended_load_as_permission + permission_delta, 0.f, 1.f);
+		anti_swing_requested *= _suspended_load_as_permission;
+		_coordination_status.selector_mode = 6;
+		_coordination_status.selector_blend = _suspended_load_as_permission;
+
+	} else {
+		_suspended_load_as_permission = 1.f;
+	}
+
+	const Vector2f frequency_selective_requested = frequency_selective_status.compensation_applied_ned;
+	const Vector2f passivity_candidate = base_acceleration + anti_swing_requested + frequency_selective_requested;
 	const SuspendedLoadEnergySupervisor::Status &energy_supervisor_status = _suspended_load_energy_supervisor.update(
 				dt, passivity_candidate, anti_swing_status.rate_filtered, position_error_ned, _yaw,
 				anti_swing_status.rope_length, anti_swing_status.energy_per_mass,
@@ -428,12 +492,31 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
 	// OFF and SHADOW return a strict zero here. ACTIVE reuses the exact same
 	// computed correction and inserts it before the existing total XY envelope.
 	const Vector2f passivity_active_requested = energy_supervisor_status.correction_active_ned;
-	const Vector2f swing_management_requested = anti_swing_requested + passivity_active_requested;
+	const Vector2f swing_management_requested = anti_swing_requested + frequency_selective_requested
+					   + passivity_active_requested;
 	Vector2f combined_acceleration{};
 	Vector2f anti_swing_applied = anti_swing_requested;
+	Vector2f frequency_selective_applied = frequency_selective_requested;
 	Vector2f passivity_active_applied = passivity_active_requested;
 
-	if (_lim_acc_horizontal > FLT_EPSILON) {
+	if (unified_coordinator && _lim_acc_horizontal > FLT_EPSILON) {
+		// The position controller owns the primary envelope in the unified
+		// architecture. Swing management receives only the remaining vector
+		// authority, preventing the position loop from fighting a privileged AS
+		// request after the permission calculation.
+		combined_acceleration = ControlMath::constrainXY(base_acceleration, swing_management_requested,
+							  _lim_acc_horizontal);
+		const Vector2f swing_management_applied = combined_acceleration - base_acceleration;
+		const float management_norm = swing_management_requested.norm();
+		const float management_scale = management_norm > FLT_EPSILON
+					       ? math::constrain(swing_management_applied.norm() / management_norm, 0.f, 1.f)
+					       : 0.f;
+		anti_swing_applied = anti_swing_requested * management_scale;
+		frequency_selective_applied = frequency_selective_requested * management_scale;
+		passivity_active_applied = passivity_active_requested * management_scale;
+		total_acc_saturated = total_acc_saturated || management_scale < 1.f - 1e-4f;
+
+	} else if (_lim_acc_horizontal > FLT_EPSILON) {
 		if ((base_acceleration + swing_management_requested).norm() > _lim_acc_horizontal) {
 			total_acc_saturated = true;
 		}
@@ -444,8 +527,9 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
 		if (swing_management_requested.norm() >= _lim_acc_horizontal) {
 			const float management_scale = _lim_acc_horizontal / swing_management_requested.norm();
 			anti_swing_applied *= management_scale;
+			frequency_selective_applied *= management_scale;
 			passivity_active_applied *= management_scale;
-			combined_acceleration = anti_swing_applied + passivity_active_applied;
+			combined_acceleration = anti_swing_applied + frequency_selective_applied + passivity_active_applied;
 
 		} else {
 			combined_acceleration = ControlMath::constrainXY(swing_management_requested, base_acceleration,
@@ -457,6 +541,8 @@ void PositionControl::_accelerationControlAndThrustSaturation(const float dt,
 	}
 
 	_suspended_load_anti_swing.setAppliedAccelerationNed(anti_swing_applied);
+	_suspended_load_frequency_selective_observer.setAppliedCompensationNed(frequency_selective_applied,
+			anti_swing_status.rate_filtered, position_error_ned, _yaw, anti_swing_status.rope_length);
 	_acc_sp.xy() = combined_acceleration;
 	_final_acceleration_command = _acc_sp;
 	_coordination_status.anti_swing_applied_ned = anti_swing_applied;
@@ -583,8 +669,6 @@ void PositionControl::_updateSuspendedLoadCoordinationStatus()
 {
 	const SuspendedLoadAntiSwing::Status &anti_swing_status = _suspended_load_anti_swing.status();
 	_coordination_status.swing_rate_norm = anti_swing_status.rate_filtered.norm();
-	_coordination_status.selector_mode = 0;
-	_coordination_status.selector_blend = 0.f;
 	_coordination_status.valid = anti_swing_status.measurement_valid
 				     && anti_swing_status.rate_filtered.isAllFinite()
 				     && PX4_ISFINITE(_yaw)

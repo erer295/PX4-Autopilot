@@ -1,0 +1,43 @@
+{
+  "winner": "filtered_rls",
+  "winner_meets_all_targets": false,
+  "aggregate": [
+    {
+      "estimator": "legacy_heso_bank",
+      "synthetic_median_abs_error_pct": 0.5446143065670206,
+      "synthetic_p95_abs_error_pct": 6.641997776143268,
+      "flight_median_abs_error_vs_fft_pct": 5.003978651664717,
+      "flight_max_abs_error_vs_fft_pct": 6.593283541468042,
+      "low_excitation_confidence_max": 0.0,
+      "synthetic_median_target_pass": true,
+      "synthetic_p95_target_pass": false,
+      "flight_fft_target_pass": false,
+      "low_excitation_target_pass": true
+    },
+    {
+      "estimator": "predictive_bank",
+      "synthetic_median_abs_error_pct": 0.7776401719907233,
+      "synthetic_p95_abs_error_pct": 6.0128984050305485,
+      "flight_median_abs_error_vs_fft_pct": 11.190354077516506,
+      "flight_max_abs_error_vs_fft_pct": 11.355173939359887,
+      "low_excitation_confidence_max": 0.0,
+      "synthetic_median_target_pass": true,
+      "synthetic_p95_target_pass": false,
+      "flight_fft_target_pass": false,
+      "low_excitation_target_pass": true
+    },
+    {
+      "estimator": "filtered_rls",
+      "synthetic_median_abs_error_pct": 0.33030079417786795,
+      "synthetic_p95_abs_error_pct": 1.416754668165682,
+      "flight_median_abs_error_vs_fft_pct": 5.816814966051981,
+      "flight_max_abs_error_vs_fft_pct": 7.090446547842344,
+      "low_excitation_confidence_max": 0.0,
+      "synthetic_median_target_pass": true,
+      "synthetic_p95_target_pass": true,
+      "flight_fft_target_pass": false,
+      "low_excitation_target_pass": true
+    }
+  ],
+  "selection_rule": "eligible minimum synthetic median error, then P95, then flight FFT cross-check"
+}

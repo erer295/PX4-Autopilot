@@ -36,6 +36,9 @@ px4_add_library(SuspendedLoadAntiSwing
 	SuspendedLoadAntiSwing.hpp
 	SuspendedLoadEnergySupervisor.cpp
 	SuspendedLoadEnergySupervisor.hpp
+	SuspendedLoadFrequencySelectiveObserver.cpp
+	SuspendedLoadFrequencySelectiveObserver.hpp
+	SuspendedLoadFrequencySelectiveDebugArray.hpp
 	SuspendedLoadCoordinationDebugArray.hpp
 	SuspendedLoadCoordinationStatus.hpp
 	SuspendedLoadJointStateDebugArray.hpp

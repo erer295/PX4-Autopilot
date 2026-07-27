@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="390" viewBox="0 0 1500 390">
+<rect width="100%" height="100%" fill="white"/>
+<style>text{font-family:sans-serif;fill:#222}.small{font-size:12px}.title{font-size:18px;font-weight:bold}.panel{font-size:14px;font-weight:bold}</style>
+<text x="750" y="27" text-anchor="middle" class="title">L=0.6 m：五组配对指标变化（蓝=锁定旧数据，橙=本轮新增）</text>
+<text x="167" y="52" text-anchor="middle" class="panel">摆角 RMS (°)</text>
+<line x1="55" y1="197.5" x2="280" y2="197.5" stroke="#333"/>
+<line x1="55" y1="70" x2="55" y2="325" stroke="#777"/>
+<text x="50" y="74" text-anchor="end" class="small">+6.7%</text>
+<text x="50" y="329" text-anchor="end" class="small">-6.7%</text>
+<rect x="68" y="197.5" width="28" height="87.9" fill="#4C78A8"/>
+<text x="82" y="342" text-anchor="middle" class="small">1</text>
+<text x="82" y="299.4" text-anchor="middle" class="small">-4.6</text>
+<rect x="111" y="197.5" width="28" height="86.8" fill="#4C78A8"/>
+<text x="125" y="342" text-anchor="middle" class="small">2</text>
+<text x="125" y="298.3" text-anchor="middle" class="small">-4.6</text>
+<rect x="154" y="197.5" width="28" height="75.9" fill="#4C78A8"/>
+<text x="168" y="342" text-anchor="middle" class="small">3</text>
+<text x="168" y="287.4" text-anchor="middle" class="small">-4.0</text>
+<rect x="197" y="197.5" width="28" height="75.4" fill="#F58518"/>
+<text x="211" y="342" text-anchor="middle" class="small">4</text>
+<text x="211" y="286.9" text-anchor="middle" class="small">-4.0</text>
+<rect x="240" y="197.5" width="28" height="106.2" fill="#F58518"/>
+<text x="254" y="342" text-anchor="middle" class="small">5</text>
+<text x="254" y="317.8" text-anchor="middle" class="small">-5.6</text>
+<text x="447" y="52" text-anchor="middle" class="panel">摆动能量积分 (J·s/kg)</text>
+<line x1="335" y1="197.5" x2="560" y2="197.5" stroke="#333"/>
+<line x1="335" y1="70" x2="335" y2="325" stroke="#777"/>
+<text x="330" y="74" text-anchor="end" class="small">+10.0%</text>
+<text x="330" y="329" text-anchor="end" class="small">-10.0%</text>
+<rect x="348" y="197.5" width="28" height="84.7" fill="#4C78A8"/>
+<text x="362" y="342" text-anchor="middle" class="small">1</text>
+<text x="362" y="296.2" text-anchor="middle" class="small">-6.6</text>
+<rect x="391" y="197.5" width="28" height="106.2" fill="#4C78A8"/>
+<text x="405" y="342" text-anchor="middle" class="small">2</text>
+<text x="405" y="317.8" text-anchor="middle" class="small">-8.3</text>
+<rect x="434" y="197.5" width="28" height="92.3" fill="#4C78A8"/>
+<text x="448" y="342" text-anchor="middle" class="small">3</text>
+<text x="448" y="303.8" text-anchor="middle" class="small">-7.2</text>
+<rect x="477" y="197.5" width="28" height="26.4" fill="#F58518"/>
+<text x="491" y="342" text-anchor="middle" class="small">4</text>
+<text x="491" y="237.9" text-anchor="middle" class="small">-2.1</text>
+<rect x="520" y="197.5" width="28" height="100.3" fill="#F58518"/>
+<text x="534" y="342" text-anchor="middle" class="small">5</text>
+<text x="534" y="311.8" text-anchor="middle" class="small">-7.9</text>
+<text x="727" y="52" text-anchor="middle" class="panel">摆角峰值 (°)</text>
+<line x1="615" y1="197.5" x2="840" y2="197.5" stroke="#333"/>
+<line x1="615" y1="70" x2="615" y2="325" stroke="#777"/>
+<text x="610" y="74" text-anchor="end" class="small">+5.0%</text>
+<text x="610" y="329" text-anchor="end" class="small">-5.0%</text>
+<rect x="628" y="197.5" width="28" height="2.3" fill="#4C78A8"/>
+<text x="642" y="342" text-anchor="middle" class="small">1</text>
+<text x="642" y="213.8" text-anchor="middle" class="small">-0.1</text>
+<rect x="671" y="143.2" width="28" height="54.3" fill="#4C78A8"/>
+<text x="685" y="342" text-anchor="middle" class="small">2</text>
+<text x="685" y="138.2" text-anchor="middle" class="small">+2.1</text>
+<rect x="714" y="155.0" width="28" height="42.5" fill="#4C78A8"/>
+<text x="728" y="342" text-anchor="middle" class="small">3</text>
+<text x="728" y="150.0" text-anchor="middle" class="small">+1.7</text>
+<rect x="757" y="197.5" width="28" height="46.6" fill="#F58518"/>
+<text x="771" y="342" text-anchor="middle" class="small">4</text>
+<text x="771" y="258.1" text-anchor="middle" class="small">-1.8</text>
+<rect x="800" y="197.5" width="28" height="86.2" fill="#F58518"/>
+<text x="814" y="342" text-anchor="middle" class="small">5</text>
+<text x="814" y="297.7" text-anchor="middle" class="small">-3.4</text>
+<text x="1007" y="52" text-anchor="middle" class="panel">XY RMS (m)</text>
+<line x1="895" y1="197.5" x2="1120" y2="197.5" stroke="#333"/>
+<line x1="895" y1="70" x2="895" y2="325" stroke="#777"/>
+<text x="890" y="74" text-anchor="end" class="small">+18.2%</text>
+<text x="890" y="329" text-anchor="end" class="small">-18.2%</text>
+<rect x="908" y="180.6" width="28" height="16.9" fill="#4C78A8"/>
+<text x="922" y="342" text-anchor="middle" class="small">1</text>
+<text x="922" y="175.6" text-anchor="middle" class="small">+2.4</text>
+<rect x="951" y="158.9" width="28" height="38.6" fill="#4C78A8"/>
+<text x="965" y="342" text-anchor="middle" class="small">2</text>
+<text x="965" y="153.9" text-anchor="middle" class="small">+5.5</text>
+<rect x="994" y="197.5" width="28" height="44.6" fill="#4C78A8"/>
+<text x="1008" y="342" text-anchor="middle" class="small">3</text>
+<text x="1008" y="256.1" text-anchor="middle" class="small">-6.4</text>
+<rect x="1037" y="185.8" width="28" height="11.7" fill="#F58518"/>
+<text x="1051" y="342" text-anchor="middle" class="small">4</text>
+<text x="1051" y="180.8" text-anchor="middle" class="small">+1.7</text>
+<rect x="1080" y="91.2" width="28" height="106.2" fill="#F58518"/>
+<text x="1094" y="342" text-anchor="middle" class="small">5</text>
+<text x="1094" y="86.2" text-anchor="middle" class="small">+15.2</text>
+<text x="1287" y="52" text-anchor="middle" class="panel">最终 jerk P95 (m/s³)</text>
+<line x1="1175" y1="197.5" x2="1400" y2="197.5" stroke="#333"/>
+<line x1="1175" y1="70" x2="1175" y2="325" stroke="#777"/>
+<text x="1170" y="74" text-anchor="end" class="small">+18.7%</text>
+<text x="1170" y="329" text-anchor="end" class="small">-18.7%</text>
+<rect x="1188" y="127.2" width="28" height="70.3" fill="#4C78A8"/>
+<text x="1202" y="342" text-anchor="middle" class="small">1</text>
+<text x="1202" y="122.2" text-anchor="middle" class="small">+10.3</text>
+<rect x="1231" y="176.6" width="28" height="20.9" fill="#4C78A8"/>
+<text x="1245" y="342" text-anchor="middle" class="small">2</text>
+<text x="1245" y="171.6" text-anchor="middle" class="small">+3.1</text>
+<rect x="1274" y="184.2" width="28" height="13.3" fill="#4C78A8"/>
+<text x="1288" y="342" text-anchor="middle" class="small">3</text>
+<text x="1288" y="179.2" text-anchor="middle" class="small">+2.0</text>
+<rect x="1317" y="98.2" width="28" height="99.3" fill="#F58518"/>
+<text x="1331" y="342" text-anchor="middle" class="small">4</text>
+<text x="1331" y="93.2" text-anchor="middle" class="small">+14.6</text>
+<rect x="1360" y="91.2" width="28" height="106.2" fill="#F58518"/>
+<text x="1374" y="342" text-anchor="middle" class="small">5</text>
+<text x="1374" y="86.2" text-anchor="middle" class="small">+15.6</text>
+<text x="750" y="375" text-anchor="middle" class="small">横轴：配对编号；纵轴：B 相对 A 变化 (%)</text></svg>

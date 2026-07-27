@@ -1,0 +1,18 @@
+{
+  "checks": {
+    "base_validity_excluding_z": {
+      "detail": [],
+      "passed": true
+    },
+    "hangfso_debug_present": {
+      "detail": "debug_array ID 687",
+      "passed": true
+    },
+    "hangvfb_debug_present": {
+      "detail": "not required for PID+AS auxiliary-mode analysis",
+      "passed": true
+    }
+  },
+  "valid": true,
+  "warnings": []
+}

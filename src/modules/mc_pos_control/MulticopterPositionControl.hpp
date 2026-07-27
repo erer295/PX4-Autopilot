@@ -40,6 +40,7 @@
 #include "PositionControl/PositionControl.hpp"
 #include "SuspendedLoadAntiSwing/SuspendedLoadCoordinationDebugArray.hpp"
 #include "SuspendedLoadAntiSwing/SuspendedLoadCoordinationPositionDebugArray.hpp"
+#include "SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp"
 #include "SuspendedLoadAntiSwing/SuspendedLoadJointStateDebugArray.hpp"
 #include "SuspendedLoadAntiSwing/LadrcVelocityFeedbackDebugArray.hpp"
 #include "Takeoff/Takeoff.hpp"
@@ -104,6 +105,7 @@ private:
 	void publishSuspendedLoadAntiSwingStatus();
 	void publishSuspendedLoadCoordinationStatus();
 	void publishSuspendedLoadCoordinationPositionStatus();
+	void publishSuspendedLoadFrequencySelectiveStatus();
 	void publishLadrcVelocityFeedbackStatus();
 
 	TakeoffHandling _takeoff; /**< state machine and ramp to bring the vehicle off the ground without jumps */
@@ -121,6 +123,7 @@ private:
 	uORB::PublicationMulti<debug_array_s> _suspended_load_anti_swing_status_pub{ORB_ID(debug_array)};
 	uORB::PublicationMulti<debug_array_s> _suspended_load_coordination_status_pub{ORB_ID(debug_array)};
 	uORB::PublicationMulti<debug_array_s> _suspended_load_coordination_position_status_pub{ORB_ID(debug_array)};
+	uORB::PublicationMulti<debug_array_s> _suspended_load_frequency_selective_status_pub{ORB_ID(debug_array)};
 	uORB::PublicationMulti<debug_array_s> _ladrc_velocity_feedback_status_pub{ORB_ID(debug_array)};
 
 	uORB::SubscriptionCallbackWorkItem _local_pos_sub{this, ORB_ID(vehicle_local_position)};	/**< vehicle local position */
@@ -274,7 +277,19 @@ private:
 		(ParamFloat<px4::params::MC_HANG_PAS_P>) _param_mc_hang_pas_p,
 		(ParamFloat<px4::params::MC_HANG_PAS_DLY>) _param_mc_hang_pas_dly,
 		(ParamInt<px4::params::MC_HANG_PAS_POS>) _param_mc_hang_pas_pos,
-		(ParamFloat<px4::params::MC_HANG_PAS_PR>) _param_mc_hang_pas_pr
+		(ParamFloat<px4::params::MC_HANG_PAS_PR>) _param_mc_hang_pas_pr,
+		(ParamInt<px4::params::MC_HANG_FSO_MD>) _param_mc_hang_fso_md,
+		(ParamFloat<px4::params::MC_HANG_FSO_BW>) _param_mc_hang_fso_bw,
+		(ParamFloat<px4::params::MC_HANG_FSO_K>) _param_mc_hang_fso_k,
+		(ParamFloat<px4::params::MC_HANG_FSO_LEAD>) _param_mc_hang_fso_lead,
+		(ParamFloat<px4::params::MC_HANG_FSO_LIM>) _param_mc_hang_fso_lim,
+		(ParamFloat<px4::params::MC_HANG_FSO_SLW>) _param_mc_hang_fso_slw,
+		(ParamFloat<px4::params::MC_HANG_FSO_E>) _param_mc_hang_fso_e,
+		(ParamFloat<px4::params::MC_HANG_FSO_R>) _param_mc_hang_fso_r,
+		(ParamFloat<px4::params::MC_HANG_FSO_T>) _param_mc_hang_fso_t,
+		(ParamFloat<px4::params::MC_HANG_FSO_CF>) _param_mc_hang_fso_cf,
+		(ParamInt<px4::params::MC_HANG_FSO_POS>) _param_mc_hang_fso_pos,
+		(ParamFloat<px4::params::MC_HANG_FSO_PE>) _param_mc_hang_fso_pe
 	);
 
 	math::WelfordMean<float> _sample_interval_s{};

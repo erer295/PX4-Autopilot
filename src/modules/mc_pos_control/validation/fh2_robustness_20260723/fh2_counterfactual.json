@@ -1,0 +1,255 @@
+{
+  "results": [
+    {
+      "run": "position_offboard_20260722_213647",
+      "rope_length_m": 0.6,
+      "validation": [
+        {
+          "name": "north",
+          "truth_peak_deg": 0.355694774511654,
+          "fh1_pred_peak_deg": 4.562694450646627,
+          "peak_error_deg": 4.2069996761349735
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 0.609246394048241,
+          "fh1_pred_peak_deg": 0.3506045593667035,
+          "peak_error_deg": -0.2586418346815375
+        },
+        {
+          "name": "east",
+          "truth_peak_deg": 4.325869947262905,
+          "fh1_pred_peak_deg": 4.647803213825675,
+          "peak_error_deg": 0.32193326656276966
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 2.0377634209985955,
+          "fh1_pred_peak_deg": 0.3611390831322083,
+          "peak_error_deg": -1.6766243378663872
+        },
+        {
+          "name": "south",
+          "truth_peak_deg": 1.0064318557949565,
+          "fh1_pred_peak_deg": 4.648167076574157,
+          "peak_error_deg": 3.6417352207792
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 4.17210690963572,
+          "fh1_pred_peak_deg": 0.36116468592487205,
+          "peak_error_deg": -3.810942223710848
+        },
+        {
+          "name": "west",
+          "truth_peak_deg": 4.145293854850428,
+          "fh1_pred_peak_deg": 4.648160541783137,
+          "peak_error_deg": 0.502866686932709
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 2.0844445949431862,
+          "fh1_pred_peak_deg": 0.36116303377896636,
+          "peak_error_deg": -1.7232815611642198
+        }
+      ],
+      "validation_peak_abs_error_max_deg": 4.2069996761349735,
+      "fh2_segments": [
+        {
+          "name": "north",
+          "start_s": 0.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.6347101464723157,
+          "rms_deg": 1.5484058792258424,
+          "entry_deg": 0.16150646696116477
+        },
+        {
+          "name": "hold",
+          "start_s": 6.0,
+          "duration_s": 5.0,
+          "peak_deg": 0.5826468721403081,
+          "rms_deg": 0.23606806315194293,
+          "entry_deg": 0.25954929215875977
+        },
+        {
+          "name": "east",
+          "start_s": 11.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.62305763911913,
+          "rms_deg": 1.5440525417901254,
+          "entry_deg": 0.07236144579793045
+        },
+        {
+          "name": "hold",
+          "start_s": 17.0,
+          "duration_s": 5.0,
+          "peak_deg": 0.5748831028565096,
+          "rms_deg": 0.2330348790688552,
+          "entry_deg": 0.2653701357799492
+        },
+        {
+          "name": "south",
+          "start_s": 22.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.622925348412124,
+          "rms_deg": 1.5439931025508111,
+          "entry_deg": 0.07068582702804292
+        },
+        {
+          "name": "hold",
+          "start_s": 28.0,
+          "duration_s": 5.0,
+          "peak_deg": 0.5747775211901317,
+          "rms_deg": 0.2329936781662796,
+          "entry_deg": 0.2654348547172629
+        },
+        {
+          "name": "west",
+          "start_s": 33.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.622927582833639,
+          "rms_deg": 1.5439931056179166,
+          "entry_deg": 0.07066407966543209
+        },
+        {
+          "name": "hold",
+          "start_s": 39.0,
+          "duration_s": 10.0,
+          "peak_deg": 0.5747779255685534,
+          "rms_deg": 0.166481389083708,
+          "entry_deg": 0.265433373850899
+        }
+      ],
+      "fh2_worst_peak_deg": 2.6347101464723157,
+      "fh2_worst_move_peak_deg": 2.6347101464723157
+    },
+    {
+      "run": "position_offboard_20260722_214030",
+      "rope_length_m": 0.8,
+      "validation": [
+        {
+          "name": "north",
+          "truth_peak_deg": 0.31947725693654877,
+          "fh1_pred_peak_deg": 5.12488819827761,
+          "peak_error_deg": 4.805410941341061
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 0.6958502841009647,
+          "fh1_pred_peak_deg": 0.5628970873157361,
+          "peak_error_deg": -0.13295319678522866
+        },
+        {
+          "name": "east",
+          "truth_peak_deg": 4.414754158205533,
+          "fh1_pred_peak_deg": 5.104483145323512,
+          "peak_error_deg": 0.689728987117979
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 2.532395673409015,
+          "fh1_pred_peak_deg": 0.5605821321233,
+          "peak_error_deg": -1.971813541285715
+        },
+        {
+          "name": "south",
+          "truth_peak_deg": 1.967219403750221,
+          "fh1_pred_peak_deg": 5.103977137511738,
+          "peak_error_deg": 3.1367577337615176
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 3.1838114553306784,
+          "fh1_pred_peak_deg": 0.5604819070152939,
+          "peak_error_deg": -2.6233295483153847
+        },
+        {
+          "name": "west",
+          "truth_peak_deg": 4.1289186901789,
+          "fh1_pred_peak_deg": 5.1039712433264635,
+          "peak_error_deg": 0.9750525531475631
+        },
+        {
+          "name": "hold",
+          "truth_peak_deg": 2.573366737345515,
+          "fh1_pred_peak_deg": 0.5604806923482135,
+          "peak_error_deg": -2.0128860449973014
+        }
+      ],
+      "validation_peak_abs_error_max_deg": 4.805410941341061,
+      "fh2_segments": [
+        {
+          "name": "north",
+          "start_s": 0.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.473273787778177,
+          "rms_deg": 1.481891386952965,
+          "entry_deg": 0.17010776522705162
+        },
+        {
+          "name": "hold",
+          "start_s": 6.0,
+          "duration_s": 5.0,
+          "peak_deg": 0.7502586126243678,
+          "rms_deg": 0.3203714144534427,
+          "entry_deg": 0.7502586126243678
+        },
+        {
+          "name": "east",
+          "start_s": 11.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.441582401718459,
+          "rms_deg": 1.4808655971066786,
+          "entry_deg": 0.10414023557613261
+        },
+        {
+          "name": "hold",
+          "start_s": 17.0,
+          "duration_s": 5.0,
+          "peak_deg": 0.7524182516410113,
+          "rms_deg": 0.3201707544817236,
+          "entry_deg": 0.7524182516410113
+        },
+        {
+          "name": "south",
+          "start_s": 22.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.441140067934452,
+          "rms_deg": 1.4807274718954,
+          "entry_deg": 0.10338495108439023
+        },
+        {
+          "name": "hold",
+          "start_s": 28.0,
+          "duration_s": 5.0,
+          "peak_deg": 0.7521588865782856,
+          "rms_deg": 0.3200617448134412,
+          "entry_deg": 0.7521588865782856
+        },
+        {
+          "name": "west",
+          "start_s": 33.0,
+          "duration_s": 6.0,
+          "peak_deg": 2.441141944874122,
+          "rms_deg": 1.4807259296100235,
+          "entry_deg": 0.10335081973923861
+        },
+        {
+          "name": "hold",
+          "start_s": 39.0,
+          "duration_s": 10.0,
+          "peak_deg": 0.7521565259653715,
+          "rms_deg": 0.23042202568494558,
+          "entry_deg": 0.7521565259653715
+        }
+      ],
+      "fh2_worst_peak_deg": 2.473273787778177,
+      "fh2_worst_move_peak_deg": 2.473273787778177
+    }
+  ],
+  "gates": {
+    "fh2_predicted_peak_le_3p5_deg": true,
+    "fh2_reference_jerk_le_1p6_m_s3": true
+  },
+  "screen_pass": true
+}

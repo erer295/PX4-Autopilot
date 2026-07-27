@@ -1,0 +1,7 @@
+[
+  {
+    "mode": "STD_L06_PID_AS_FSOPC_K20",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_heso_confirm_20260721/runs/STD_L06_PID_AS_FSOPC_K20/2026-07-21/position_offboard_20260721_200808",
+    "valid": false
+  }
+]

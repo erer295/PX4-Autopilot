@@ -1,0 +1,32 @@
+[
+  {
+    "mode": "STD_L06_PID_AS",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS/2026-07-21/position_offboard_20260721_204526",
+    "valid": false
+  },
+  {
+    "mode": "STD_L06_PID_AS_FSOJPC_K20",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS_FSOJPC_K20/2026-07-21/position_offboard_20260721_204755",
+    "valid": false
+  },
+  {
+    "mode": "STD_L06_PID_AS",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS/2026-07-21/position_offboard_20260721_205023",
+    "valid": false
+  },
+  {
+    "mode": "STD_L06_PID_AS_FSOJPC_K20",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS_FSOJPC_K20/2026-07-21/position_offboard_20260721_205255",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS/2026-07-21/position_offboard_20260721_205520",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_FSOJPC_K20",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_jpc_confirm_20260721/runs/STD_L06_PID_AS_FSOJPC_K20/2026-07-21/position_offboard_20260721_205744",
+    "valid": false
+  }
+]

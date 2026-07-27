@@ -1,0 +1,8 @@
+{
+  "mode": "STD_MM070_PID_AS_UCIS_EI",
+  "payload_mass_kg": 0.5,
+  "payload_sphere_inertia_kg_m2": 0.0009800000000000002,
+  "rope_inertia_kg_m2": 0.0004083733333333333,
+  "rope_length_m": 0.7,
+  "source_model_restored_after_spawn": true
+}

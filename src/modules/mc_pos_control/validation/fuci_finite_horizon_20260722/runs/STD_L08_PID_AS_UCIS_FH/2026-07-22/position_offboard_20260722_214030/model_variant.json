@@ -1,0 +1,8 @@
+{
+  "mode": "STD_L08_PID_AS_UCIS_FH",
+  "payload_mass_kg": 0.5,
+  "payload_sphere_inertia_kg_m2": 0.0009800000000000002,
+  "rope_inertia_kg_m2": 0.0005333733333333336,
+  "rope_length_m": 0.8,
+  "source_model_restored_after_spawn": true
+}

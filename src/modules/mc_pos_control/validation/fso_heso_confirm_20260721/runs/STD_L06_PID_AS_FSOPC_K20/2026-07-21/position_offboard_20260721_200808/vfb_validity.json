@@ -1,0 +1,16 @@
+{
+  "checks": {
+    "base_validity_excluding_z": {
+      "detail": [],
+      "passed": true
+    },
+    "hangvfb_debug_present": {
+      "detail": "debug_array ID 686",
+      "passed": false
+    }
+  },
+  "valid": false,
+  "warnings": [
+    "z_observation_only:truth_z_peak_le_0_5m,ekf_truth_z_peak_le_0_3m"
+  ]
+}

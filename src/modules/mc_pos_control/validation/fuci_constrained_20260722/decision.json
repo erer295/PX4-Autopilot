@@ -1,0 +1,59 @@
+{
+  "preregistered_single_trial_pass": false,
+  "recommendation": "REWORK_FINITE_HORIZON_TRACKING_WITHIN_FUCI",
+  "gates": {
+    "strict_valid": true,
+    "offline_constraints": true,
+    "xy_rms_reduction_ge_15pct": false,
+    "swing_rms_not_worse_than_25pct": true,
+    "energy_not_worse_than_25pct": true,
+    "jerk_not_worse_than_10pct": true,
+    "mechanism_safe": true
+  },
+  "changes_vs_previous_full_mean_pct": {
+    "swing_angle_rms_deg_change_pct": -14.225948419275236,
+    "swing_angle_peak_deg_change_pct": -26.313352638341858,
+    "swing_energy_integral_j_s_kg_change_pct": -47.156763784415276,
+    "xy_error_rms_m_change_pct": -14.277269152661354,
+    "command_xy_error_rms_m_change_pct": -8.049737922086475,
+    "command_vs_mission_xy_offset_rms_m_change_pct": -20.443844529612143,
+    "final_jerk_p95_m_s3_change_pct": -17.48082846983079,
+    "truth_z_peak_m_change_pct": -88.02426354147104,
+    "ekf_truth_z_peak_m_change_pct": -84.67959043144447
+  },
+  "changes_vs_previous_mode_means_pct": {
+    "A_PID_AS": {
+      "swing_angle_rms_deg_change_pct": -67.43935354123968,
+      "swing_angle_peak_deg_change_pct": -64.02963687765923,
+      "swing_energy_integral_j_s_kg_change_pct": -90.29708159753355,
+      "xy_error_rms_m_change_pct": 108.73552291971626,
+      "command_xy_error_rms_m_change_pct": -2.4561355960996067,
+      "command_vs_mission_xy_offset_rms_m_change_pct": 347.56522590799034,
+      "final_jerk_p95_m_s3_change_pct": -45.12260627973814,
+      "truth_z_peak_m_change_pct": -93.99795382381183,
+      "ekf_truth_z_peak_m_change_pct": -92.32537531127547
+    },
+    "B_ZVD": {
+      "swing_angle_rms_deg_change_pct": -15.307912534860158,
+      "swing_angle_peak_deg_change_pct": -20.239919697803156,
+      "swing_energy_integral_j_s_kg_change_pct": -48.24587819994255,
+      "xy_error_rms_m_change_pct": -14.385008371064922,
+      "command_xy_error_rms_m_change_pct": -2.9253495067849355,
+      "command_vs_mission_xy_offset_rms_m_change_pct": -21.194964065378276,
+      "final_jerk_p95_m_s3_change_pct": -17.593271728875813,
+      "truth_z_peak_m_change_pct": -51.35395106366693,
+      "ekf_truth_z_peak_m_change_pct": -48.7536685404944
+    },
+    "C_FULL": {
+      "swing_angle_rms_deg_change_pct": -14.225948419275236,
+      "swing_angle_peak_deg_change_pct": -26.313352638341858,
+      "swing_energy_integral_j_s_kg_change_pct": -47.156763784415276,
+      "xy_error_rms_m_change_pct": -14.277269152661354,
+      "command_xy_error_rms_m_change_pct": -8.049737922086475,
+      "command_vs_mission_xy_offset_rms_m_change_pct": -20.443844529612143,
+      "final_jerk_p95_m_s3_change_pct": -17.48082846983079,
+      "truth_z_peak_m_change_pct": -88.02426354147104,
+      "ekf_truth_z_peak_m_change_pct": -84.67959043144447
+    }
+  }
+}

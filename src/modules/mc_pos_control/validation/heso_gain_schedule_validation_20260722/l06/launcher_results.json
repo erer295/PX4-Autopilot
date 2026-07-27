@@ -1,0 +1,22 @@
+[
+  {
+    "mode": "STD_L06_PID_AS",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_gain_schedule_validation_20260722/l06/runs/STD_L06_PID_AS/2026-07-22/position_offboard_20260722_105944",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_HGS_K40",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_gain_schedule_validation_20260722/l06/runs/STD_L06_PID_AS_HGS_K40/2026-07-22/position_offboard_20260722_110205",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_gain_schedule_validation_20260722/l06/runs/STD_L06_PID_AS/2026-07-22/position_offboard_20260722_110427",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_HGS_K40",
+    "run_dir": "src/modules/mc_pos_control/validation/heso_gain_schedule_validation_20260722/l06/runs/STD_L06_PID_AS_HGS_K40/2026-07-22/position_offboard_20260722_110648",
+    "valid": true
+  }
+]

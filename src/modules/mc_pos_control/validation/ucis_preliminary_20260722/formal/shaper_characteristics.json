@@ -1,0 +1,24 @@
+{
+  "type": "damped_zvd_equal_total_time",
+  "frequency_source": "confidence_fallback_nominal",
+  "damping_ratio": 0.1,
+  "spacing_s": 0.780993757918218,
+  "weights": [
+    0.33441490789149075,
+    0.4877425475242017,
+    0.1778425445843075
+  ],
+  "weight_sum": 1.0,
+  "original_duration_s": 6.0,
+  "base_duration_s": 4.438012484163564,
+  "shaped_total_duration_s": 6.0,
+  "original_peak_velocity_m_s": 0.4,
+  "shaped_peak_velocity_m_s": 0.5817314536269292,
+  "peak_velocity_change_pct": 45.432863406732295,
+  "original_peak_acceleration_m_s2": 0.6283185307179586,
+  "shaped_peak_acceleration_m_s2": 0.4456901802738419,
+  "peak_acceleration_change_pct": -29.066204721900124,
+  "linear_nominal_postmove_rms_deg_original": 1.2312961947056336,
+  "linear_nominal_postmove_rms_deg_shaped": 1.2702936057730478e-07,
+  "linear_nominal_residual_change_pct": -99.99998968328164
+}

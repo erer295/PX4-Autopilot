@@ -1,0 +1,45 @@
+{
+  "binary_sha256": "3a07e292fceef7754c4e7faaa6b778f0e7989d8a2ec2ab4b161f504fc9a7a413",
+  "build": {
+    "command": "make px4_sitl_default",
+    "result": "success",
+    "steps": 11
+  },
+  "git_head": "5cfa2f23e9a647b837bd8922328f7e7667e6e017",
+  "git_status_short": [
+    " ? Tools/simulation/gz",
+    " M src/modules/mc_autotune_attitude_control/mc_autotune_attitude_control.cpp",
+    " M src/modules/mc_pos_control/MulticopterPositionControl.cpp",
+    " M src/modules/mc_pos_control/MulticopterPositionControl.hpp",
+    " M src/modules/mc_pos_control/PositionControl/PositionControl.cpp",
+    " M src/modules/mc_pos_control/PositionControl/PositionControl.hpp",
+    " M src/modules/mc_pos_control/SuspendedLoadAntiSwing/CMakeLists.txt",
+    " M src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadAntiSwingTest.cpp",
+    " M src/modules/mc_pos_control/suspended_load_anti_swing_params.c",
+    " M src/modules/mc_pos_control/validation_tools/zd680_vfb_recorder.py",
+    " M src/modules/mc_pos_control/validation_tools/zd680_vfb_report.py",
+    " M src/modules/mc_pos_control/validation_tools/zd680_vfb_validation_suite.py",
+    "?? git",
+    "?? src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp",
+    "?? src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.cpp",
+    "?? src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.hpp",
+    "?? src/modules/mc_pos_control/validation/",
+    "?? src/modules/mc_pos_control/validation_tools/zd680_fso_usc_quick_freeze_report.py"
+  ],
+  "readiness": {
+    "formal_budget": false,
+    "note": "hold-only readiness intentionally fails formal directional-route validity",
+    "type_error_count": 0
+  },
+  "untracked_source_sha256": {
+    "src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveDebugArray.hpp": "efa8ffa1f82831e7f3f45341cd241d73d118dbb8de6ee15fad7f7820d54e1c9c",
+    "src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.cpp": "b02eee0a9aaccb109f1516e762e588fa06054a8dd8e3b848c4ac649ba068b97b",
+    "src/modules/mc_pos_control/SuspendedLoadAntiSwing/SuspendedLoadFrequencySelectiveObserver.hpp": "eae3cda5113afd7a97135bc8006feee93f137fd8bf1fb286a390d78b87890358",
+    "src/modules/mc_pos_control/validation_tools/zd680_fso_usc_quick_freeze_report.py": "b9a2bf9ad1ab331fae82f80cbf10dccb53d9520aaf9c1dfaee7db90905776343"
+  },
+  "validation_script_sha256": {
+    "zd680_vfb_recorder.py": "d73f973f352c1c467b4055b70a675cc858cad6b72e395397a7413cb625d04035",
+    "zd680_vfb_report.py": "c14e2bd2b04987c72896385639488d7349202801a0dc17471e2940010f65d8e2",
+    "zd680_vfb_validation_suite.py": "268899efb8a82fb5cdc596a4587b557d79fe6cd9b028bd14a3a88afb1e205d9a"
+  }
+}

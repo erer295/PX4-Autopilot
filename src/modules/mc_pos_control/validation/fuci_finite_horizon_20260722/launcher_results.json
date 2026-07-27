@@ -1,0 +1,7 @@
+[
+  {
+    "mode": "STD_L08_PID_AS_UCIS_FH",
+    "run_dir": "src/modules/mc_pos_control/validation/fuci_finite_horizon_20260722/runs/STD_L08_PID_AS_UCIS_FH/2026-07-22/position_offboard_20260722_214030",
+    "valid": true
+  }
+]

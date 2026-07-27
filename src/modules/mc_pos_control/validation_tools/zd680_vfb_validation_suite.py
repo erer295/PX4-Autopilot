@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import runpy
+import os
+import subprocess
 from pathlib import Path
 
 
@@ -14,7 +16,25 @@ API = runpy.run_path(str(SOURCE), run_name="zd680_vfb_suite_api")
 
 MODES = (
     "VFB_L06_W00", "VFB_L06_W05", "VFB_L08_W00", "VFB_L08_W25", "VFB_L08_W05",
-    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
+    "STD_L06_PID_AS", "STD_L06_PID_AS_PAS", "STD_L06_PID_AS_FSO_SHADOW",
+    "STD_L06_PID_AS_FSOPC", "STD_L06_PID_AS_FSOPC_K20", "STD_L06_PID_AS_FSOPC_K40",
+    "STD_L06_PID_AS_FSOPC_K60",
+    "STD_L06_PID_AS_FSOJPC_K05", "STD_L06_PID_AS_FSOJPC_K10", "STD_L06_PID_AS_FSOJPC_K15",
+    "STD_L06_PID_AS_FSOJPC_K20",
+    "STD_L06_PID_AS_FSOUSC_K20",
+    "STD_L06_PID_AS_FSOUSC_READY",
+    "STD_L08_PID_AS", "STD_L08_PID_AS_FSOUSC_K20",
+    "STD_L06_PID_AS_HGS_K40", "STD_L06_PID_AS_HGS_READY", "STD_L08_PID_AS_HGS_K40",
+    "STD_L06_PID_AS_HGS2_ORACLE_K40", "STD_L06_PID_AS_HGS2_ORACLE_READY",
+    "STD_L06_PID_AS_HGS2_RLS_SHADOW", "STD_L06_PID_AS_HGS2_RLS_READY",
+    "STD_L06_PID_AS_HGS2_BASE",
+    "STD_L06_PID_AS_UCIS_BASE", "STD_L06_PID_AS_UCIS_FIXED",
+    "STD_L06_PID_AS_UCIS_FULL", "STD_L06_PID_AS_UCIS_FUCI",
+    "STD_L06_PID_AS_UCIS_FH", "STD_L08_PID_AS_UCIS_FH", "STD_L06_PID_AS_UCIS_READY",
+    "STD_L06_FULL_W05", "STD_L06_FULL_W10_OBS_DECOUPLE",
+    "STD_L05_PID_AS_UCIS_FH2", "STD_L06_PID_AS_UCIS_FH2", "STD_L08_PID_AS_UCIS_FH2",
+    "STD_L06P75_PID_AS_UCIS_FH2", "STD_MM070_PID_AS_UCIS_FH2",
+    "STD_L06_PID_AS_UCIS_EI", "STD_MM070_PID_AS_UCIS_EI",
 )
 CURRENT_MODE = ""
 
@@ -46,8 +66,34 @@ def send_with_pre_takeoff_freeze(self, command: str) -> None:
 original_run_mode = API["run_mode"]
 
 
+def residual_sim_processes():
+    """Return only PX4/Gazebo/recorder processes that can contaminate a run."""
+    result = subprocess.run(
+        ["ps", "-eo", "pid=,comm=,args="], check=True, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    )
+    ancestors = {os.getpid(), os.getppid()}
+    residuals = []
+    for line in result.stdout.splitlines():
+        fields = line.strip().split(None, 2)
+        if len(fields) < 3:
+            continue
+        pid, command, arguments = int(fields[0]), fields[1], fields[2]
+        if pid in ancestors:
+            continue
+        is_px4 = command == "px4"
+        is_gazebo = command in {"gzserver", "gzclient"} or "gz sim -r" in arguments
+        is_recorder = "position_offboard_flight_recorder.py" in arguments
+        if is_px4 or is_gazebo or is_recorder:
+            residuals.append(line.strip())
+    return residuals
+
+
 def run_mode(mode: str, args):
     global CURRENT_MODE
+    residuals = residual_sim_processes()
+    if residuals:
+        raise RuntimeError("residual PX4/Gazebo/recorder process before run: " + " | ".join(residuals))
     CURRENT_MODE = mode
     return original_run_mode(mode, args)
 

@@ -1,0 +1,108 @@
+Output directory: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946
+attaching to an already running PX4/Gazebo instance
+connecting MAVLink: udpin:0.0.0.0:14540
+hang joint recorder started: /world/default/model/zd680_hang_0/joint_state
+applying requested PX4 rate-controller parameters
+set MC_LADRC_EN=0: ok
+set MC_RBF_EN=0: ok
+set MC_RBF_LEARN_EN=0: ok
+requested rate controller: pid
+applying requested PX4 position-controller parameters
+set MC_PLADRC_EN=0: ok
+set MC_PLADRC_TD_EN=0: ok
+requested position controller: pid
+requested position LADRC TD: off
+applying task-book VFB parameter profile: STD_L06_PID_AS_FSOUSC_READY (L=0.6, W=0.0)
+set MC_LADRC_EN=0: ok
+set MC_RBF_EN=0: ok
+set MC_RBF_LEARN_EN=0: ok
+set MC_PLADRC_TD_EN=0: ok
+set MC_HANG_SIGN_X=-1: ok
+set MC_HANG_SIGN_Y=-1: ok
+set MC_HANG_MODE=2: ok
+set MC_PLADRC_EN=0: ok
+set MC_HANG_FRQ_EN=0: ok
+set MC_HANG_AS_EN=1: ok
+set MC_HANG_PAS_MD=0: ok
+set MC_HANG_PAS_POS=0: ok
+set MC_HANG_FSO_MD=2: ok
+set MC_HANG_FSO_POS=1: ok
+set EKF2_EV_CTRL=0: ok
+set EKF2_GPS_CTRL=7: ok
+set EKF2_HGT_REF=1: ok
+set EKF2_BARO_CTRL=0: ok
+set EKF2_RNG_CTRL=0: ok
+set MC_PLADRC_B0_XY=1: ok
+set MC_PLADRC_WC_XY=1.8: ok
+set MC_PLADRC_WO_XY=6: ok
+set MC_PLADRC_LIM_XY=0.8: ok
+set MC_PLADRC_D_XY=0: ok
+set MC_HANG_LEN=0.6: ok
+set MC_HANG_WC_R=0.25: ok
+set MC_HANG_WO_R=0.6: ok
+set MC_HANG_WO_MIN=2: ok
+set MC_HANG_K_ANG=0: ok
+set MC_HANG_K_RATE=0.6: ok
+set MC_HANG_ZETA=0.1: ok
+set MC_HANG_E_MIN=0: ok
+set MC_HANG_E_FULL=0.01: ok
+set MC_HANG_ACC_LIM=0.2: ok
+set MC_HANG_ACC_SLW=2: ok
+set MC_HANG_LPF_HZ=4: ok
+set MC_HANG_TOT_A=0.8: ok
+set MC_HANG_PAS_E=0.005: ok
+set MC_HANG_PAS_R=0.05: ok
+set MC_HANG_PAS_K=1: ok
+set MC_HANG_PAS_LIM=0.08: ok
+set MC_HANG_PAS_SLW=1.5: ok
+set MC_HANG_PAS_LPF=1: ok
+set MC_HANG_PAS_P=0.0005: ok
+set MC_HANG_PAS_DLY=0.1: ok
+set MC_HANG_PAS_PR=0.25: ok
+set SIM_BAT_DRAIN=3600: ok
+set SIM_BAT_MIN_PCT=100: ok
+set MC_HANG_FSO_BW=0.3: ok
+set MC_HANG_FSO_K=0.2: ok
+set MC_HANG_FSO_LEAD=0.05: ok
+set MC_HANG_FSO_LIM=0.08: ok
+set MC_HANG_FSO_SLW=0.3: ok
+set MC_HANG_FSO_E=0.003: ok
+set MC_HANG_FSO_R=0.03: ok
+set MC_HANG_FSO_T=2: ok
+set MC_HANG_FSO_PE=0.05: ok
+set MC_PLADRC_VFB_W=0: ok
+set EKF2_BARO_NOISE=3.5: ok
+set EKF2_ACC_B_NOISE=0: ok
+holding current hover point: x=-0.06 m y=-0.01 m z=-10.02 m yaw=102.9 deg
+streaming position setpoint NED: x=-0.06 m y=-0.01 m z=-10.02 m yaw=102.9 deg
+OFFBOARD mode command sent: ok
+vehicle is already armed; no arm command was sent
+settling for 3.0s
+waiting position: x=-0.08 y=-0.00 z=-10.03 target=(-0.06,-0.01,-10.02) mode=UNKNOWN
+position stable: x=-0.09 y=-0.01 z=-10.04 mode=UNKNOWN
+position stable check: ok
+waiting hang initial condition: angle_rms=0.219/0.750deg rate_rms=0.0155/0.0600rad/s angle_now=0.138/0.750deg rate_now=0.0229/0.0600rad/s xy_error=0.033m vxy=0.020m/s
+waiting hang initial condition: angle_rms=0.234/0.750deg rate_rms=0.0178/0.0600rad/s angle_now=0.245/0.750deg rate_now=0.0111/0.0600rad/s xy_error=0.012m vxy=0.022m/s
+waiting hang initial condition: angle_rms=0.215/0.750deg rate_rms=0.0140/0.0600rad/s angle_now=0.208/0.750deg rate_now=0.0185/0.0600rad/s xy_error=0.029m vxy=0.013m/s
+hang initial condition ready: angle_rms=0.216deg rate_rms=0.0175rad/s angle_now=0.207deg rate_now=0.0206rad/s
+running action profile
+  action 1: hold:1
+action_01_hold: 1.0s
+LOITER mode command sent: ok
+wrote hang joint samples: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/hang_joint_samples.csv (600 rows)
+copied ULog: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/position_offboard.ulg
+wrote live samples: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/live_samples.csv
+
+Position OFFBOARD run complete.
+events:  src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/events.csv
+summary: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/summary.csv
+coord:   src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/hangcoord_summary.csv
+posprot: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/hangpos4_summary.csv
+active:  src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/active_summary.json
+validity:src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/validity.json (invalid_validation)
+summary records: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/summaries
+summary index:   src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/summaries/run_index.csv
+live:    src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/live_samples.csv
+hang:    src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/hang_joint_samples.csv
+ulog:    src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/position_offboard.ulg
+console: src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/readiness/runs/STD_L06_PID_AS_FSOUSC_READY/2026-07-22/position_offboard_20260722_095946/px4_console.log

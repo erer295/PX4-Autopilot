@@ -41,6 +41,10 @@
 
 using namespace matrix;
 
+// Keep this translation unit rebuilt with the generated parameter table.  A
+// stale SITL object predating newly added parameters otherwise retains shifted
+// parameter indices and reports unrelated type errors during startup.
+
 McAutotuneAttitudeControl::McAutotuneAttitudeControl() :
 	ModuleParams(nullptr),
 	WorkItem(MODULE_NAME, px4::wq_configurations::hp_default)

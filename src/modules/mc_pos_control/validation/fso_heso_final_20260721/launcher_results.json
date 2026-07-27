@@ -1,0 +1,17 @@
+[
+  {
+    "mode": "STD_L06_PID_AS_FSOPC_K20",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_heso_final_20260721/runs/STD_L06_PID_AS_FSOPC_K20/2026-07-21/position_offboard_20260721_194156",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_FSOPC_K40",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_heso_final_20260721/runs/STD_L06_PID_AS_FSOPC_K40/2026-07-21/position_offboard_20260721_194415",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_FSOPC_K60",
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_heso_final_20260721/runs/STD_L06_PID_AS_FSOPC_K60/2026-07-21/position_offboard_20260721_194638",
+    "valid": true
+  }
+]

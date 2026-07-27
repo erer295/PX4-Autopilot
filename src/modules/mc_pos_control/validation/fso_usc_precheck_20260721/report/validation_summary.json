@@ -1,0 +1,86 @@
+{
+  "comparisons": [],
+  "generated_local": "2026-07-21T22:00:56",
+  "runs": [
+    {
+      "a_base_p95_m_s2": 0.0,
+      "a_base_peak_m_s2": 0.0,
+      "a_base_rms_m_s2": 0.0,
+      "active_intervention_ratio": 0.0,
+      "along_path_speed_rmse_m_s": 0.05415280848619248,
+      "as_negative_power_integral_j_kg": -0.24541100120913317,
+      "as_p95_m_s2": 0.16671031573838363,
+      "as_peak_m_s2": 0.2000000149480579,
+      "as_positive_power_integral_j_kg": 0.0,
+      "as_rms_m_s2": 0.05761342304310142,
+      "battery_remaining_mean": 0.9999465942382812,
+      "battery_remaining_min": 0.9999465942382812,
+      "battery_voltage_min_v": 24.30000114440918,
+      "battery_warning_peak": 0.0,
+      "candidate_positive_power_integral_j_kg": 0.0,
+      "completed": true,
+      "controller": "PID_AS",
+      "cross_path_velocity_rms_m_s": 0.012813507223517375,
+      "ekf_truth_z_peak_m": 0.13327980041503906,
+      "endpoint_xy_error_m": NaN,
+      "failsafe_ratio": 0.0,
+      "final_5s_swing_angle_rms_deg": 0.2772319782308727,
+      "final_acc_p95_m_s2": 0.43915293910043535,
+      "final_acc_peak_m_s2": 0.7816433911398744,
+      "final_acc_rms_m_s2": 0.17854351856917935,
+      "final_jerk_p95_m_s3": 2.3838510688184633,
+      "final_jerk_peak_m_s3": 30.230062997107314,
+      "final_jerk_rms_m_s3": 2.2771678931014163,
+      "final_positive_power_integral_j_kg": 0.23030268922798183,
+      "hover_xy_error_rms_m": NaN,
+      "initial_horizontal_speed_m_s": 0.010941719896316775,
+      "initial_swing_angle_rms_deg": 0.19533698320704093,
+      "initial_swing_rate_rms_rad_s": 0.012434289534173925,
+      "initial_xy_error_m": 0.017783198148682015,
+      "mode": "STD_L06_PID_AS_FSOUSC_K20",
+      "moving_xy_error_rms_m": 0.05478119517612251,
+      "pas_p95_m_s2": 0.0,
+      "pas_peak_m_s2": 0.0,
+      "pas_position_limiter_ratio": 0.0,
+      "pas_rms_m_s2": 0.0,
+      "payload_mass_kg": 0.5,
+      "ramp_time_s": 1.0,
+      "rejection_reasons": "",
+      "rope_length_m": 0.6,
+      "run_dir": "mc_pos_control/validation/fso_usc_precheck_20260721/runs/STD_L06_PID_AS_FSOUSC_K20/2026-07-21/position_offboard_20260721_215902",
+      "swing_angle_peak_deg": 5.002785037600302,
+      "swing_angle_rms_deg": 1.6093244128940003,
+      "swing_energy_integral_j_s_kg": 0.317328972981354,
+      "swing_energy_mean_j_kg": 0.0056449055154264224,
+      "swing_energy_peak_j_kg": 0.05280466278350758,
+      "swing_rate_peak_rad_s": 0.5415725307868734,
+      "swing_rate_rms_rad_s": 0.13590314038155554,
+      "total_acc_saturated_ratio": 0.0,
+      "total_envelope_trigger_ratio": 0.0,
+      "truth_z_peak_m": 0.1538848876953125,
+      "valid": true,
+      "xy_error_peak_m": 0.11346807393025668,
+      "xy_error_rms_m": 0.05478119517612251
+    }
+  ],
+  "vfb_validity": {
+    "STD_L06_PID_AS_FSOUSC_K20": {
+      "checks": {
+        "base_validity_excluding_z": {
+          "detail": [],
+          "passed": true
+        },
+        "hangfso_debug_present": {
+          "detail": "debug_array ID 687",
+          "passed": true
+        },
+        "hangvfb_debug_present": {
+          "detail": "not required for PID+AS auxiliary-mode analysis",
+          "passed": true
+        }
+      },
+      "valid": true,
+      "warnings": []
+    }
+  }
+}

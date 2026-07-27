@@ -1,0 +1,86 @@
+{
+  "a": {
+    "comparisons": {
+      "final_jerk_p95_m_s3": {
+        "absolute_difference": 0.0,
+        "analyzer": 2.1081388763292224,
+        "pass": true,
+        "raw": 2.1081388763292224,
+        "tolerance": 2.1081388763292224e-06
+      },
+      "swing_angle_peak_deg": {
+        "absolute_difference": 0.0,
+        "analyzer": 4.9593363093715075,
+        "pass": true,
+        "raw": 4.9593363093715075,
+        "tolerance": 4.959336309371507e-06
+      },
+      "swing_angle_rms_deg": {
+        "absolute_difference": 0.0,
+        "analyzer": 1.6651255894795287,
+        "pass": true,
+        "raw": 1.6651255894795287,
+        "tolerance": 1.6651255894795286e-06
+      },
+      "swing_energy_integral_j_s_kg": {
+        "absolute_difference": 0.0,
+        "analyzer": 0.3299532711155415,
+        "pass": true,
+        "raw": 0.3299532711155415,
+        "tolerance": 3.299532711155415e-07
+      },
+      "xy_error_rms_m": {
+        "absolute_difference": 6.938893903907228e-18,
+        "analyzer": 0.05296207060786201,
+        "pass": true,
+        "raw": 0.05296207060786202,
+        "tolerance": 5.296207060786201e-08
+      }
+    },
+    "pass": true,
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/runs/STD_L06_PID_AS/2026-07-22/position_offboard_20260722_100623"
+  },
+  "b": {
+    "comparisons": {
+      "final_jerk_p95_m_s3": {
+        "absolute_difference": 0.0,
+        "analyzer": 2.4373815711560254,
+        "pass": true,
+        "raw": 2.4373815711560254,
+        "tolerance": 2.437381571156025e-06
+      },
+      "swing_angle_peak_deg": {
+        "absolute_difference": 0.0,
+        "analyzer": 4.791743561068993,
+        "pass": true,
+        "raw": 4.791743561068993,
+        "tolerance": 4.7917435610689935e-06
+      },
+      "swing_angle_rms_deg": {
+        "absolute_difference": 0.0,
+        "analyzer": 1.5719605556307155,
+        "pass": true,
+        "raw": 1.5719605556307155,
+        "tolerance": 1.5719605556307155e-06
+      },
+      "swing_energy_integral_j_s_kg": {
+        "absolute_difference": 0.0,
+        "analyzer": 0.3040430432467817,
+        "pass": true,
+        "raw": 0.3040430432467817,
+        "tolerance": 3.040430432467817e-07
+      },
+      "xy_error_rms_m": {
+        "absolute_difference": 6.938893903907228e-18,
+        "analyzer": 0.06101533791719109,
+        "pass": true,
+        "raw": 0.0610153379171911,
+        "tolerance": 6.101533791719108e-08
+      }
+    },
+    "pass": true,
+    "run_dir": "/home/lst/PX4-Autopilot/src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/runs/STD_L06_PID_AS_FSOUSC_K20/2026-07-22/position_offboard_20260722_100842"
+  },
+  "pair": 2,
+  "pass": true
+}

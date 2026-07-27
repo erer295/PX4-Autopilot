@@ -1,0 +1,22 @@
+[
+  {
+    "mode": "STD_L06_PID_AS",
+    "run_dir": "src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/runs/STD_L06_PID_AS/2026-07-22/position_offboard_20260722_100144",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_FSOUSC_K20",
+    "run_dir": "src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/runs/STD_L06_PID_AS_FSOUSC_K20/2026-07-22/position_offboard_20260722_100402",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS",
+    "run_dir": "src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/runs/STD_L06_PID_AS/2026-07-22/position_offboard_20260722_100623",
+    "valid": true
+  },
+  {
+    "mode": "STD_L06_PID_AS_FSOUSC_K20",
+    "run_dir": "src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/runs/STD_L06_PID_AS_FSOUSC_K20/2026-07-22/position_offboard_20260722_100842",
+    "valid": true
+  }
+]

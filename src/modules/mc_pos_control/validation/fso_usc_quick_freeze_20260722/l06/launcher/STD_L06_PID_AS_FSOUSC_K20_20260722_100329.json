@@ -1,0 +1,29 @@
+{
+  "error": "",
+  "mode": "STD_L06_PID_AS_FSOUSC_K20",
+  "model_source_restored": true,
+  "profile": {
+    "actions": "hold:5;north:2:6;hold:5;east:2:6;hold:5;south:2:6;hold:5;west:2:6;hold:10",
+    "controller": "PID_AS",
+    "initial_angle_rms_max_deg": 0.75,
+    "initial_condition_profile": "strict_matched_taskbook_v1",
+    "initial_current_angle_max_deg": 0.75,
+    "initial_current_rate_max_rad_s": 0.06,
+    "initial_horizontal_speed_max_m_s": 0.1,
+    "initial_rate_rms_max_rad_s": 0.06,
+    "initial_stable_time_s": 3.0,
+    "initial_xy_error_max_m": 0.1,
+    "mode": "STD_L06_PID_AS_FSOUSC_K20",
+    "motion_profile": "s_curve",
+    "payload_mass_kg": 0.5,
+    "ramp_time_s": 1.0,
+    "rope_length_m": 0.6,
+    "velocity_feedback_weight": 0.0,
+    "wrench_schedule": ""
+  },
+  "recorder_log": "src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/launcher/STD_L06_PID_AS_FSOUSC_K20_20260722_100329_recorder.log",
+  "recorder_returncode": 0,
+  "run_dir": "src/modules/mc_pos_control/validation/fso_usc_quick_freeze_20260722/l06/runs/STD_L06_PID_AS_FSOUSC_K20/2026-07-22/position_offboard_20260722_100402",
+  "started_local": "2026-07-22T10:03:29",
+  "valid": true
+}

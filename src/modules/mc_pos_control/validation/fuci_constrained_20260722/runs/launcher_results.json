@@ -1,0 +1,7 @@
+[
+  {
+    "mode": "STD_L06_PID_AS_UCIS_FUCI",
+    "run_dir": "src/modules/mc_pos_control/validation/fuci_constrained_20260722/runs/runs/STD_L06_PID_AS_UCIS_FUCI/2026-07-22/position_offboard_20260722_210658",
+    "valid": true
+  }
+]

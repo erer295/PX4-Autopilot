@@ -1,0 +1,40 @@
+{
+  "type": "positive_three_impulse_frequency_uncertainty_constrained",
+  "frequency_source": "bounded_ratio_interval_offline_constraint",
+  "damping_ratio": 0.1,
+  "frequency_ratio_min": 0.9,
+  "frequency_ratio_max": 1.2,
+  "residual_limit": 0.1,
+  "impulse_times_s": [
+    0.0,
+    0.5700160993377398,
+    1.1699724676436745
+  ],
+  "weights": [
+    0.3295785796978337,
+    0.4230609449850559,
+    0.24736047531711053
+  ],
+  "weight_sum": 1.0000000000000002,
+  "minimum_weight": 0.24736047531711053,
+  "impulse_duration_s": 1.1699724676436745,
+  "centroid_delay_s": 0.5305564953467917,
+  "base_duration_s": 4.8300275323563255,
+  "worst_residual_ratio": 0.0993335637868704,
+  "worst_residual_frequency_ratio": 0.9,
+  "nominal_residual_ratio": 0.01564519242366225,
+  "offline_command_offset_rms_m": 0.09822505268331344,
+  "offline_command_offset_peak_m": 0.1777093649281194,
+  "offline_peak_velocity_m_s": 0.5221894576746168,
+  "offline_peak_acceleration_m_s2": 0.39059615376958257,
+  "checks": {
+    "frequency_interval_frozen": true,
+    "worst_residual_le_0p10": true,
+    "nominal_residual_le_0p03": true,
+    "weights_nonnegative_and_sum_one": true,
+    "impulse_times_ordered": true,
+    "peak_velocity_le_0p54": true,
+    "peak_acceleration_le_0p45": true
+  },
+  "all_checks_pass": true
+}

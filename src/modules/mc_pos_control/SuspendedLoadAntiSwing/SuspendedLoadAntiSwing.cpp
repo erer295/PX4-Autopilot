@@ -104,6 +104,14 @@ void SuspendedLoadAntiSwing::setAppliedAccelerationNed(const Vector2f &applied_a
 	}
 }
 
+void SuspendedLoadAntiSwing::setGainScheduleScale(float scale)
+{
+	// The scheduler may only reshape the existing damping gain. Keeping a
+	// bounded, unity-centred scale makes loss of estimator validity a strict
+	// fallback to the frozen PID+AS controller.
+	_gain_schedule_scale = math::constrain(sanitizeFinite(scale, 1.f), 0.5f, 1.5f);
+}
+
 Vector2f SuspendedLoadAntiSwing::update(float dt, uint64_t now, float yaw, bool flying)
 {
 	_safety_limited = false;
@@ -176,7 +184,8 @@ Vector2f SuspendedLoadAntiSwing::update(float dt, uint64_t now, float yaw, bool 
 
 	} else if (_parameters.mode == Mode::EnergyDamping) {
 		const float damping_gain = 2.f * _parameters.energy_damping_ratio
-					   * sqrtf(CONSTANTS_ONE_G * _parameters.rope_length);
+					   * sqrtf(CONSTANTS_ONE_G * _parameters.rope_length)
+					   * _gain_schedule_scale;
 		const float energy = perUnitMassEnergy(_angle_filtered, _rate_filtered, _parameters.rope_length);
 		acceleration_body = damping_gain * _rate_filtered
 				    * energyGate(energy, _parameters.energy_gate_start, _parameters.energy_gate_full);
@@ -233,6 +242,7 @@ void SuspendedLoadAntiSwing::resetActivation(bool reset_flying_since)
 	_engaged_since = 0;
 	_safety_rearm_since = 0;
 	_last_ramp_scale = 0.f;
+	_gain_schedule_scale = 1.f;
 	_filter_initialized = false;
 	_engaged = false;
 	_active = false;
@@ -285,8 +295,10 @@ void SuspendedLoadAntiSwing::updateStatus(uint64_t now)
 			      ? energyGate(_status.energy_per_mass, _parameters.energy_gate_start, _parameters.energy_gate_full)
 			      : 0.f;
 	_status.damping_gain = _parameters.mode == Mode::EnergyDamping
-			       ? 2.f * _parameters.energy_damping_ratio * sqrtf(CONSTANTS_ONE_G * _parameters.rope_length)
-			       : 0.f;
+				       ? 2.f * _parameters.energy_damping_ratio * sqrtf(CONSTANTS_ONE_G * _parameters.rope_length)
+				       * _gain_schedule_scale
+				       : 0.f;
+	_status.gain_schedule_scale = _gain_schedule_scale;
 	_status.rope_length = _parameters.rope_length;
 	_status.mode = (_parameters.enabled ? _parameters.mode : Mode::Off);
 	_status.measurement_valid = _measurement_usable;

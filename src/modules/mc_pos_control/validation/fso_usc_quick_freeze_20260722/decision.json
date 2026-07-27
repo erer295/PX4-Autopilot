@@ -1,0 +1,83 @@
+{
+  "core_non_jerk_pass": true,
+  "decision": "STOP_HESO_DIRECT",
+  "formal_budget": {
+    "invalid": 0,
+    "maximum": 8,
+    "remaining_unused": 4,
+    "retries": 0,
+    "used": 4
+  },
+  "gate_1_l06": {
+    "baseline": {
+      "final_5s_swing_angle_rms_deg": 0.33520809589584116,
+      "final_5s_swing_angle_rms_deg_sd": 0.04228053214951364,
+      "final_acc_rms_m_s2": 0.18232893570761283,
+      "final_acc_rms_m_s2_sd": 0.0026926497827571587,
+      "final_jerk_p95_m_s3": 2.2420861138804864,
+      "final_jerk_p95_m_s3_sd": 0.07983409519849774,
+      "n": 5,
+      "swing_angle_peak_deg": 5.034343291864007,
+      "swing_angle_peak_deg_sd": 0.09003284834517956,
+      "swing_angle_rms_deg": 1.658743610494513,
+      "swing_angle_rms_deg_sd": 0.012813923092617098,
+      "swing_energy_integral_j_s_kg": 0.33129787141543476,
+      "swing_energy_integral_j_s_kg_sd": 0.00603013933690877,
+      "valid_count": 5,
+      "xy_error_rms_m": 0.056517077434671395,
+      "xy_error_rms_m_sd": 0.002305604061977476
+    },
+    "candidate": {
+      "final_5s_swing_angle_rms_deg": 0.2802509829746159,
+      "final_5s_swing_angle_rms_deg_sd": 0.06535471534895393,
+      "final_acc_rms_m_s2": 0.17961853695710878,
+      "final_acc_rms_m_s2_sd": 0.0023699544144098724,
+      "final_jerk_p95_m_s3": 2.4431307307270633,
+      "final_jerk_p95_m_s3_sd": 0.09043761925076536,
+      "n": 5,
+      "swing_angle_peak_deg": 5.020638717019136,
+      "swing_angle_peak_deg_sd": 0.19781683508923445,
+      "swing_angle_rms_deg": 1.5831901595687319,
+      "swing_angle_rms_deg_sd": 0.009670154483639977,
+      "swing_energy_integral_j_s_kg": 0.3099672722372576,
+      "swing_energy_integral_j_s_kg_sd": 0.006832575811450966,
+      "valid_count": 5,
+      "xy_error_rms_m": 0.05846163691452474,
+      "xy_error_rms_m_sd": 0.0021178696846116864
+    },
+    "changes": {
+      "final_5s_swing_angle_rms_deg_change_pct": -16.39492410657707,
+      "final_acc_rms_m_s2_change_pct": -1.4865433947634732,
+      "final_jerk_p95_m_s3_change_pct": 8.966855269382101,
+      "swing_angle_peak_deg_change_pct": -0.2722216990450166,
+      "swing_angle_rms_deg_change_pct": -4.554860103018377,
+      "swing_energy_integral_j_s_kg_change_pct": -6.438495691820911,
+      "xy_error_rms_m_change_pct": 3.4406582366207417
+    },
+    "checks": {
+      "all_10_runs_valid": true,
+      "combined_energy_le_minus_5pct": true,
+      "combined_jerk_le_plus_7pct": false,
+      "combined_peak_le_plus_3pct": true,
+      "combined_swing_rms_le_minus_3pct": true,
+      "combined_xy_le_plus_5pct": true,
+      "each_pair_jerk_le_plus_12pct": false,
+      "new_pair_energy_each_decreases": true,
+      "new_pair_swing_rms_each_decreases": true
+    },
+    "core_pass": true,
+    "jerk_class": "fail",
+    "pass": false
+  },
+  "gate_2_l08": {
+    "reason": "gate_1_jerk_hard_stop",
+    "status": "not_run"
+  },
+  "generated_local": "2026-07-22T10:22:04",
+  "raw_recompute_pass": true,
+  "stop_reasons": [
+    "combined jerk P95 change +8.966855% > +7%",
+    "new pair 1 jerk P95 change +14.589863% > +12%",
+    "new pair 2 jerk P95 change +15.617695% > +12%"
+  ]
+}

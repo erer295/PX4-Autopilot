@@ -1,0 +1,76 @@
+{
+  "stage1_winner": "filtered_rls",
+  "stage1_winner_meets_all_targets": false,
+  "stage2_oracle_performance_pass": false,
+  "stage2_mechanism_pass": true,
+  "decision": "STOP_CURRENT_AS_GAIN_SCHEDULER",
+  "base_means": {
+    "swing_angle_rms_deg": 1.6281024970458458,
+    "swing_angle_peak_deg": 5.116004286448318,
+    "swing_energy_integral_j_s_kg": 0.3170364114095801,
+    "xy_error_rms_m": 0.05608849759120853,
+    "final_jerk_p95_m_s3": 2.130627978011111,
+    "as_rms_m_s2": 0.0564875692556045,
+    "final_acc_rms_m_s2": 0.17784985762115998,
+    "as_negative_power_integral_j_kg": -0.23723072798493255
+  },
+  "oracle_means": {
+    "swing_angle_rms_deg": 1.5924751123661451,
+    "swing_angle_peak_deg": 5.002609608126728,
+    "swing_energy_integral_j_s_kg": 0.31078111929182206,
+    "xy_error_rms_m": 0.056759956074822454,
+    "final_jerk_p95_m_s3": 2.307101507510877,
+    "as_rms_m_s2": 0.06340403195026248,
+    "final_acc_rms_m_s2": 0.18202381861261727,
+    "as_negative_power_integral_j_kg": -0.2642585817414128
+  },
+  "oracle_vs_base_change_pct": {
+    "swing_angle_rms_deg": -2.188276520940524,
+    "swing_angle_peak_deg": -2.216469572200286,
+    "swing_energy_integral_j_s_kg": -1.9730516409601995,
+    "xy_error_rms_m": 1.197141147384162,
+    "final_jerk_p95_m_s3": 8.282700279966292,
+    "as_rms_m_s2": 12.244220783091597,
+    "final_acc_rms_m_s2": 2.34690150854564,
+    "as_negative_power_integral_j_kg": 11.39306614537594
+  },
+  "pair_comparisons": [
+    {
+      "pair": 1,
+      "baseline": "A1",
+      "oracle": "B1",
+      "swing_rms_change_pct": -0.6254248939361218,
+      "energy_change_pct": 1.0428517139555282,
+      "xy_rms_change_pct": -3.434275813690224,
+      "jerk_p95_change_pct": 10.141440999758444,
+      "as_rms_change_pct": 13.584503608335186,
+      "final_acc_rms_change_pct": 2.0158023183158846
+    },
+    {
+      "pair": 2,
+      "baseline": "A2",
+      "oracle": "B2",
+      "swing_rms_change_pct": -3.750750035160777,
+      "energy_change_pct": -4.992074168249305,
+      "xy_rms_change_pct": 6.206304611418845,
+      "jerk_p95_change_pct": 6.437261090962543,
+      "as_rms_change_pct": 10.899522328516277,
+      "final_acc_rms_change_pct": 2.6842182039250817
+    }
+  ],
+  "gates": {
+    "all_six_runs_valid": true,
+    "both_pair_swing_rms_decrease": true,
+    "both_pair_energy_decrease": false,
+    "mean_swing_rms_le_minus_2pct": true,
+    "mean_energy_le_minus_3pct": false,
+    "mean_xy_rms_le_plus_5pct": true,
+    "mean_jerk_p95_le_plus_7pct": false,
+    "each_pair_jerk_p95_le_plus_12pct": true,
+    "oracle_mode_and_truth_signals_correct": true,
+    "direct_heso_compensation_zero": true,
+    "oracle_gain_in_range_and_activates": true,
+    "rls_shadow_gain_unity_and_inactive": true,
+    "as_positive_power_zero": true
+  }
+}

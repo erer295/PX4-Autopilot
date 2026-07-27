@@ -105,6 +105,7 @@ enum DataIndex : uint8_t {
 	ACCEL_APPLIED_NORTH,
 	ACCEL_APPLIED_EAST,
 	MODE,
+	GAIN_SCHEDULE_SCALE,
 	DATA_COUNT
 };
 
@@ -139,6 +140,7 @@ inline void fromStatus(const SuspendedLoadAntiSwing::Status &status, debug_array
 	debug_array.data[ACCEL_APPLIED_NORTH] = status.acceleration_applied_ned(0);
 	debug_array.data[ACCEL_APPLIED_EAST] = status.acceleration_applied_ned(1);
 	debug_array.data[MODE] = static_cast<float>(static_cast<int32_t>(status.mode));
+	debug_array.data[GAIN_SCHEDULE_SCALE] = status.gain_schedule_scale;
 }
 
 } // namespace suspended_load_anti_swing_status_bridge

@@ -357,6 +357,22 @@ void MulticopterPositionControl::parameters_update(bool force)
 		energy_supervisor_parameters.position_recovery_cancellation_ratio = _param_mc_hang_pas_pr.get();
 		_control.setSuspendedLoadEnergySupervisorParameters(energy_supervisor_parameters);
 
+		SuspendedLoadFrequencySelectiveObserver::Parameters frequency_selective_parameters{};
+		frequency_selective_parameters.mode = static_cast<SuspendedLoadFrequencySelectiveObserver::Mode>(
+						       _param_mc_hang_fso_md.get());
+		frequency_selective_parameters.bandwidth_hz = _param_mc_hang_fso_bw.get();
+		frequency_selective_parameters.compensation_gain = _param_mc_hang_fso_k.get();
+		frequency_selective_parameters.phase_lead_s = _param_mc_hang_fso_lead.get();
+		frequency_selective_parameters.acceleration_limit = _param_mc_hang_fso_lim.get();
+		frequency_selective_parameters.acceleration_slew_rate = _param_mc_hang_fso_slw.get();
+		frequency_selective_parameters.energy_threshold = _param_mc_hang_fso_e.get();
+		frequency_selective_parameters.rate_min = _param_mc_hang_fso_r.get();
+		frequency_selective_parameters.settling_time = _param_mc_hang_fso_t.get();
+		frequency_selective_parameters.confidence_min = _param_mc_hang_fso_cf.get();
+		frequency_selective_parameters.position_protection_enabled = _param_mc_hang_fso_pos.get() != 0;
+		frequency_selective_parameters.position_error_threshold = _param_mc_hang_fso_pe.get();
+		_control.setSuspendedLoadFrequencySelectiveObserverParameters(frequency_selective_parameters);
+
 		_goto_control.setParamMpcAccHor(_param_mpc_acc_hor.get());
 		_goto_control.setParamMpcAccDownMax(_param_mpc_acc_down_max.get());
 		_goto_control.setParamMpcAccUpMax(_param_mpc_acc_up_max.get());
@@ -760,6 +776,7 @@ void MulticopterPositionControl::Run()
 			publishSuspendedLoadAntiSwingStatus();
 			publishSuspendedLoadCoordinationStatus();
 			publishSuspendedLoadCoordinationPositionStatus();
+			publishSuspendedLoadFrequencySelectiveStatus();
 			publishLadrcVelocityFeedbackStatus();
 
 			// Publish internal position control setpoints
@@ -895,6 +912,14 @@ void MulticopterPositionControl::publishSuspendedLoadCoordinationPositionStatus(
 	debug_array_s debug_array{};
 	suspended_load_coordination_position_status_bridge::fromStatus(_control.suspendedLoadCoordinationStatus(), debug_array);
 	_suspended_load_coordination_position_status_pub.publish(debug_array);
+}
+
+void MulticopterPositionControl::publishSuspendedLoadFrequencySelectiveStatus()
+{
+	debug_array_s debug_array{};
+	suspended_load_frequency_selective_status_bridge::fromStatus(
+		_control.suspendedLoadFrequencySelectiveObserverStatus(), debug_array, hrt_absolute_time());
+	_suspended_load_frequency_selective_status_pub.publish(debug_array);
 }
 
 void MulticopterPositionControl::publishLadrcVelocityFeedbackStatus()

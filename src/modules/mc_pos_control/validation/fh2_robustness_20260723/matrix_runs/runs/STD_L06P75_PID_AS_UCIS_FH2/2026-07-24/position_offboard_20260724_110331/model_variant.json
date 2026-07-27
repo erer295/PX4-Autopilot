@@ -1,0 +1,8 @@
+{
+  "mode": "STD_L06P75_PID_AS_UCIS_FH2",
+  "payload_mass_kg": 0.75,
+  "payload_sphere_inertia_kg_m2": 0.0014700000000000004,
+  "rope_inertia_kg_m2": 0.00030004,
+  "rope_length_m": 0.6,
+  "source_model_restored_after_spawn": true
+}

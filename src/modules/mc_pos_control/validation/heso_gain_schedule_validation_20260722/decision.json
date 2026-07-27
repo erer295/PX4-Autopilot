@@ -1,0 +1,47 @@
+{
+  "date": "2026-07-22",
+  "candidate": "PID+AS+HESO effective-frequency/confidence/energy-position gain scheduling",
+  "decision": "STOP_CURRENT_HGS_PARAMETERS",
+  "direction_retained": true,
+  "l06_formal_runs": 4,
+  "l06_all_valid": true,
+  "l06_performance_gate_pass": false,
+  "mechanism_gate_pass": true,
+  "l08_executed": false,
+  "l08_reason": "Not run because the preregistered L06 gate failed.",
+  "aggregate_change_pct": {
+    "swing_angle_rms_deg": 0.0685769354,
+    "swing_energy_integral_j_s_kg": 1.2766950784,
+    "swing_angle_peak_deg": -0.9455124092,
+    "xy_error_rms_m": 6.4109831238,
+    "final_jerk_p95_m_s3": 8.4638060977,
+    "final_acc_rms_m_s2": 2.4886230533,
+    "as_rms_m_s2": 8.9976096620
+  },
+  "performance_checks": {
+    "all_four_runs_valid": true,
+    "both_pairs_swing_rms_decrease": false,
+    "both_pairs_energy_integral_decrease": false,
+    "mean_swing_rms_le_minus_2pct": false,
+    "mean_energy_le_minus_3pct": false,
+    "mean_peak_le_plus_5pct": true,
+    "mean_xy_le_plus_5pct": false,
+    "mean_jerk_le_plus_7pct": false,
+    "each_pair_jerk_le_plus_12pct": false
+  },
+  "mechanism_checks": {
+    "candidate_mode_is_3": true,
+    "direct_heso_compensation_is_zero": true,
+    "gain_scale_in_1_to_1p4_and_activates": true,
+    "frequency_ratio_in_0p7_to_1p3": true,
+    "all_three_gates_finite_and_nonconstant": true,
+    "gain_does_not_rise_when_position_gate_is_zero": true,
+    "anti_swing_power_nonpositive": true
+  },
+  "posthoc_diagnostics_not_used_for_gate": {
+    "after_removing_first_5s_hold_mean_swing_change_pct": -0.0049329833,
+    "after_removing_first_5s_hold_mean_energy_change_pct": 1.2175420268,
+    "heso_active_frequency_ratio_median_runs": [1.1197180748, 1.1210024357],
+    "offline_fft_peak_ratio_runs": [1.0160249189, 0.9986646615]
+  }
+}

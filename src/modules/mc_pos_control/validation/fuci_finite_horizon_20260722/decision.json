@@ -1,0 +1,62 @@
+{
+  "decision": "FINITE_HORIZON_DUAL_LENGTH_FAIL_REWORK_SAME_ROUTE",
+  "dual_length_preliminary_robustness_pass": false,
+  "offline_all_pass": true,
+  "implementation_all_pass": true,
+  "flight_pass_by_length": {
+    "FH06": false,
+    "FH08": false
+  },
+  "flight_gates": {
+    "FH06": {
+      "strict_valid": true,
+      "failsafe_zero": true,
+      "selector_mode6_100pct": true,
+      "swing_rms_le_1p0_deg": true,
+      "swing_peak_le_4p0_deg": false,
+      "xy_rms_le_0p12_m": true,
+      "jerk_p95_le_2p0_m_s3": false,
+      "direct_compensation_zero": true,
+      "as_positive_power_zero": true,
+      "as_never_amplified": true
+    },
+    "FH08": {
+      "strict_valid": true,
+      "failsafe_zero": true,
+      "selector_mode6_100pct": true,
+      "swing_rms_le_1p0_deg": true,
+      "swing_peak_le_4p0_deg": false,
+      "xy_rms_le_0p12_m": true,
+      "jerk_p95_le_2p0_m_s3": false,
+      "direct_compensation_zero": true,
+      "as_positive_power_zero": true,
+      "as_never_amplified": true
+    }
+  },
+  "fh06_relative_gates_vs_previous_fuci": {
+    "fh06_command_offset_reduction_ge_20pct": true,
+    "fh06_swing_rms_not_worse_than_50pct": false,
+    "fh06_xy_rms_reduction_ge_15pct": true
+  },
+  "fh06_changes_vs_previous_fuci_pct": {
+    "swing_angle_rms_deg_change_pct": 73.62279398891327,
+    "swing_angle_peak_deg_change_pct": 126.81132373172788,
+    "swing_energy_integral_j_s_kg_change_pct": 224.8820824769385,
+    "xy_error_rms_m_change_pct": -35.96260811201164,
+    "command_xy_error_rms_m_change_pct": -7.590282564726913,
+    "command_vs_mission_xy_offset_rms_m_change_pct": -36.72743192315965,
+    "final_jerk_p95_m_s3_change_pct": 86.55455240689103,
+    "truth_z_peak_m_change_pct": 615.5803114297047
+  },
+  "fh08_changes_vs_fh06_pct": {
+    "swing_angle_rms_deg_change_pct": -1.681252211532669,
+    "swing_angle_peak_deg_change_pct": 2.054712971638639,
+    "swing_energy_integral_j_s_kg_change_pct": 56.172831343592854,
+    "xy_error_rms_m_change_pct": 23.772618684503644,
+    "command_xy_error_rms_m_change_pct": 0.12289404226462075,
+    "command_vs_mission_xy_offset_rms_m_change_pct": 14.790420284535877,
+    "final_jerk_p95_m_s3_change_pct": 6.72573059338657,
+    "truth_z_peak_m_change_pct": -7.970265395898046
+  },
+  "sample_scope": "one preregistered valid SITL run per rope length; no retries"
+}
